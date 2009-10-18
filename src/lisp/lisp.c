@@ -16,6 +16,17 @@ void *init()
   nil->cdr = nil;
 }
 
+cons *null (cons *a)
+{
+  if (a == nil ||
+      (a->type = CONS &&
+       a->car == nil &&
+       a->cdr == nil))
+    return t;
+  else
+    return nil;
+}
+
 cons *numberp(cons *a)
 {
   switch (a->type)
@@ -50,7 +61,7 @@ cons *car(cons *a)
 
 cons *rplaca(cons *a, cons *new)
 {
-  if (a->type == CONS)
+  if (a->type == CONS && a != nil)
     {
       a->car = new;
       return a;
@@ -69,7 +80,7 @@ cons *cdr(cons *a)
 
 cons *rplacd(cons *a, cons *new)
 {
-  if (a->type == CONS)
+  if (a->type == CONS && a != nil)
     {
       a->cdr = new;
       return a;
