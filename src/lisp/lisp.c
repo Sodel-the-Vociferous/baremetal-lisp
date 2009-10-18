@@ -7,7 +7,6 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
-
 void *init()
 {
   t->type = T;
@@ -32,6 +31,7 @@ cons *numberp(cons *a)
 }
 
 cons *fcons(cons *a, cons *b)
+//The cons function. f added to prevent name collision.
 {
   cons *to_ret = malloc(sizeof(cons));
   to_ret->type = CONS;  
@@ -48,10 +48,32 @@ cons *car(cons *a)
     return nil;//TODO error
 }
 
+cons *rplaca(cons *a, cons *new)
+{
+  if (a->type == CONS)
+    {
+      a->car = new;
+      return a;
+    }
+  else
+    return nil;//TODO error
+}
+
 cons *cdr(cons *a)
 {
   if (a->type == CONS)
     return a->cdr;
+  else
+    return nil;//TODO error
+}
+
+cons *rplacd(cons *a, cons *new)
+{
+  if (a->type == CONS)
+    {
+      a->cdr = new;
+      return a;
+    }
   else
     return nil;//TODO error
 }

@@ -64,6 +64,7 @@ typedef struct vector
 {
   unsigned short type;
   int size;
+  unsigned short datatype;
   struct cons **v;
   struct vector *next;
 }__attribute__((packed)) vector;
