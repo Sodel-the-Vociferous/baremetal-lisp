@@ -16,8 +16,9 @@ void *init()
   nil->cdr = nil;
 }
 
-cons *null (cons *a)
+cons *null (cons *env)
 {
+  cons *a = car(env);
   if (a == nil ||
       (a->type = CONS &&
        a->car == nil &&
@@ -27,7 +28,7 @@ cons *null (cons *a)
     return nil;
 }
 
-cons *numberp(cons *a)
+cons *numberp(cons *env)
 {
   switch (a->type)
     {
@@ -41,7 +42,7 @@ cons *numberp(cons *a)
     }
 }
 
-cons *fcons(cons *a, cons *b)
+cons *fcons(cons *env)
 //The cons function. f added to prevent name collision.
 {
   cons *to_ret = malloc(sizeof(cons));
@@ -51,7 +52,7 @@ cons *fcons(cons *a, cons *b)
   return to_ret;
 }
 
-cons *car(cons *a)
+cons *car(cons *env)
 {
   if (a->type == CONS)
     return a->car;
@@ -59,7 +60,7 @@ cons *car(cons *a)
     return nil;//TODO error
 }
 
-cons *rplaca(cons *a, cons *new)
+cons *rplaca(cons *env)
 {
   if (a->type == CONS && a != nil)
     {
@@ -70,7 +71,7 @@ cons *rplaca(cons *a, cons *new)
     return nil;//TODO error
 }
 
-cons *cdr(cons *a)
+cons *cdr(cons *env)
 {
   if (a->type == CONS)
     return a->cdr;
@@ -78,7 +79,7 @@ cons *cdr(cons *a)
     return nil;//TODO error
 }
 
-cons *rplacd(cons *a, cons *new)
+cons *rplacd(cons *env)
 {
   if (a->type == CONS && a != nil)
     {
@@ -89,7 +90,7 @@ cons *rplacd(cons *a, cons *new)
     return nil;//TODO error
 }
 
-cons *eq (cons *a, cons *b)
+cons *eq (cons *env)
 {
   if (a==b)
     return t;
@@ -97,7 +98,7 @@ cons *eq (cons *a, cons *b)
     return nil;
 }
 
-cons *eql (cons *a, cons *b)
+cons *eql (cons *env)
 {
   if (eq(a, b) == t)
     return t;
@@ -107,35 +108,35 @@ cons *eql (cons *a, cons *b)
 	{
 	  //numbers
 	case (FIXNUM):
-	  if (a->num = b->num)
+	  if (((fixnum*)a)->num == ((fixnum*)b)->num)
 	    return t;
 	case (BIGNUM):
-	  while (a->num = b->num)
+	  while (((bignum*)a)->num == ((bignum*)b)->num)
 	    {
-	      if ((a->next == nil) && 
-		  (b->next = nil))
+	      if (((cons*)((bignum*)a)->next == nil) && 
+		  ((cons*)((bignum*)b)->next == nil))
 		return t;
-	      a = a->next;
-	      b = b->next;
+	      a = (cons*)((bignum*)a)->next;
+	      b = (cons*)((bignum*)b)->next;
 	    }
 	  return nil;
 	case (RATIO):
-	  if ((a->numerator == b->numerator) && 
-	      (a->denominator = b->denominator))
+	  if ((((ratio*)a)->numerator == ((ratio*)b)->numerator) &&
+	      (((ratio*)a)->denominator == ((ratio*)b)->denominator))
 	    return t;
 	  else
 	    return nil;
 	case (SINGLE):
-	  if ((a->sign == b->sign) &&
-	      (a->base == b->base) &&
-	      (eql(a->exponent, b->exponent) == t) &&
-	      (eql(a->integer, b->integer)))
+	  if ((((single*)a)->sign == ((single*)b)->sign) &&
+	      (((single*)a)->base == ((single*)b)->base) &&
+	      (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
+	      (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
 	    return t;
 	  else
 	    return nil;
 	  //characters
 	case (BASE_CHAR):
-	  if (a->c == b->c)
+	  if (((base_char*)a)->c == ((base_char*)b)->c)
 	    return t;
 	  else
 	    return nil;
@@ -147,7 +148,7 @@ cons *eql (cons *a, cons *b)
     return nil;
 }
 
-cons *equal (cons *a, cons *b)
+cons *equal (cons *env)
 {//AHHHHHHHHHHHHHHH TODOOOOOOOO
   if (eq(a, b) == t)
     return t;
@@ -155,3 +156,7 @@ cons *equal (cons *a, cons *b)
     return nil;
 }
   
+int main ()
+{
+  return 0;
+}
