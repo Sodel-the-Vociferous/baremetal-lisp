@@ -12,8 +12,6 @@
 #define ARRAY 9
 #define COMPILED_FUNCTION 10
 
-
-
 #define BITS32
 
 #ifdef BITS32
@@ -21,6 +19,7 @@
 typedef struct cons
 {
   unsigned short type;
+  struct cons *plist;
   struct cons *car;
   struct cons *cdr;
 } __attribute__((packed)) cons;
@@ -31,12 +30,14 @@ typedef struct cons
 typedef struct fixnum
 {
   unsigned short type;
+  struct cons *plist;
   long num;
 } __attribute__((packed)) fixnum;
 
 typedef struct bignum
 {
   unsigned short type;
+  struct cons *plist;
   long num;
   struct bignum *next;
 } __attribute__((packed)) bignum;
@@ -45,6 +46,7 @@ typedef struct bignum
 typedef struct ratio
 {
   unsigned short type;
+  struct cons *plist;
   struct fixnum *numerator;
   struct fixnum *denominator;
 } __attribute__((packed)) ratio;
@@ -53,6 +55,7 @@ typedef struct ratio
 typedef struct single
 {
   unsigned short type;
+  struct cons *plist;
   unsigned short sign : 1;
   unsigned short base : 15;
   struct fixnum *exponent;
@@ -65,12 +68,14 @@ typedef struct single
 typedef struct base_char
 {
   unsigned short type;
+  struct cons *plist;
   char c;
 }__attribute__((packed)) base_char;
 
 typedef struct vector
 {
   unsigned short type;
+  struct cons *plist;
   int size;
   unsigned short datatype;
   struct cons **v;
@@ -80,6 +85,7 @@ typedef struct vector
 typedef struct array
 {
   unsigned short type;
+  struct cons *plist;
   unsigned short rank;
   struct vector **a;
   struct array *next;
@@ -89,6 +95,7 @@ typedef struct array
 typedef struct compiled_function
 {
   unsigned short type;
+  struct cons *plist;
   struct cons *lambda_list;
   struct cons *(*function)(struct cons*);
 }__attribute__((packed)) compiled_function;
