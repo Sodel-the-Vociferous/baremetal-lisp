@@ -19,7 +19,6 @@
 typedef struct cons
 {
   unsigned short type;
-  struct cons *plist;
   struct cons *car;
   struct cons *cdr;
 } __attribute__((packed)) cons;
@@ -30,14 +29,12 @@ typedef struct cons
 typedef struct fixnum
 {
   unsigned short type;
-  struct cons *plist;
   long num;
 } __attribute__((packed)) fixnum;
 
 typedef struct bignum
 {
   unsigned short type;
-  struct cons *plist;
   long num;
   struct bignum *next;
 } __attribute__((packed)) bignum;
@@ -46,7 +43,6 @@ typedef struct bignum
 typedef struct ratio
 {
   unsigned short type;
-  struct cons *plist;
   struct fixnum *numerator;
   struct fixnum *denominator;
 } __attribute__((packed)) ratio;
@@ -55,7 +51,6 @@ typedef struct ratio
 typedef struct single
 {
   unsigned short type;
-  struct cons *plist;
   unsigned short sign : 1;
   unsigned short base : 15;
   struct fixnum *exponent;
@@ -68,7 +63,6 @@ typedef struct single
 typedef struct base_char
 {
   unsigned short type;
-  struct cons *plist;
   char c;
 }__attribute__((packed)) base_char;
 
@@ -97,10 +91,38 @@ typedef struct compiled_function
   unsigned short type;
   struct cons *plist;
   struct cons *lambda_list;
+  struct cons *lexenv;
   struct cons *(*function)(struct cons*);
 }__attribute__((packed)) compiled_function;
 
+typedef struct symbol
+{
+  unsigned short type;
+  struct vector *name;
+  struct cons *plist;
+  struct cons *home_package;
+  struct cons *value;
+  struct cons *function;
+}__attribute__((packed)) symbol;
+
+typedef struct hash_table
+{
+  unsigned short type;
+  struct cons *plist;
+  struct vector **table;
+}__attribute__((packed)) hash_table;
+
+typedef struct package
+{
+  unsigned short type;
+  struct cons *plist;
+  struct vector name;
+  struct hash_table *global;
+}__attribute__((packed)) package;
+
+
 #endif
+
 
 extern cons *nil;
 extern cons *t;

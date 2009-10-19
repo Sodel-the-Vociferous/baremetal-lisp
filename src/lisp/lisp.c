@@ -7,14 +7,71 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
-void *init()
+cons *init()
 {
+  char cl_name[] = "COMMON-LISP";
+  char cl_user_name[] = "COMMON-LISP-USER";
+  char keyword_name[] = "KEYWORD";
+
   t->type = T;
   
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
+
+  cons *package_list = malloc(sizeof(cons));
+  cons *thiscons = package_list;
+  package_list->type = CONS;
+  package_list->car = malloc(sizeof(package));
+  package_list->cdr = malloc(sizeof(cons));
+
+  package *thispackage = (package*)package_list->car;
+  thispackage->type = PACKAGE;
+  thispackage->plist = nil;
+  thispackage->name = strtolstr(&cl_name[0]);
+
+  thiscons = cdr(thiscons);
+  thiscons->type = CONS;
+  thiscons->car = malloc(sizeof(package));
+  thiscons->cdr = malloc(sizeof(cons));
+  
+  thispackage = (package*)car(thiscons);
+  thispackage->type = PACKAGE;
+  thispackage->plist = nil;
+  thispackage->name = strtolstr(&cl_user_name[0]);
+  thispackage->cdr = malloc(sizeof(cons));
+
+  thiscons = cdr(thiscons);
+  thiscons->type = CONS;
+  thiscons->car = malloc(sizeof(package));
+  thiscons->cdr = malloc(sizeof(cons));
+  
+  thispackage = (package*)car(thiscons);
+  thispackage->type = PACKAGE;
+  thispackage->plist = nil;
+  thispackage->name = strtolstr(&keyword_name[0]);
+  thispackage->cdr = malloc(sizeof(cons)); 
 }
+
+vector *strtolstr(char *str)
+{
+  int i;
+
+  vector *to_ret = malloc(sizeof(vector));
+  to_ret->plist = nil;
+
+  for (i=1;*str!=0;i++);
+  to_ret->size = i;
+  to_ret->datatype = BASE_CHAR;
+  to_ret->v = malloc((i*sizeof(base_char)));
+  for(i=0;*str!=0;i++)
+    {
+      to_ret->v[i] = *str;
+      str++;
+    }
+  to_ret->next = nil;
+}
+      
 
 cons *null (cons *env)
 {
@@ -158,5 +215,6 @@ cons *equal (cons *env)
   
 int main ()
 {
+  cons *global = init();
   return 0;
 }
