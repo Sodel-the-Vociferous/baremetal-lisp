@@ -109,7 +109,7 @@ typedef struct hash_table
 {
   unsigned short type;
   struct cons *plist;
-  struct vector **table;
+  struct cons **table;
 }__attribute__((packed)) hash_table;
 
 typedef struct package

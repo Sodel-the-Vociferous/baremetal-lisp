@@ -18,60 +18,92 @@ cons *init()
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
+}
 
-  cons *package_list = malloc(sizeof(cons));
-  cons *thiscons = package_list;
-  package_list->type = CONS;
-  package_list->car = malloc(sizeof(package));
-  package_list->cdr = malloc(sizeof(cons));
+cons *newcons()
+{
+  cons *c = malloc(sizeof(cons));
+  c->type = CONS;
+  c->car = nil;
+  c->cdr = nil;
+  return c;
+}
 
-  package *thispackage = (package*)package_list->car;
-  thispackage->type = PACKAGE;
-  thispackage->plist = nil;
-  thispackage->name = strtolstr(&cl_name[0]);
+fixnum *newfixnum()
+{
+  fixnum *f = malloc(sizeof(fixnum));
+  f->type = FIXNUM;
+  f->num = 0;
+  return f;
+}
 
-  thiscons = cdr(thiscons);
-  thiscons->type = CONS;
-  thiscons->car = malloc(sizeof(package));
-  thiscons->cdr = malloc(sizeof(cons));
-  
-  thispackage = (package*)car(thiscons);
-  thispackage->type = PACKAGE;
-  thispackage->plist = nil;
-  thispackage->name = strtolstr(&cl_user_name[0]);
-  thispackage->cdr = malloc(sizeof(cons));
+bignum *newbignum()
+{
+  bignum *b = malloc(sizeof(bignum));
+  b->type = BIGNUM;
+  b->num = 0;
+  b->next = nil;
+  return b;
+}
 
-  thiscons = cdr(thiscons);
-  thiscons->type = CONS;
-  thiscons->car = malloc(sizeof(package));
-  thiscons->cdr = malloc(sizeof(cons));
-  
-  thispackage = (package*)car(thiscons);
-  thispackage->type = PACKAGE;
-  thispackage->plist = nil;
-  thispackage->name = strtolstr(&keyword_name[0]);
-  thispackage->cdr = malloc(sizeof(cons)); 
+ratio *newratio(fixnum *n, fixnum *d)
+{
+  ratio *r = malloc(sizeof(ratio));
+  r->type = RATIO;
+  r->numerator = n;
+  r->denominator = d;
+  return r;
+}
+
+single *newsingle()
+{
+  single *s = malloc(sizeof(single));
+  s->type = SINGLE;
+  s->sign = 0;
+  s->base = 0;
+  s->exponent = 0;
+  s->integer = 0;
+  return s;
+}
+
+base_char *newbase_char()
+{
+  base_char *c = malloc(sizeof(base_char));
+  c->type = BASE_CHAR;
+  c->0;
+}
+
+vector *newvector(int size)
+{
+  vector *v = malloc(sizeof(vector));
+  v->type = VECTOR;
+  v->plist = nil;
+  v->size = size;
+  v->datatype = t;
+  v->v = malloc((size * sizeof(cons*)));
+  v->next = nil;
 }
 
 vector *strtolstr(char *str)
 {
+  int string_len;
   int i;
+  for(string_len=1;*(str+string_len)!=0;string_len++);
 
-  vector *to_ret = malloc(sizeof(vector));
-  to_ret->plist = nil;
-
-  for (i=1;*str!=0;i++);
-  to_ret->size = i;
+  vector *to_ret = newvector(string_len);
   to_ret->datatype = BASE_CHAR;
-  to_ret->v = malloc((i*sizeof(base_char)));
+ 
+  base_char *c = 0;
   for(i=0;*str!=0;i++)
     {
-      to_ret->v[i] = *str;
+      c = newbase_char();
+      to_ret->v[i] = c;
+      c->c = *str;
       str++;
     }
   to_ret->next = nil;
+  return to_ret;
 }
-      
 
 cons *null (cons *env)
 {
@@ -147,6 +179,19 @@ cons *rplacd(cons *env)
     return nil;//TODO error
 }
 
+cons *intern(vector *name, package *p)
+{
+  int i;
+  int index = *(int*)name % HASH_TABLE_SIZE;
+  cons *entry = p->global->table[index];
+  symbol *s = (symbol*)entry->car;
+}
+
+cons kchareq(base_char *a, base_char *b)//for kernel use; doesn't use Lisp conventions
+{
+  
+      
+
 cons *eq (cons *env)
 {
   if (a==b)
@@ -154,7 +199,7 @@ cons *eq (cons *env)
   else
     return nil;
 }
-
+      
 cons *eql (cons *env)
 {
   if (eq(a, b) == t)
@@ -212,6 +257,7 @@ cons *equal (cons *env)
   else
     return nil;
 }
+
   
 int main ()
 {
