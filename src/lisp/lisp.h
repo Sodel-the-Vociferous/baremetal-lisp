@@ -12,6 +12,8 @@
 #define ARRAY 9
 #define COMPILED_FUNCTION 10
 #define STRING 11
+#define SYMBOL 12
+#define FUNCTION 13
 
 #define BITS32
 
@@ -96,6 +98,15 @@ typedef struct compiled_function
   struct cons *(*function)(struct cons*);
 }__attribute__((packed)) compiled_function;
 
+typedef struct function
+{
+  unsigned short type;
+  struct cons *plist;
+  struct cons *lambda_list;
+  struct cons *lexenv;
+  struct cons *function;
+}__attribute__((packed)) function;
+
 typedef struct symbol
 {
   unsigned short type;
@@ -127,3 +138,35 @@ typedef struct package
 
 extern cons *nil;
 extern cons *t;
+
+
+cons *init();
+cons *newcons();
+fixnum *newfixnum();
+bignum *newbignum();
+ratio *newratio(fixnum *n, fixnum *d);
+single *newsingle();
+base_char *newbase_char();
+vector *newvector(int size);
+vector *strtolstr(char *str);
+cons *null (cons *env);
+cons *numberp(cons *env);
+cons *fcons(cons *env);
+cons *car(cons *env);
+cons *rplaca(cons *env);
+cons *cdr(cons *env);
+cons *rplacd(cons *env);
+symbol *fintern(vector *name, package *p);
+cons *bchareq(base_char *a, base_char *b);
+cons *bcharequal(base_char *a, base_char *b);
+cons *bstringeq(vector *a, vector *b);
+cons *bstringequal(vector *a, vector *b);
+cons *eq (cons *env);
+cons *eql (cons *env);
+cons *feql (cons *a, cons *b);
+cons *equal (cons *env);
+cons *lookup(char *name, cons *env);
+cons *eval(cons *exp, cons *env);
+cons *extend_env(cons *env);
+cons *envbind(cons *env, cons *binding);
+cons *evalambda(cons *lambda_list, cons *args, cons *env);

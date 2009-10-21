@@ -9,15 +9,23 @@ cons *nil = &nil_phys;
 
 cons *init()
 {
-  char cl_name[] = "COMMON-LISP";
-  char cl_user_name[] = "COMMON-LISP-USER";
-  char keyword_name[] = "KEYWORD";
+  vector *cl_name = strtolstr("COMMON-LISP");
+  vector *cl_user_name = strtolstr("COMMON_LISP_USER");
+  vector *keyword_name = strtolstr("KEYWORD");
+  vector *nilname = strtolstr("NIL");
+  vector *tname = strtolstr("T");
 
+  symbol *s;
+
+
+  //init t
   t->type = T;
+  s=
   
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
+
 }
 
 cons *newcons()
@@ -80,7 +88,8 @@ vector *newvector(int size)
   v->plist = nil;
   v->size = size;
   v->datatype = T;
-  v->v = malloc((size * sizeof(cons*)));
+  v->v = malloc(((size) * sizeof(cons*)));
+  v->v[0] = nil;
   v->next = (vector*)nil;
 }
 
@@ -97,10 +106,13 @@ vector *strtolstr(char *str)
   for(i=0;*str!=0;i++)
     {
       c = newbase_char();
-      ((base_char*)to_ret->v[i])->c = (char)c;
+      to_ret->v[i] = (cons*)c;
       c->c = *str;
       str++;
     }
+  c = newbase_char();
+  to_ret->v[i] = (cons*)c;
+  c->c = 0;
   return to_ret;
 }
 
@@ -314,7 +326,7 @@ cons *eql (cons *env)
 {
   cons *a = lookup("A", env);
   cons *b = lookup("B", env);
-  if (eq(a, b) == t)
+  if (a == b)
     return t;
   else if (a->type == b->type)
     {
@@ -343,8 +355,8 @@ cons *eql (cons *env)
 	case (SINGLE):
 	  if ((((single*)a)->sign == ((single*)b)->sign) &&
 	      (((single*)a)->base == ((single*)b)->base) &&
-	      (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
-	      (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
+	      (feql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
+	      (feql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
 	    return t;
 	  else
 	    return nil;
@@ -362,19 +374,59 @@ cons *eql (cons *env)
     return nil;
 }
 
-cons *equal (cons *env)
-{//AHHHHHHHHHHHHHHH TODOOOOOOOO
-  cons *a = lookup("A", env);
-  cons *b = lookup("B", env);
-  if (eq(a, b) == t)
+cons *feql (cons *a, cons *b)
+{
+  if (a == b)
     return t;
+  else if (a->type == b->type)
+    {
+      switch (a->type)
+	{
+	  //numbers
+	case (FIXNUM):
+	  if (((fixnum*)a)->num == ((fixnum*)b)->num)
+	    return t;
+	case (BIGNUM):
+	  while (((bignum*)a)->num == ((bignum*)b)->num)
+	    {
+	      if (((cons*)((bignum*)a)->next == nil) && 
+		  ((cons*)((bignum*)b)->next == nil))
+		return t;
+	      a = (cons*)((bignum*)a)->next;
+	      b = (cons*)((bignum*)b)->next;
+	    }
+	  return nil;
+	case (RATIO):
+	  if ((((ratio*)a)->numerator == ((ratio*)b)->numerator) &&
+	      (((ratio*)a)->denominator == ((ratio*)b)->denominator))
+	    return t;
+	  else
+	    return nil;
+	case (SINGLE):
+	  if ((((single*)a)->sign == ((single*)b)->sign) &&
+	      (((single*)a)->base == ((single*)b)->base) &&
+	      (feql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
+	      (feql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
+	    return t;
+	  else
+	    return nil;
+	  //characters
+	case (BASE_CHAR):
+	  if (((base_char*)a)->c == ((base_char*)b)->c)
+	    return t;
+	  else
+	    return nil;
+	default:
+	  return nil;
+	}
+    }
   else
     return nil;
 }
 
 cons *lookup(char *name, cons *env)
 {
-  vector *v = strtolstring(name);
+  vector *v = strtolstr(name);
   symbol *s = fintern(v, env);
   return eval(s, env);
 }
@@ -388,26 +440,95 @@ cons *eval(cons *exp, cons *env)
   else if (exp->type == SYMBOL)
     {
       symbol *s = fintern((((symbol*)exp)->name), (package*)car(env));
-      cons *c = cdr(env);
+      cons *c = cdr(env);//current environment node
       while (c!=nil)//Loop through the environment
 	{
 	  if (c->car->car == s)
 	    return c->car->cdr->car;
 	  else if (c->cdr == nil)
 	    c = c->car->cdr;
+	  else
+	    c = c->cdr;
 	}
       return s->value;
     }
-  else if ((exp->type == CONS) && (exp->car->type != CONS))
-    return t;//TODO do function/macro lookups
+  else if ((exp->type == CONS) && 
+	   (exp->car->type != CONS))
+    {
+      symbol *s = fintern((((symbol*)exp->car)->name), (package*)car(env));
+      function *f = s->function;
+      if (f == nil)
+	return nil;//TODO error no function binding
+      
+      env = extend_env(env);
+      env = evalambda(f->lambda_list, exp->cdr, env);
+      if (f->type == FUNCTION)
+	return eval(f->function, env);
+      else if (f->type == COMPILED_FUNCTION)
+	return (*(((compiled_function*)f)->function)) (env);
+      else
+	return nil;//TODO error, not a function
+    }
   else
     return nil;//TODO should be error
 }
 
- 
- 
+
+cons *extend_env(cons *env)
+{
+  cons *oldenv = env;
+  cons *newenv = newcons();
+  newenv->car = oldenv->car;
+  newenv->cdr = newcons();
+  newenv->cdr->car = oldenv;
+  env = newenv;
+  return env;
+}
+
+cons *envbind(cons *env, cons *binding)
+{
+  cons *first = env;
+  cons *oldsecond = first->cdr;
+  cons *newsecond = newcons();
+  newsecond->car = binding;
+  newsecond->cdr = oldsecond;
+  first->cdr = newsecond;
+  return env;
+}
+
+cons *evalambda(cons *lambda_list, cons *args, cons *env)
+{
+  cons *oldenv = env;
+  vector *varname;
+  symbol *varsym;
+  cons *binding;
+  
+  while(null(lambda_list) == nil && null(args) == nil)
+    {
+      varname = ((symbol*)lambda_list->car)->name;
+      varsym = fintern(varname, env->car);
+      
+      binding = newcons;
+      binding->car = varsym;
+      binding->cdr = newcons();
+      binding->cdr->car = args->car;
+
+      envbind(env, binding);
+
+      lambda_list = lambda_list->cdr;
+      args = args->cdr;
+    }
+  if (lambda_list != nil)
+    return oldenv;//TODO error too few args
+  else if (args != nil)
+    return oldenv;//TODO error too many args
+  else
+    return env;
+}
+  
 int main ()
 {
   cons *global = init();
+  vector *hope = strtolstr("hope");
   return 0;
 }
