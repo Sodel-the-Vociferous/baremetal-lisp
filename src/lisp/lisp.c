@@ -42,7 +42,7 @@ bignum *newbignum()
   bignum *b = malloc(sizeof(bignum));
   b->type = BIGNUM;
   b->num = 0;
-  b->next = nil;
+  b->next = (bignum*)nil;
   return b;
 }
 
@@ -70,7 +70,7 @@ base_char *newbase_char()
 {
   base_char *c = malloc(sizeof(base_char));
   c->type = BASE_CHAR;
-  c->0;
+  c->c = 0;
 }
 
 vector *newvector(int size)
@@ -79,9 +79,9 @@ vector *newvector(int size)
   v->type = VECTOR;
   v->plist = nil;
   v->size = size;
-  v->datatype = t;
+  v->datatype = T;
   v->v = malloc((size * sizeof(cons*)));
-  v->next = nil;
+  v->next = (vector*)nil;
 }
 
 vector *strtolstr(char *str)
@@ -97,17 +97,16 @@ vector *strtolstr(char *str)
   for(i=0;*str!=0;i++)
     {
       c = newbase_char();
-      to_ret->v[i] = c;
+      ((base_char*)to_ret->v[i])->c = (char)c;
       c->c = *str;
       str++;
     }
-  to_ret->next = nil;
   return to_ret;
 }
 
 cons *null (cons *env)
 {
-  cons *a = car(env);
+  cons *a = lookup("A", env);
   if (a == nil ||
       (a->type = CONS &&
        a->car == nil &&
@@ -119,6 +118,7 @@ cons *null (cons *env)
 
 cons *numberp(cons *env)
 {
+  cons *a = lookup("A", env);
   switch (a->type)
     {
     case (FIXNUM):
@@ -131,9 +131,11 @@ cons *numberp(cons *env)
     }
 }
 
-cons *fcons(cons *env)
 //The cons function. f added to prevent name collision.
+cons *fcons(cons *env)
 {
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
   cons *to_ret = malloc(sizeof(cons));
   to_ret->type = CONS;  
   to_ret->car = a;
@@ -143,6 +145,7 @@ cons *fcons(cons *env)
 
 cons *car(cons *env)
 {
+  cons *a = lookup("A", env);
   if (a->type == CONS)
     return a->car;
   else
@@ -151,6 +154,8 @@ cons *car(cons *env)
 
 cons *rplaca(cons *env)
 {
+  cons *a = lookup("A", env);
+  cons *new = lookup("NEW", env);
   if (a->type == CONS && a != nil)
     {
       a->car = new;
@@ -162,6 +167,7 @@ cons *rplaca(cons *env)
 
 cons *cdr(cons *env)
 {
+  cons *a = lookup("A", env);
   if (a->type == CONS)
     return a->cdr;
   else
@@ -170,6 +176,8 @@ cons *cdr(cons *env)
 
 cons *rplacd(cons *env)
 {
+  cons *a = lookup("A", env);
+  cons *new = lookup("NEW", env);
   if (a->type == CONS && a != nil)
     {
       a->cdr = new;
@@ -179,21 +187,123 @@ cons *rplacd(cons *env)
     return nil;//TODO error
 }
 
-cons *intern(vector *name, package *p)
+//This is all infrastructure for the intern function. One day, I will re-implement this in Lisp. :]
+symbol *fintern(vector *name, package *p)
 {
   int i;
   int index = *(int*)name % HASH_TABLE_SIZE;
   cons *entry = p->global->table[index];
   symbol *s = (symbol*)entry->car;
+
+  while(entry != nil)
+    {
+      if (bstringequal(name, s->name) == t)
+	return s;
+      else if (cdr(entry) == nil)
+	break;
+      else
+	entry = cdr(entry);
+    }
+
+  if (cdr(entry) == nil)
+    {
+      entry->cdr = newcons();
+      entry = cdr(entry);
+      entry->car = malloc(sizeof(symbol));
+      s = (symbol*)car(entry);
+      s->name = name;
+      s->home_package = p;
+      s->value = nil;
+      s->function = nil;
+      return s;
+    }
+
 }
 
-cons kchareq(base_char *a, base_char *b)//for kernel use; doesn't use Lisp conventions
+cons *bchareq(base_char *a, base_char *b)
 {
-  
-      
+  if (a==b)
+    return t;
+  else if (a->type != b->type)
+    return nil;//TODO error?
+  else if (a->type != BASE_CHAR)
+    return nil;//TODO error!
+  else if (a->c == b->c)
+    return t;
+  else
+    return nil;
+}
 
+cons *bcharequal(base_char *a, base_char *b)
+{
+  char ac;
+  char bc;
+  if (a==b)
+    return t;
+  else if (a->type != b->type)
+    return nil;//TODO error?
+  else if (a->type != BASE_CHAR)
+    return nil;//TODO error!
+
+  ac = a->c;
+  if (ac<='z' && ac>='a')
+    ac = ac-'a';
+
+  bc = b->c;
+  if (bc<='z' && bc>='z')
+    bc = bc-'a';
+
+  else if (ac == bc)
+    return t;
+  else
+    return nil;
+}
+
+cons *bstringeq(vector *a, vector *b)
+{
+  int i=0;
+  if(a==b)
+    return t;
+  else if (a->type != b->type)
+    return nil;
+  else if (a->type != STRING)
+    return nil;
+  while(1)
+    {
+      if (bchareq(a->v[i], b->v[i]) == nil)
+	return nil;
+      else if (a->v[i] == 0) 
+	return t;
+      else
+	i++;
+    }
+}
+
+cons *bstringequal(vector *a, vector *b)
+{
+  int i=0;
+  if (a==b)
+    return t;
+  else if (a->type != b->type)
+    return nil;
+  else if (a->type != STRING)
+    return nil;
+  while(1)
+    {
+      if (bcharequal(a->v[i], b->v[i]) == nil)
+	return nil;
+      else if (a->v[i] == 0) 
+	return t;
+      else
+	i++;
+    }
+}
+
+//ACTUAL Lisp equality checkers
 cons *eq (cons *env)
 {
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
   if (a==b)
     return t;
   else
@@ -202,6 +312,8 @@ cons *eq (cons *env)
       
 cons *eql (cons *env)
 {
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
   if (eq(a, b) == t)
     return t;
   else if (a->type == b->type)
@@ -252,13 +364,48 @@ cons *eql (cons *env)
 
 cons *equal (cons *env)
 {//AHHHHHHHHHHHHHHH TODOOOOOOOO
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
   if (eq(a, b) == t)
     return t;
   else
     return nil;
 }
 
-  
+cons *lookup(char *name, cons *env)
+{
+  vector *v = strtolstring(name);
+  symbol *s = fintern(v, env);
+  return eval(s, env);
+}
+
+cons *eval(cons *exp, cons *env)
+{
+  if (exp == nil)
+    return nil;
+  else if (exp == t)
+    return t;
+  else if (exp->type == SYMBOL)
+    {
+      symbol *s = fintern((((symbol*)exp)->name), (package*)car(env));
+      cons *c = cdr(env);
+      while (c!=nil)//Loop through the environment
+	{
+	  if (c->car->car == s)
+	    return c->car->cdr->car;
+	  else if (c->cdr == nil)
+	    c = c->car->cdr;
+	}
+      return s->value;
+    }
+  else if ((exp->type == CONS) && (exp->car->type != CONS))
+    return t;//TODO do function/macro lookups
+  else
+    return nil;//TODO should be error
+}
+
+ 
+ 
 int main ()
 {
   cons *global = init();

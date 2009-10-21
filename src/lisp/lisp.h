@@ -11,6 +11,7 @@
 #define VECTOR 8
 #define ARRAY 9
 #define COMPILED_FUNCTION 10
+#define STRING 11
 
 #define BITS32
 
