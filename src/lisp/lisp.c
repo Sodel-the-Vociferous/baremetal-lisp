@@ -470,7 +470,7 @@ cons *eval(cons *exp, cons *env)
 	return nil;//TODO error no function binding
       
       env = extend_env(env);
-      env = evalambda(f->lambda_list, exp->cdr, env);
+      env-> = evalambda(f->lambda_list, exp->cdr, env);
       if (f->type == FUNCTION)
 	return eval(f->function, env);
       else if (f->type == COMPILED_FUNCTION)
@@ -497,14 +497,15 @@ cons *extend_env(cons *env)
 cons *envbind(cons *env, cons *binding)
 {
   cons *first = env;
-  cons *oldsecond = first->cdr;
-  cons *newsecond = newcons();
+  cons *oldexec = first->cdr->cdr;//old execution environment
+  cons *newexec = newcons();
   newsecond->car = binding;
-  newsecond->cdr = oldsecond;
-  first->cdr = newsecond;
+  newsecond->cdr = oldexecx;
+  first->cdr->cdr = newsecond;
   return env;
 }
 
+//This needs to be updated, in accordance with new environment infrastructure.
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
 {
   cons *oldenv = env;
