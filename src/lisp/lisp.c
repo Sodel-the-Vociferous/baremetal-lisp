@@ -17,10 +17,8 @@ cons *init()
 
   symbol *s;
 
-
   //init t
   t->type = T;
-  s=
   
   nil->type = CONS;
   nil->car = nil;
@@ -79,6 +77,7 @@ base_char *newbase_char()
   base_char *c = malloc(sizeof(base_char));
   c->type = BASE_CHAR;
   c->c = 0;
+  return c;
 }
 
 vector *newvector(int size)
@@ -91,6 +90,16 @@ vector *newvector(int size)
   v->v = malloc(((size) * sizeof(cons*)));
   v->v[0] = nil;
   v->next = (vector*)nil;
+  return v;
+}
+
+package *newpackage()
+{
+  package *p = malloc(sizeof(package));
+  p->plist = nil;
+  p->name = nil;
+  p->global = newhash_table();
+  return p;
 }
 
 vector *strtolstr(char *str)
@@ -473,14 +482,14 @@ cons *eval(cons *exp, cons *env)
     return nil;//TODO should be error
 }
 
-
 cons *extend_env(cons *env)
 {
   cons *oldenv = env;
   cons *newenv = newcons();
   newenv->car = oldenv->car;
-  newenv->cdr = newcons();
-  newenv->cdr->car = oldenv;
+  newenv->cdr = newcons();//lexical environment
+  newenv->cdr->cdr = newcons();//execution environment
+  newenv->cdr->cdr->car = oldenv;
   env = newenv;
   return env;
 }

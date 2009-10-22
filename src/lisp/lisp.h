@@ -26,7 +26,6 @@ typedef struct cons
   struct cons *cdr;
 } __attribute__((packed)) cons;
 
-
 //Numbers
 //Integers
 typedef struct fixnum
@@ -129,9 +128,8 @@ typedef struct package
   unsigned short type;
   struct cons *plist;
   struct vector name;
-  struct hash_table *global;
+  struct vector *global;//Change to hash table one day
 }__attribute__((packed)) package;
-
 
 #endif
 
