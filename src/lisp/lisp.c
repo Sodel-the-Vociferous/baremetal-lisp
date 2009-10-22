@@ -12,18 +12,31 @@ cons *init()
   vector *cl_name = strtolstr("COMMON-LISP");
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");
   vector *keyword_name = strtolstr("KEYWORD");
-  vector *nilname = strtolstr("NIL");
-  vector *tname = strtolstr("T");
+  vector *nil_name = strtolstr("NIL");
+  vector *t_name = strtolstr("T");
 
-  symbol *s;
+  cons *env = extend_env(nil);
+
+  package *cl = newpackage();
+  cl->name = strtolstr(&cl_name);
+
+  package *cl_user = newpackage();
+  cl_user->name = strtolstr(&cl_user_name);
+
+  package *keyword = newpackage();
+  keyword->name = strtolstr(&keyword_name);
+
 
   //init t
   t->type = T;
+  symbol *t_sym = fintern(t_name, cl);
+  t_sym->value = t;
   
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
 
+  
 }
 
 cons *newcons()
@@ -97,8 +110,8 @@ package *newpackage()
 {
   package *p = malloc(sizeof(package));
   p->plist = nil;
-  p->name = nil;
-  p->global = newhash_table();
+  p->name = (vector*)nil;
+  p->global = newvector(HASH_TABLE_SIZE);
   return p;
 }
 
@@ -213,7 +226,7 @@ symbol *fintern(vector *name, package *p)
 {
   int i;
   int index = *(int*)name % HASH_TABLE_SIZE;
-  cons *entry = p->global->table[index];
+  cons *entry = p->global->v[index];
   symbol *s = (symbol*)entry->car;
 
   while(entry != nil)
@@ -291,7 +304,7 @@ cons *bstringeq(vector *a, vector *b)
     return nil;
   while(1)
     {
-      if (bchareq(a->v[i], b->v[i]) == nil)
+      if (bchareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -311,7 +324,7 @@ cons *bstringequal(vector *a, vector *b)
     return nil;
   while(1)
     {
-      if (bcharequal(a->v[i], b->v[i]) == nil)
+      if (bcharequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -436,8 +449,8 @@ cons *feql (cons *a, cons *b)
 cons *lookup(char *name, cons *env)
 {
   vector *v = strtolstr(name);
-  symbol *s = fintern(v, env);
-  return eval(s, env);
+  symbol *s = fintern(v, (package*)env->car);
+  return eval((cons*)s, env);
 }
 
 cons *eval(cons *exp, cons *env)
@@ -452,7 +465,7 @@ cons *eval(cons *exp, cons *env)
       cons *c = cdr(env);//current environment node
       while (c!=nil)//Loop through the environment
 	{
-	  if (c->car->car == s)
+	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
 	  else if (c->cdr == nil)
 	    c = c->car->cdr;
@@ -465,12 +478,12 @@ cons *eval(cons *exp, cons *env)
 	   (exp->car->type != CONS))
     {
       symbol *s = fintern((((symbol*)exp->car)->name), (package*)car(env));
-      function *f = s->function;
-      if (f == nil)
+      function *f = (function*)s->function;
+      if (f == (function*)nil)
 	return nil;//TODO error no function binding
       
       env = extend_env(env);
-      env-> = evalambda(f->lambda_list, exp->cdr, env);
+      env = evalambda(f->lambda_list, exp->cdr, env);
       if (f->type == FUNCTION)
 	return eval(f->function, env);
       else if (f->type == COMPILED_FUNCTION)
@@ -486,7 +499,7 @@ cons *extend_env(cons *env)
 {
   cons *oldenv = env;
   cons *newenv = newcons();
-  newenv->car = oldenv->car;
+  newenv->car = oldenv->car;//Package list
   newenv->cdr = newcons();//lexical environment
   newenv->cdr->cdr = newcons();//execution environment
   newenv->cdr->cdr->car = oldenv;
@@ -499,9 +512,9 @@ cons *envbind(cons *env, cons *binding)
   cons *first = env;
   cons *oldexec = first->cdr->cdr;//old execution environment
   cons *newexec = newcons();
-  newsecond->car = binding;
-  newsecond->cdr = oldexecx;
-  first->cdr->cdr = newsecond;
+  newexec->car = binding;
+  newexec->cdr = oldexec;
+  first->cdr->cdr = newexec;
   return env;
 }
 
@@ -513,13 +526,13 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   symbol *varsym;
   cons *binding;
   
-  while(null(lambda_list) == nil && null(args) == nil)
+  while((null(lambda_list) == nil) && (null(args) == nil))
     {
       varname = ((symbol*)lambda_list->car)->name;
-      varsym = fintern(varname, env->car);
+      varsym = fintern(varname, (package*)env->car);
       
-      binding = newcons;
-      binding->car = varsym;
+      binding = newcons();
+      binding->car = (cons*)varsym;
       binding->cdr = newcons();
       binding->cdr->car = args->car;
 

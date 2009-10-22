@@ -111,7 +111,7 @@ typedef struct symbol
   unsigned short type;
   struct vector *name;
   struct cons *plist;
-  struct cons *home_package;
+  struct package *home_package;
   struct cons *value;
   struct cons *function;
 }__attribute__((packed)) symbol;
@@ -127,9 +127,27 @@ typedef struct package
 {
   unsigned short type;
   struct cons *plist;
-  struct vector name;
+  struct vector *name;
   struct vector *global;//Change to hash table one day
 }__attribute__((packed)) package;
+
+
+
+
+
+typedef struct procinfo//Global stuff for each Lisp 'process'.
+{
+  unsigned short type;
+  struct cons *globals;
+  //List of all package dynamic environments included by the package.
+  //This is included for the sake of speed.
+  //It is included from the :included property of the current package's property list.
+
+  struct cons *packages;
+  //Packages that are defined for this process. A list unique to each process.
+  //common-lisp is always first package.
+}
+  
 
 #endif
 
