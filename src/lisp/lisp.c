@@ -1,6 +1,13 @@
 #include <stdlib.h>
 #include "lisp.h"
 
+/*
+ *Functions prefixed with 'b' 'f' are callable from C without infrastructure.
+ *The rest are setup for use within Lisp.
+ *
+ *It's really more of a guideline than an actual rule. Take init(), for example.
+ */
+
 cons t_phys;
 cons nil_phys;
 
@@ -30,10 +37,14 @@ procinfo *init()
   t_sym->value = t;
   symbol *test = fintern(t_name, cl);
   
+  //init nil
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
+  symbol *nil_sym = fintern(nil_name, cl);
+  nil_sym->value = nil;
 
+  //init process info
   procinfo *main = malloc(sizeof(procinfo));
   main->type = PROCINFO;
   main->package  = 0;
@@ -175,9 +186,9 @@ cons *numberp(cons *env)
     }
 }
 
-//The cons function. f added to prevent name collision.
-cons *fcons(cons *env)
-{
+
+cons *lcons(cons *env)
+{//The cons function. l added to prevent name collision with struct cons.
   cons *a = lookup("A", env);
   cons *b = lookup("B", env);
   cons *to_ret = malloc(sizeof(cons));
@@ -362,9 +373,8 @@ cons *bstringequal(vector *a, vector *b)
     }
 }
 
-//ACTUAL Lisp equality checkers
 cons *eq (cons *env)
-{
+{//ACTUAL Lisp equality checkers
   cons *a = lookup("A", env);
   cons *b = lookup("B", env);
   if (a==b)
