@@ -28,6 +28,7 @@ procinfo *init()
   t->type = T;
   symbol *t_sym = fintern(t_name, cl);
   t_sym->value = t;
+  symbol *test = fintern(t_name, cl);
   
   nil->type = CONS;
   nil->car = nil;
@@ -35,14 +36,13 @@ procinfo *init()
 
   procinfo *main = malloc(sizeof(procinfo));
   main->type = PROCINFO;
-  main->package = 0;
+  main->package  = 0;
   main->packages = newcons();
   main->packages->car = (cons*)cl;
   main->packages->cdr = newcons();
   main->packages->cdr->car = (cons*)cl_user;
   main->packages->cdr->cdr = newcons();
-  main->packages->cdr->cdr->car = (cons*)keyword;
-  
+  main->packages->cdr->cdr->car = (cons*)keyword;  
   return main;
 }
 
@@ -129,7 +129,7 @@ vector *strtolstr(char *str)
 {
   int string_len;
   int i;
-  for(string_len=1;*(str+string_len)!=0;string_len++);
+  for(string_len=1;*(str+string_len-1)!=0;string_len++);
 
   vector *to_ret = newvector(string_len);
   to_ret->datatype = BASE_CHAR;
@@ -235,7 +235,16 @@ symbol *fintern(vector *name, package *p)
 {//This is all infrastructure for the intern function. ('f' prefixed because this one uses
   //C calling convention.) One day, I will re-implement this in Lisp.
   //HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
-  int index = *(int*)name % HASH_TABLE_SIZE;
+  int i;
+  char hashed_name[4];
+  for (i=0;i<3;i++)
+    {
+      if (i >= name->size)
+	hashed_name[i] = 0;
+      else
+	hashed_name[i] = ((base_char*)name->v[i])->c;
+    }
+  int index = *(int*)&hashed_name[0] % HASH_TABLE_SIZE;
   
   cons *entry = p->global->v[index];
   symbol *s;
@@ -261,11 +270,12 @@ symbol *fintern(vector *name, package *p)
     }
   else if (entry == nil)
     {
-      entry = newcons();
-      entry->car = (cons*)malloc(sizeof(symbol));
+      p->global->v[index] = newcons();
+      p->global->v[index]->car = (cons*)malloc(sizeof(symbol));
+      entry = p->global->v[index];
     }
   s = (symbol*)entry->car;
-  s->type = CONS;
+  s->type = SYMBOL;
   s->name = name;
   s->home_package = p;
   s->value = nil;
