@@ -232,39 +232,45 @@ cons *rplacd(cons *env)
 }
 
 symbol *fintern(vector *name, package *p)
-{//This is all infrastructure for the intern function. One day, I will re-implement this in Lisp.
-  //HARK. This function doesn't DO symbol lookups in other packages with the : and :: syntax. Change this later. :]
+{//This is all infrastructure for the intern function. ('f' prefixed because this one uses
+  //C calling convention.) One day, I will re-implement this in Lisp.
+  //HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int index = *(int*)name % HASH_TABLE_SIZE;
   
   cons *entry = p->global->v[index];
   symbol *s;
 
   if (entry != nil)
-    s = (symbol*)entry->car;
-
-  while(entry != nil)
     {
-      if (bstringequal(name, s->name) == t)
-	return s;
-      else if (entry->cdr == nil)
-	break;
-      else
-	entry = entry->cdr;
-    }
-
-  if (entry->cdr == nil)
-    {
-      entry->cdr = newcons();
-      entry = entry->cdr;
-      entry->car = (cons*)malloc(sizeof(symbol));
       s = (symbol*)entry->car;
-      s->type = CONS;
-      s->name = name;
-      s->home_package = p;
-      s->value = nil;
-      s->function = nil;
-      return s;
+
+      while(entry != nil)
+	{
+	  if (bstringequal(name, s->name) == t)
+	    return s;
+	  else if (entry->cdr == nil)
+	    {
+	      entry->cdr = newcons();
+	      entry = entry->cdr;
+	      entry->car = (cons*)malloc(sizeof(symbol));
+	      break;
+	    }
+	  else
+	    entry = entry->cdr;
+	}
     }
+  else if (entry == nil)
+    {
+      entry = newcons();
+      entry->car = (cons*)malloc(sizeof(symbol));
+    }
+  s = (symbol*)entry->car;
+  s->type = CONS;
+  s->name = name;
+  s->home_package = p;
+  s->value = nil;
+  s->function = nil;
+  return s;
 }
 
 cons *bchareq(base_char *a, base_char *b)

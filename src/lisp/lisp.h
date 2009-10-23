@@ -143,7 +143,7 @@ typedef struct procinfo//Global stuff for each Lisp 'process'.
   //The current package can now be swiftly looked-up, without having to look up the symbol in :cl.
   struct cons *packages;
   //Packages that are defined for this process. A list unique to each process.
-  //common-lisp is always first package, cl-user second, keywprd third, followed by the rest.
+  //common-lisp is always first package, cl-user second, keyword third, followed by the rest.
 }__attribute__((packed)) procinfo;
 
 #endif
