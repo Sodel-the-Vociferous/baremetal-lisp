@@ -14,6 +14,9 @@
 #define STRING 11
 #define SYMBOL 12
 #define FUNCTION 13
+#define HASH_TABLE 14
+#define PACKAGE 15
+#define PROCINFO 16
 
 #define BITS32
 
@@ -93,7 +96,7 @@ typedef struct compiled_function
   unsigned short type;
   struct cons *plist;
   struct cons *lambda_list;
-  struct cons *lexenv;
+  struct cons *env;
   struct cons *(*function)(struct cons*);
 }__attribute__((packed)) compiled_function;
 
@@ -102,7 +105,7 @@ typedef struct function
   unsigned short type;
   struct cons *plist;
   struct cons *lambda_list;
-  struct cons *lexenv;
+  struct cons *env;
   struct cons *function;
 }__attribute__((packed)) function;
 
@@ -131,32 +134,25 @@ typedef struct package
   struct vector *global;//Change to hash table one day
 }__attribute__((packed)) package;
 
-
-
-
-
 typedef struct procinfo//Global stuff for each Lisp 'process'.
 {
   unsigned short type;
-  struct cons *globals;
-  //List of all package dynamic environments included by the package.
-  //This is included for the sake of speed.
-  //It is included from the :included property of the current package's property list.
-
+  struct symbol *package;
+  //Just for speed. :)
+  //This is the *pakage* binding.
+  //The current package can now be swiftly looked-up, without having to look up the symbol in :cl.
   struct cons *packages;
   //Packages that are defined for this process. A list unique to each process.
-  //common-lisp is always first package.
-}
-  
+  //common-lisp is always first package, cl-user second, keywprd third, followed by the rest.
+}__attribute__((packed)) procinfo;
 
 #endif
-
 
 extern cons *nil;
 extern cons *t;
 
 
-cons *init();
+procinfo *init();
 cons *newcons();
 fixnum *newfixnum();
 bignum *newbignum();
@@ -164,6 +160,7 @@ ratio *newratio(fixnum *n, fixnum *d);
 single *newsingle();
 base_char *newbase_char();
 vector *newvector(int size);
+package *newpackage();
 vector *strtolstr(char *str);
 cons *null (cons *env);
 cons *numberp(cons *env);

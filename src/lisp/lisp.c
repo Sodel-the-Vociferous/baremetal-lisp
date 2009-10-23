@@ -7,7 +7,7 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
-cons *init()
+procinfo *init()
 {
   vector *cl_name = strtolstr("COMMON-LISP");
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");
@@ -15,18 +15,15 @@ cons *init()
   vector *nil_name = strtolstr("NIL");
   vector *t_name = strtolstr("T");
 
-  cons *env = extend_env(nil);
-
   package *cl = newpackage();
-  cl->name = strtolstr(&cl_name);
+  cl->name = strtolstr((char*)&cl_name);
 
   package *cl_user = newpackage();
-  cl_user->name = strtolstr(&cl_user_name);
+  cl_user->name = strtolstr((char*)&cl_user_name);
 
   package *keyword = newpackage();
-  keyword->name = strtolstr(&keyword_name);
-
-
+  keyword->name = strtolstr((char*)&keyword_name);
+  
   //init t
   t->type = T;
   symbol *t_sym = fintern(t_name, cl);
@@ -36,7 +33,17 @@ cons *init()
   nil->car = nil;
   nil->cdr = nil;
 
+  procinfo *main = malloc(sizeof(procinfo));
+  main->type = PROCINFO;
+  main->package = 0;
+  main->packages = newcons();
+  main->packages->car = (cons*)cl;
+  main->packages->cdr = newcons();
+  main->packages->cdr->car = (cons*)cl_user;
+  main->packages->cdr->cdr = newcons();
+  main->packages->cdr->cdr->car = (cons*)keyword;
   
+  return main;
 }
 
 cons *newcons()
@@ -96,12 +103,14 @@ base_char *newbase_char()
 vector *newvector(int size)
 {
   vector *v = malloc(sizeof(vector));
+  int i;
   v->type = VECTOR;
   v->plist = nil;
   v->size = size;
   v->datatype = T;
   v->v = malloc(((size) * sizeof(cons*)));
-  v->v[0] = nil;
+  for (i=0;i<size;i++)
+    v->v[i] = nil;
   v->next = (vector*)nil;
   return v;
 }
@@ -109,6 +118,7 @@ vector *newvector(int size)
 package *newpackage()
 {
   package *p = malloc(sizeof(package));
+  p->type = PACKAGE;
   p->plist = nil;
   p->name = (vector*)nil;
   p->global = newvector(HASH_TABLE_SIZE);
@@ -221,37 +231,40 @@ cons *rplacd(cons *env)
     return nil;//TODO error
 }
 
-//This is all infrastructure for the intern function. One day, I will re-implement this in Lisp. :]
 symbol *fintern(vector *name, package *p)
-{
-  int i;
+{//This is all infrastructure for the intern function. One day, I will re-implement this in Lisp.
+  //HARK. This function doesn't DO symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int index = *(int*)name % HASH_TABLE_SIZE;
+  
   cons *entry = p->global->v[index];
-  symbol *s = (symbol*)entry->car;
+  symbol *s;
+
+  if (entry != nil)
+    s = (symbol*)entry->car;
 
   while(entry != nil)
     {
       if (bstringequal(name, s->name) == t)
 	return s;
-      else if (cdr(entry) == nil)
+      else if (entry->cdr == nil)
 	break;
       else
-	entry = cdr(entry);
+	entry = entry->cdr;
     }
 
-  if (cdr(entry) == nil)
+  if (entry->cdr == nil)
     {
       entry->cdr = newcons();
-      entry = cdr(entry);
-      entry->car = malloc(sizeof(symbol));
-      s = (symbol*)car(entry);
+      entry = entry->cdr;
+      entry->car = (cons*)malloc(sizeof(symbol));
+      s = (symbol*)entry->car;
+      s->type = CONS;
       s->name = name;
       s->home_package = p;
       s->value = nil;
       s->function = nil;
       return s;
     }
-
 }
 
 cons *bchareq(base_char *a, base_char *b)
@@ -446,10 +459,10 @@ cons *feql (cons *a, cons *b)
     return nil;
 }
 
-cons *lookup(char *name, cons *env)
+cons *lookup(char *namestr, cons *env)
 {
-  vector *v = strtolstr(name);
-  symbol *s = fintern(v, (package*)env->car);
+  vector *name = strtolstr(namestr);
+  symbol *s = fintern(name, (package*)((procinfo*)env->car)->package->value);
   return eval((cons*)s, env);
 }
 
@@ -461,9 +474,9 @@ cons *eval(cons *exp, cons *env)
     return t;
   else if (exp->type == SYMBOL)
     {
-      symbol *s = fintern((((symbol*)exp)->name), (package*)car(env));
-      cons *c = cdr(env);//current environment node
-      while (c!=nil)//Loop through the environment
+      symbol *s = fintern((((symbol*)exp)->name), (package*)((procinfo*)env->car)->package->value);
+      cons *c = env->cdr;//current environment node
+      while (c!=nil)//Loop through the lexical environment
 	{
 	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
@@ -477,7 +490,7 @@ cons *eval(cons *exp, cons *env)
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS))
     {
-      symbol *s = fintern((((symbol*)exp->car)->name), (package*)car(env));
+      symbol *s = fintern((((symbol*)exp->car)->name), (package*)env->car);
       function *f = (function*)s->function;
       if (f == (function*)nil)
 	return nil;//TODO error no function binding
@@ -485,9 +498,10 @@ cons *eval(cons *exp, cons *env)
       env = extend_env(env);
       env = evalambda(f->lambda_list, exp->cdr, env);
       if (f->type == FUNCTION)
-	return eval(f->function, env);
+	return eval(f->function, f->env);
       else if (f->type == COMPILED_FUNCTION)
-	return (*(((compiled_function*)f)->function)) (env);
+	return (*(((compiled_function*)f)->function)) (f->env);
+      //though garbled, the previous just calls a C function pointer.
       else
 	return nil;//TODO error, not a function
     }
@@ -500,21 +514,23 @@ cons *extend_env(cons *env)
   cons *oldenv = env;
   cons *newenv = newcons();
   newenv->car = oldenv->car;//Package list
-  newenv->cdr = newcons();//lexical environment
-  newenv->cdr->cdr = newcons();//execution environment
-  newenv->cdr->cdr->car = oldenv;
+  newenv->cdr = newcons();
+  newenv->cdr->car = oldenv;
+  //Last entry in the lexical environment. Points to the previous environment "level".
+  //New lexical bindings will be pushed in before this. When the evaluator, looking for bindings,
+  //reaches a lexical binding whose cdr is nil, it will know to descend to the next level.
+  //When both the car and cdr are nil, there's nowhere else to go.
   env = newenv;
   return env;
 }
 
 cons *envbind(cons *env, cons *binding)
 {
-  cons *first = env;
-  cons *oldexec = first->cdr->cdr;//old execution environment
-  cons *newexec = newcons();
-  newexec->car = binding;
-  newexec->cdr = oldexec;
-  first->cdr->cdr = newexec;
+  cons *first = env;  
+  cons *newenv = newcons();
+  newenv->car = binding;
+  newenv->cdr = env->cdr;
+  env->cdr = newenv;
   return env;
 }
 
@@ -551,7 +567,6 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   
 int main ()
 {
-  cons *global = init();
-  vector *hope = strtolstr("hope");
+  procinfo *main = init();
   return 0;
 }
