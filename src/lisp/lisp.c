@@ -14,49 +14,6 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
-procinfo *init()
-{
-  vector *cl_name = strtolstr("COMMON-LISP");
-  vector *cl_user_name = strtolstr("COMMON_LISP_USER");
-  vector *keyword_name = strtolstr("KEYWORD");
-  vector *nil_name = strtolstr("NIL");
-  vector *t_name = strtolstr("T");
-
-  package *cl = newpackage();
-  cl->name = strtolstr((char*)&cl_name);
-
-  package *cl_user = newpackage();
-  cl_user->name = strtolstr((char*)&cl_user_name);
-
-  package *keyword = newpackage();
-  keyword->name = strtolstr((char*)&keyword_name);
-  
-  //init t
-  t->type = T;
-  symbol *t_sym = fintern(t_name, cl);
-  t_sym->value = t;
-  symbol *test = fintern(t_name, cl);
-  
-  //init nil
-  nil->type = CONS;
-  nil->car = nil;
-  nil->cdr = nil;
-  symbol *nil_sym = fintern(nil_name, cl);
-  nil_sym->value = nil;
-
-  //init process info
-  procinfo *main = malloc(sizeof(procinfo));
-  main->type = PROCINFO;
-  main->package  = 0;
-  main->packages = newcons();
-  main->packages->car = (cons*)cl;
-  main->packages->cdr = newcons();
-  main->packages->cdr->car = (cons*)cl_user;
-  main->packages->cdr->cdr = newcons();
-  main->packages->cdr->cdr->car = (cons*)keyword;  
-  return main;
-}
-
 cons *newcons()
 {
   cons *c = malloc(sizeof(cons));
@@ -488,7 +445,7 @@ cons *feql (cons *a, cons *b)
 cons *lookup(char *namestr, cons *env)
 {
   vector *name = strtolstr(namestr);
-  symbol *s = fintern(name, (package*)((procinfo*)env->car)->package->value);
+  symbol *s = fintern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
   return eval((cons*)s, env);
 }
 
@@ -500,10 +457,13 @@ cons *eval(cons *exp, cons *env)
     return t;
   else if (exp->type == SYMBOL)
     {
-      symbol *s = fintern((((symbol*)exp)->name), (package*)((procinfo*)env->car)->package->value);
-      cons *c = env->cdr;//current environment node
-      while (c!=nil)//Loop through the lexical environment
-	{
+      symbol *s = fintern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
+      //symbol *s = (symbol*)exp;
+      cons *c = env->cdr;
+      //current environment node
+      
+      while (c!=nil)
+	{//Loop through the lexical environment
 	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
 	  else if (c->cdr == nil)
@@ -511,12 +471,13 @@ cons *eval(cons *exp, cons *env)
 	  else
 	    c = c->cdr;
 	}
-      return s->value;
+      return s->value->car;
+      //If there's no binding in the lexical environment, return the dynamic binding.
     }
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS))
     {
-      symbol *s = fintern((((symbol*)exp->car)->name), (package*)env->car);
+      symbol *s = fintern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
       function *f = (function*)s->function;
       if (f == (function*)nil)
 	return nil;//TODO error no function binding
@@ -571,7 +532,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   while((null(lambda_list) == nil) && (null(args) == nil))
     {
       varname = ((symbol*)lambda_list->car)->name;
-      varsym = fintern(varname, (package*)env->car);
+      varsym = fintern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
       
       binding = newcons();
       binding->car = (cons*)varsym;

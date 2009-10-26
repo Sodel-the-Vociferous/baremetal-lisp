@@ -137,7 +137,7 @@ typedef struct package
 typedef struct procinfo//Global stuff for each Lisp 'process'.
 {
   unsigned short type;
-  struct symbol *package;
+  struct symbol *package_sym;
   //Just for speed. :)
   //This is the *pakage* binding.
   //The current package can now be swiftly looked-up, without having to look up the symbol in :cl.
@@ -152,34 +152,34 @@ extern cons *nil;
 extern cons *t;
 
 
-procinfo *init();
-cons *newcons();
-fixnum *newfixnum();
-bignum *newbignum();
-ratio *newratio(fixnum *n, fixnum *d);
-single *newsingle();
-base_char *newbase_char();
-vector *newvector(int size);
-package *newpackage();
-vector *strtolstr(char *str);
-cons *null (cons *env);
-cons *numberp(cons *env);
-cons *fcons(cons *env);
-cons *car(cons *env);
-cons *rplaca(cons *env);
-cons *cdr(cons *env);
-cons *rplacd(cons *env);
-symbol *fintern(vector *name, package *p);
-cons *bchareq(base_char *a, base_char *b);
-cons *bcharequal(base_char *a, base_char *b);
-cons *bstringeq(vector *a, vector *b);
-cons *bstringequal(vector *a, vector *b);
-cons *eq (cons *env);
-cons *eql (cons *env);
-cons *feql (cons *a, cons *b);
-cons *equal (cons *env);
-cons *lookup(char *name, cons *env);
-cons *eval(cons *exp, cons *env);
-cons *extend_env(cons *env);
-cons *envbind(cons *env, cons *binding);
-cons *evalambda(cons *lambda_list, cons *args, cons *env);
+extern procinfo *init();
+extern cons *newcons();
+extern fixnum *newfixnum();
+extern bignum *newbignum();
+extern ratio *newratio(fixnum *n, fixnum *d);
+extern single *newsingle();
+extern base_char *newbase_char();
+extern vector *newvector(int size);
+extern package *newpackage();
+extern vector *strtolstr(char *str);
+extern cons *null (cons *env);
+extern cons *numberp(cons *env);
+extern cons *fcons(cons *env);
+extern cons *car(cons *env);
+extern cons *rplaca(cons *env);
+extern cons *cdr(cons *env);
+extern cons *rplacd(cons *env);
+extern symbol *fintern(vector *name, package *p);
+extern cons *bchareq(base_char *a, base_char *b);
+extern cons *bcharequal(base_char *a, base_char *b);
+extern cons *bstringeq(vector *a, vector *b);
+extern cons *bstringequal(vector *a, vector *b);
+extern cons *eq (cons *env);
+extern cons *eql (cons *env);
+extern cons *feql (cons *a, cons *b);
+extern cons *equal (cons *env);
+extern cons *lookup(char *name, cons *env);
+extern cons *eval(cons *exp, cons *env);
+extern cons *extend_env(cons *env);
+extern cons *envbind(cons *env, cons *binding);
+extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
