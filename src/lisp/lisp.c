@@ -445,7 +445,7 @@ cons *feql (cons *a, cons *b)
 cons *lookup(char *namestr, cons *env)
 {
   vector *name = strtolstr(namestr);
-  symbol *s = fintern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
+  symbol *s = fintern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
   return eval((cons*)s, env);
 }
 
@@ -457,7 +457,7 @@ cons *eval(cons *exp, cons *env)
     return t;
   else if (exp->type == SYMBOL)
     {
-      symbol *s = fintern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
+      symbol *s = fintern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       //symbol *s = (symbol*)exp;
       cons *c = env->cdr;
       //current environment node
@@ -471,13 +471,13 @@ cons *eval(cons *exp, cons *env)
 	  else
 	    c = c->cdr;
 	}
-      return s->value->car;
+      return s->value;
       //If there's no binding in the lexical environment, return the dynamic binding.
     }
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS))
     {
-      symbol *s = fintern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
+      symbol *s = fintern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       function *f = (function*)s->function;
       if (f == (function*)nil)
 	return nil;//TODO error no function binding
@@ -532,7 +532,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   while((null(lambda_list) == nil) && (null(args) == nil))
     {
       varname = ((symbol*)lambda_list->car)->name;
-      varsym = fintern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value->car);
+      varsym = fintern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       
       binding = newcons();
       binding->car = (cons*)varsym;
