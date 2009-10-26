@@ -1,13 +1,6 @@
 #include <stdlib.h>
 #include "lisp.h"
 
-/*
- *Functions prefixed with 'b' 'f' are callable from C without infrastructure.
- *The rest are setup for use within Lisp.
- *
- *It's really more of a guideline than an actual rule. Take init(), for example.
- */
-
 cons t_phys;
 cons nil_phys;
 
@@ -116,9 +109,8 @@ vector *strtolstr(char *str)
   return to_ret;
 }
 
-cons *null (cons *env)
+cons *null (cons *a)
 {
-  cons *a = lookup("A", env);
   if (a == nil ||
       (a->type = CONS &&
        a->car == nil &&
@@ -128,9 +120,8 @@ cons *null (cons *env)
     return nil;
 }
 
-cons *numberp(cons *env)
+cons *numberp(cons *a)
 {
-  cons *a = lookup("A", env);
   switch (a->type)
     {
     case (FIXNUM):
@@ -143,11 +134,8 @@ cons *numberp(cons *env)
     }
 }
 
-
-cons *lcons(cons *env)
-{//The cons function. l added to prevent name collision with struct cons.
-  cons *a = lookup("A", env);
-  cons *b = lookup("B", env);
+cons *fcons(cons *a, cons *b)
+{//f added to prevent collision
   cons *to_ret = malloc(sizeof(cons));
   to_ret->type = CONS;  
   to_ret->car = a;
@@ -155,19 +143,16 @@ cons *lcons(cons *env)
   return to_ret;
 }
 
-cons *car(cons *env)
+cons *car(cons *a)
 {
-  cons *a = lookup("A", env);
   if (a->type == CONS)
     return a->car;
   else
     return nil;//TODO error
 }
 
-cons *rplaca(cons *env)
+cons *rplaca(cons *a, cons *new)
 {
-  cons *a = lookup("A", env);
-  cons *new = lookup("NEW", env);
   if (a->type == CONS && a != nil)
     {
       a->car = new;
@@ -177,19 +162,16 @@ cons *rplaca(cons *env)
     return nil;//TODO error
 }
 
-cons *cdr(cons *env)
+cons *cdr(cons *a)
 {
-  cons *a = lookup("A", env);
   if (a->type == CONS)
     return a->cdr;
   else
     return nil;//TODO error
 }
 
-cons *rplacd(cons *env)
+cons *rplacd(cons *a, cons *new)
 {
-  cons *a = lookup("A", env);
-  cons *new = lookup("NEW", env);
   if (a->type == CONS && a != nil)
     {
       a->cdr = new;
@@ -199,10 +181,10 @@ cons *rplacd(cons *env)
     return nil;//TODO error
 }
 
+//This is all infrastructure for the intern function. ('f' prefixed because this one uses
+//C calling convention.) One day, I will re-implement this in Lisp.
 symbol *fintern(vector *name, package *p)
-{//This is all infrastructure for the intern function. ('f' prefixed because this one uses
-  //C calling convention.) One day, I will re-implement this in Lisp.
-  //HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
+{//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int i;
   char hashed_name[4];
   for (i=0;i<3;i++)
@@ -212,7 +194,7 @@ symbol *fintern(vector *name, package *p)
       else
 	hashed_name[i] = ((base_char*)name->v[i])->c;
     }
-  int index = *(int*)&hashed_name[0] % HASH_TABLE_SIZE;
+  unsigned int index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
   
   cons *entry = p->global->v[index];
   symbol *s;
@@ -330,69 +312,26 @@ cons *bstringequal(vector *a, vector *b)
     }
 }
 
-cons *eq (cons *env)
+package *find_package(vector *name, procinfo *pinfo)
+{
+  cons *p = pinfo->packages;
+  for (p;p!=nil;p=p->cdr)
+    {
+      if (bstringequal(((package*)p->car)->name, name) == t)
+	return (package*)p->car;
+    }
+  return (package*)nil;
+}
+
+cons *eq (cons *a, cons *b)
 {//ACTUAL Lisp equality checkers
-  cons *a = lookup("A", env);
-  cons *b = lookup("B", env);
   if (a==b)
     return t;
   else
     return nil;
 }
-      
-cons *eql (cons *env)
-{
-  cons *a = lookup("A", env);
-  cons *b = lookup("B", env);
-  if (a == b)
-    return t;
-  else if (a->type == b->type)
-    {
-      switch (a->type)
-	{
-	  //numbers
-	case (FIXNUM):
-	  if (((fixnum*)a)->num == ((fixnum*)b)->num)
-	    return t;
-	case (BIGNUM):
-	  while (((bignum*)a)->num == ((bignum*)b)->num)
-	    {
-	      if (((cons*)((bignum*)a)->next == nil) && 
-		  ((cons*)((bignum*)b)->next == nil))
-		return t;
-	      a = (cons*)((bignum*)a)->next;
-	      b = (cons*)((bignum*)b)->next;
-	    }
-	  return nil;
-	case (RATIO):
-	  if ((((ratio*)a)->numerator == ((ratio*)b)->numerator) &&
-	      (((ratio*)a)->denominator == ((ratio*)b)->denominator))
-	    return t;
-	  else
-	    return nil;
-	case (SINGLE):
-	  if ((((single*)a)->sign == ((single*)b)->sign) &&
-	      (((single*)a)->base == ((single*)b)->base) &&
-	      (feql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
-	      (feql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
-	    return t;
-	  else
-	    return nil;
-	  //characters
-	case (BASE_CHAR):
-	  if (((base_char*)a)->c == ((base_char*)b)->c)
-	    return t;
-	  else
-	    return nil;
-	default:
-	  return nil;
-	}
-    }
-  else
-    return nil;
-}
 
-cons *feql (cons *a, cons *b)
+cons *eql (cons *a, cons *b)
 {
   if (a == b)
     return t;
@@ -423,8 +362,8 @@ cons *feql (cons *a, cons *b)
 	case (SINGLE):
 	  if ((((single*)a)->sign == ((single*)b)->sign) &&
 	      (((single*)a)->base == ((single*)b)->base) &&
-	      (feql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
-	      (feql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
+	      (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
+	      (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
 	    return t;
 	  else
 	    return nil;
