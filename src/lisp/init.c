@@ -1,6 +1,28 @@
 #include <stdlib.h>
 #include "lisp.h"
 
+package *keyword_pkg;
+package *cl_pkg;
+package *cl_user_pkg;
+
+//Keywords
+//Symbol attributes
+symbol *internal;
+symbol *external;
+symbol *inherited;
+//Readtable attributes
+symbol *constituent;
+symbol *whitespace;
+symbol *terminating_macro;
+symbol *non_terminating_macro;
+symbol *single_escape;
+symbol *multiple_escape;
+
+//Common-Lisp symbols
+symbol *package;
+symbol *readtable;
+
+
 
 procinfo *init()
 {
