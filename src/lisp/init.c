@@ -1,8 +1,13 @@
 #include <stdlib.h>
 #include "lisp.h"
 
+
 procinfo *init()
 {
+  long i;
+  long j;
+
+
   //Init keyword package
   vector *keyword_name = strtolstr("KEYWORD");
   package *keyword = newpackage();
@@ -11,23 +16,56 @@ procinfo *init()
   //Init :external
   vector *external_name = strtolstr("EXTERNAL");
   symbol *external = fintern(external_name, keyword);
-  external->plist = newcons();
-  external->plist->car = fcons((cons*)external, t);
+  external->plist = fcons(assoc((cons*)external, t), nil);
   external->value = (cons*)external;
 
   //Init :internal
   vector *internal_name = strtolstr("INTERNAL");
   symbol *internal = fintern(internal_name, keyword);
-  internal->plist = newcons();
-  internal->plist->car = fcons((cons*)external, t);
+  internal->plist = fcons(assoc((cons*)external, t), nil);
   internal->value = (cons*)internal;
 
   //Init :inherited
   vector *inherited_name = strtolstr("INHERITED");
   symbol *inherited = fintern(inherited_name, keyword);
-  inherited->plist = newcons();
-  inherited->plist->car = fcons((cons*)external, t);
+  inherited->plist = fcons(assoc((cons*)external, t), nil);
   inherited->value = (cons*)inherited;
+
+  //Init :constituent
+  vector *constituent_name = strtolstr("CONSTITUENT");
+  symbol *constituent = fintern(constituent_name, keyword);
+  constituent->plist = fcons(assoc((cons*)external, t), nil);
+  constituent->value = (cons*)constituent;
+
+  //Init :whitespace
+  vector *whitespace_name = strtolstr("WHITESPACE");
+  symbol *whitespace = fintern(whitespace_name, keyword);
+  whitespace->plist = fcons(assoc((cons*)external, t), nil);
+  whitespace->value = (cons*)whitespace;
+
+  //Init :terminating-macro
+  vector *terminating_macro_name = strtolstr("TERMINATING-MACRO");
+  symbol *terminating_macro = fintern(terminating_macro_name, keyword);
+  terminating_macro->plist = fcons(assoc((cons*)external, t), nil);
+  terminating_macro->value = (cons*)terminating_macro;
+
+  //Init :non-terminating-macro
+  vector *non_terminating_macro_name = strtolstr("NON_TERMINATING_MACRO");
+  symbol *non_terminating_macro = fintern(non_terminating_macro_name, keyword);
+  non_terminating_macro->plist = fcons(assoc((cons*)external, t), nil);
+  non_terminating_macro->value = (cons*)non_terminating_macro;
+
+  //Init :single-escape
+  vector *single_escape_name = strtolstr("SINGLE-ESCAPE");
+  symbol *single_escape = fintern(single_escape_name, keyword);
+  single_escape->plist = fcons(assoc((cons*)external, t), nil);
+  single_escape->value = (cons*)single_escape;
+
+  //Init :multiple-escape
+  vector *multiple_escape_name = strtolstr("MULTIPLE-ESCAPE");
+  symbol *multiple_escape = fintern(multiple_escape_name, keyword);
+  multiple_escape->plist = fcons(assoc((cons*)external, t), nil);
+  multiple_escape->value = (cons*)multiple_escape; 
 
 
   //Init cl package
@@ -41,8 +79,7 @@ procinfo *init()
   symbol *t_sym = fintern(t_name, cl);
   t_sym->value = t;
   symbol *test = fintern(t_name, cl);
-  t_sym->plist = newcons();
-  t_sym->plist->car = fcons((cons*)external, t);
+  t_sym->plist = fcons(assoc((cons*)external, t), nil);
   
   //Init nil
   vector *nil_name = strtolstr("NIL");
@@ -51,15 +88,32 @@ procinfo *init()
   nil->cdr = nil;
   symbol *nil_sym = fintern(nil_name, cl);
   nil_sym->value = nil;
-  nil_sym->plist = newcons();
-  nil_sym->plist->car = fcons((cons*)external, t);
+  nil_sym->plist = fcons(assoc((cons*)external, t), nil);
 
   //Init *package*
   vector *package_sym_name = strtolstr("*PACKAGE*");
   symbol *package_sym = fintern(package_sym_name, cl);
   package_sym->value = (cons*)cl;
-  package_sym->plist = newcons();
-  package_sym->plist->car = fcons((cons*)external, t);
+  package_sym->plist = fcons(assoc((cons*)external, t), nil);
+
+  //Init *readtable*
+  vector *readtable_name = strtolstr("*READTABLE*");
+  symbol *readtable_sym = fintern(readtable_name, cl);
+  readtable_sym->value = (cons*)newvector(255);
+  char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
+  char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char lowercase_chars[] = "abcdefghijklmnopqrstuvwxyz";
+  char whitespace_chars[] = "\t\n";
+  char terminating_macro_chars[] = "\"\'(),;`";
+  char non_terminating_macro_chars[] = "#";
+  char single_escape_chars[] = "\\";
+  char mutple_escape_chars[] = "|";
+  
+  base_char *c;
+  vector *readtable_vector = ((vector*)readtable_sym->value);
+  
+  readtable_sym->plist = fcons(assoc((cons*)external, t), nil);
+
 
   //Init cl-user package
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");

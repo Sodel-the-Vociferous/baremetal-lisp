@@ -151,7 +151,6 @@ typedef struct procinfo//Global stuff for each Lisp 'process'.
 extern cons *nil;
 extern cons *t;
 
-
 extern procinfo *init();
 extern cons *newcons();
 extern fixnum *newfixnum();
@@ -183,3 +182,4 @@ extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
 extern cons *envbind(cons *env, cons *binding);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
+extern cons *assoc(cons *key, cons *value);

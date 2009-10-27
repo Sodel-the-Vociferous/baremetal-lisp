@@ -86,6 +86,13 @@ package *newpackage()
   return p;
 }
 
+base_char *ctolc(char c)
+{
+  base_char *lc = newbase_char();
+  lc->c = c;
+  return lc;
+}
+
 vector *strtolstr(char *str)
 {
   int string_len;
@@ -490,7 +497,15 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   else
     return env;
 }
-  
+
+cons *assoc(cons *key, cons *value)
+{
+  cons *a = newcons();
+  a->car = key;
+  a->cdr = value;
+  return a;
+}
+
 int main ()
 {
   procinfo *main = init();
