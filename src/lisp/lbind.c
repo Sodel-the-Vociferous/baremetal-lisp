@@ -80,10 +80,3 @@ cons *leval(cons *env)
   cons *exp = lookup("EXP", env);
   return eval(exp, env);
 }
-
-cons *lassoc(cons *env)
-{
-  cons *key = lookup("KEY", env);
-  cons *value = lookup("VALUE", env);
-  return assoc(key, value);
-}

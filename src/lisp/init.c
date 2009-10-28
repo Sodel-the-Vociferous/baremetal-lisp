@@ -53,6 +53,7 @@ procinfo *init()
   keyword_pkg = newpackage();
   keyword_pkg->name = keyword_name;
 
+  //External and constant must be initialized manually, because they depend on themselves.
   external = fintern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
   constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
@@ -60,6 +61,7 @@ procinfo *init()
   external->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
   constant->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
 
+  //Other symbol attributes
   internal = initsym("INTERNAL", keyword_pkg);
   inherited = initsym("INHERITED", keyword_pkg);
   dynamic = initsym("DYNAMIC", keyword_pkg);
