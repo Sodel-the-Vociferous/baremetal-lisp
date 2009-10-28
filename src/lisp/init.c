@@ -5,7 +5,7 @@ package *keyword_pkg;
 package *cl_pkg;
 package *cl_user_pkg;
 
-//Keywords
+/*Keywords*/
 //Symbol attributes
 symbol *internal;
 symbol *external;
@@ -39,11 +39,22 @@ symbol *hash_tabletype;
 symbol *packagetype;
 symbol *procinfotype;
 
-//Common-Lisp symbols
+/*Common-Lisp symbols*/
 symbol *ts;//T symbol
 symbol *nils;//NIL symbol
-symbol *package_sym;
-symbol *readtable;
+symbol *package_sym;//*package*
+symbol *readtable;//*readtable*
+
+//Lambda list control symbols
+symbol *optional;//&optional
+symbol *rest;//&rest
+symbol *keyword;//&keyword
+symbol *aux;//&aux
+symbol *whole;//&whole
+symbol *body;//&body
+symbol *allow_other_keys;//&allow-other-keys
+
+
 
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
 symbol *initsym(char *name, package *p)
@@ -175,7 +186,16 @@ procinfo *init()
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)multiple_escape, t), nil);
- 
+
+  //Init lambda list control symbols
+  optional = initsym("&OPTIONAL", cl_pkg);
+  rest = initsym("&REST", cl_pkg);
+  keyword = initsym("&KEYWORD", cl_pkg);
+  aux = initsym("&AUX", cl_pkg);
+  whole = initsym("&WHOLE", cl_pkg);
+  body = initsym("&BODY", cl_pkg);
+  allow_other_keys = initsym("&ALLOW-OTHER-KEYS", cl_pkg);
+
   //Init cl-user package
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");
   cl_user_pkg = newpackage();
