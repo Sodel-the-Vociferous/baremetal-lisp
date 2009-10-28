@@ -117,9 +117,9 @@ procinfo *init()
   for (c=whitespace_chars;*c!=0;c++)
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)whitespace, t), nil);
   for (c=terminating_macro_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, t), nil);  
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, t), nil);//Change to to macro function  
   for (c=non_terminating_macro_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, t), nil);  
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, t), nil);//Change t to macro function
   for (c=single_escape_chars;*c!=0;c++)
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)
