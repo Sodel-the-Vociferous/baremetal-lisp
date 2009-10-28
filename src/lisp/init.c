@@ -10,6 +10,8 @@ package *cl_user_pkg;
 symbol *internal;
 symbol *external;
 symbol *inherited;
+symbol *dynamic;
+symbol *constant;
 //Readtable attributes
 symbol *constituent;
 symbol *whitespace;
@@ -19,108 +21,82 @@ symbol *single_escape;
 symbol *multiple_escape;
 
 //Common-Lisp symbols
-symbol *package;
+symbol *ts;//T symbol
+symbol *nils;//NIL symbol
+symbol *package_sym;
 symbol *readtable;
 
-
+//This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
+symbol *initsym(char *name, package *p)
+{
+  vector *a_name = strtolstr(name);
+  symbol *a = fintern(a_name, p);
+  if (p == keyword_pkg)
+    {
+      a->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+      a->value = (cons*)a;
+    }
+  else if (p == cl_pkg)
+    {
+      a->plist = fcons(assoc((cons*)external, t), nil);
+    }
+  return a;
+}
 
 procinfo *init()
 {
   long i;
   long j;
 
-
   //Init keyword package
   vector *keyword_name = strtolstr("KEYWORD");
-  package *keyword = newpackage();
-  keyword->name = keyword_name;
+  keyword_pkg = newpackage();
+  keyword_pkg->name = keyword_name;
 
-  //Init :external
-  vector *external_name = strtolstr("EXTERNAL");
-  symbol *external = fintern(external_name, keyword);
-  external->plist = fcons(assoc((cons*)external, t), nil);
+  external = fintern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
+  constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
+  constant->value = (cons*)constant;
+  external->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  constant->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
 
-  //Init :internal
-  vector *internal_name = strtolstr("INTERNAL");
-  symbol *internal = fintern(internal_name, keyword);
-  internal->plist = fcons(assoc((cons*)external, t), nil);
-  internal->value = (cons*)internal;
+  internal = initsym("INTERNAL", keyword_pkg);
+  inherited = initsym("INHERITED", keyword_pkg);
+  dynamic = initsym("DYNAMIC", keyword_pkg);
 
-  //Init :inherited
-  vector *inherited_name = strtolstr("INHERITED");
-  symbol *inherited = fintern(inherited_name, keyword);
-  inherited->plist = fcons(assoc((cons*)external, t), nil);
-  inherited->value = (cons*)inherited;
-
-  //Init :constituent
-  vector *constituent_name = strtolstr("CONSTITUENT");
-  symbol *constituent = fintern(constituent_name, keyword);
-  constituent->plist = fcons(assoc((cons*)external, t), nil);
-  constituent->value = (cons*)constituent;
-
-  //Init :whitespace
-  vector *whitespace_name = strtolstr("WHITESPACE");
-  symbol *whitespace = fintern(whitespace_name, keyword);
-  whitespace->plist = fcons(assoc((cons*)external, t), nil);
-  whitespace->value = (cons*)whitespace;
-
-  //Init :terminating-macro
-  vector *terminating_macro_name = strtolstr("TERMINATING-MACRO");
-  symbol *terminating_macro = fintern(terminating_macro_name, keyword);
-  terminating_macro->plist = fcons(assoc((cons*)external, t), nil);
-  terminating_macro->value = (cons*)terminating_macro;
-
-  //Init :non-terminating-macro
-  vector *non_terminating_macro_name = strtolstr("NON_TERMINATING_MACRO");
-  symbol *non_terminating_macro = fintern(non_terminating_macro_name, keyword);
-  non_terminating_macro->plist = fcons(assoc((cons*)external, t), nil);
-  non_terminating_macro->value = (cons*)non_terminating_macro;
-
-  //Init :single-escape
-  vector *single_escape_name = strtolstr("SINGLE-ESCAPE");
-  symbol *single_escape = fintern(single_escape_name, keyword);
-  single_escape->plist = fcons(assoc((cons*)external, t), nil);
-  single_escape->value = (cons*)single_escape;
-
-  //Init :multiple-escape
-  vector *multiple_escape_name = strtolstr("MULTIPLE-ESCAPE");
-  symbol *multiple_escape = fintern(multiple_escape_name, keyword);
-  multiple_escape->plist = fcons(assoc((cons*)external, t), nil);
-  multiple_escape->value = (cons*)multiple_escape; 
+  //Readtable character attributes
+  constituent = initsym("CONSTITUENT", keyword_pkg);
+  whitespace = initsym("WHITESPACE", keyword_pkg);
+  terminating_macro = initsym("TERMINATING-MACRO-CHARACTER", keyword_pkg);
+  non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", keyword_pkg);
+  single_escape = initsym("SINGLE-ESCAPE", keyword_pkg);
+  multiple_escape = initsym("MULTIPLE-ESCAPE", keyword_pkg);
 
 
   //Init cl package
   vector *cl_name = strtolstr("COMMON-LISP");
-  package *cl = newpackage();
-  cl->name = cl_name;
- 
+  cl_pkg = newpackage();
+  cl_pkg->name = cl_name;
+
   //Init t
   t->type = T;
-  vector *t_name = strtolstr("T");
-  symbol *t_sym = fintern(t_name, cl);
-  t_sym->value = t;
-  symbol *test = fintern(t_name, cl);
-  t_sym->plist = fcons(assoc((cons*)external, t), nil);
+  ts = initsym("T", cl_pkg);
+  ts->value = t;
   
   //Init nil
-  vector *nil_name = strtolstr("NIL");
+  //vector *nil_name = strtolstr("NIL");
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
-  symbol *nil_sym = fintern(nil_name, cl);
-  nil_sym->value = nil;
-  nil_sym->plist = fcons(assoc((cons*)external, t), nil);
+  nils = initsym("NIL", cl_pkg);
+  nils->value = nil;
 
-  //Init *package*
-  vector *package_sym_name = strtolstr("*PACKAGE*");
-  symbol *package_sym = fintern(package_sym_name, cl);
-  package_sym->value = (cons*)cl;
-  package_sym->plist = fcons(assoc((cons*)external, t), nil);
+  package_sym = initsym("*PACKAGE*", cl_pkg);
+  package_sym->value = (cons*)cl_pkg;
 
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
-  symbol *readtable_sym = fintern(readtable_name, cl);
+  symbol *readtable_sym = fintern(readtable_name, cl_pkg);
   readtable_sym->value = (cons*)newvector(255);
   char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
   char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -129,18 +105,30 @@ procinfo *init()
   char terminating_macro_chars[] = "\"\'(),;`";
   char non_terminating_macro_chars[] = "#";
   char single_escape_chars[] = "\\";
-  char mutple_escape_chars[] = "|";
+  char multiple_escape_chars[] = "|";
+  char *c;
+  base_char *bc;
   
-  base_char *c;
-  vector *readtable_vector = ((vector*)readtable_sym->value);
-  
-  readtable_sym->plist = fcons(assoc((cons*)external, t), nil);
-
-
+  //Create the default readtable
+  for (c=uppercase_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)constituent, t), nil);
+  for (c=lowercase_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)constituent, t), nil);  
+  for (c=whitespace_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)whitespace, t), nil);
+  for (c=terminating_macro_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, t), nil);  
+  for (c=non_terminating_macro_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, t), nil);  
+  for (c=single_escape_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)single_escape, t), nil);  
+  for (c=multiple_escape_chars;*c!=0;c++)
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)multiple_escape, t), nil);
+ 
   //Init cl-user package
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");
-  package *cl_user = newpackage();
-  cl_user->name = cl_user_name;
+  cl_user_pkg = newpackage();
+  cl_user_pkg->name = cl_user_name;
 
 
   //init process info
@@ -148,11 +136,11 @@ procinfo *init()
   main->type = PROCINFO;
   main->package_sym  = package_sym;
   main->packages = newcons();
-  main->packages->car = (cons*)cl;
+  main->packages->car = (cons*)cl_pkg;
   main->packages->cdr = newcons();
-  main->packages->cdr->car = (cons*)cl_user;
+  main->packages->cdr->car = (cons*)cl_user_pkg;
   main->packages->cdr->cdr = newcons();
-  main->packages->cdr->cdr->car = (cons*)keyword;  
+  main->packages->cdr->cdr->car = (cons*)keyword_pkg;  
 
   return main;
 }
