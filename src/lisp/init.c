@@ -19,6 +19,25 @@ symbol *terminating_macro;
 symbol *non_terminating_macro;
 symbol *single_escape;
 symbol *multiple_escape;
+//Types
+symbol *ttype;
+symbol *constype;
+symbol *ttype;
+symbol *constype;
+symbol *fixnumtype;
+symbol *bignumtype;
+symbol *ratiotype;
+symbol *singletype;
+symbol *base_chartype;
+symbol *vectortype;
+symbol *arraytype;
+symbol *compiled_functiontype;
+symbol *stringtype;
+symbol *symboltype;
+symbol *functiontype;
+symbol *hash_tabletype;
+symbol *packagetype;
+symbol *procinfotype;
 
 //Common-Lisp symbols
 symbol *ts;//T symbol
@@ -41,6 +60,18 @@ symbol *initsym(char *name, package *p)
       a->plist = fcons(assoc((cons*)external, t), nil);
     }
   return a;
+}
+
+symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
+{
+  symbol *funsym = fintern(strtolstr(name), p);
+  funsym->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  funsym->value = (cons*)newcompiled_function();
+  compiled_function *f = (compiled_function*)funsym->value;
+  f->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  f->lambda_list = lambda_list;
+  f->fun = fun;
+  return funsym;
 }
 
 procinfo *init()
@@ -74,6 +105,24 @@ procinfo *init()
   single_escape = initsym("SINGLE-ESCAPE", keyword_pkg);
   multiple_escape = initsym("MULTIPLE-ESCAPE", keyword_pkg);
 
+  //Types
+  ttype = initsym("T", keyword_pkg);
+  constype = initsym("CONS", keyword_pkg);
+  fixnumtype = initsym("FIXNUM", keyword_pkg);
+  bignumtype = initsym("BIGNUM", keyword_pkg);
+  ratiotype = initsym("RATIO", keyword_pkg);
+  singletype = initsym("SINGLE", keyword_pkg);
+  base_chartype = initsym("BASE-CHARACTER", keyword_pkg);
+  vectortype = initsym("VECTOR", keyword_pkg);
+  arraytype = initsym("ARRAY", keyword_pkg);
+  compiled_functiontype = initsym("COMPILED-FUNCTION", keyword_pkg);
+  stringtype = initsym("STRING", keyword_pkg);
+  symboltype = initsym("SYMBOL", keyword_pkg);
+  functiontype = initsym("FUNCTION", keyword_pkg);
+  hash_tabletype = initsym("HASH-TABLE", keyword_pkg);
+  packagetype = initsym("PACKAGE", keyword_pkg);
+  procinfotype = initsym("PROCESS-INFO-TABLE", keyword_pkg);
+  
 
   //Init cl package
   vector *cl_name = strtolstr("COMMON-LISP");
@@ -119,9 +168,9 @@ procinfo *init()
   for (c=whitespace_chars;*c!=0;c++)
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)whitespace, t), nil);
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, t), nil);//Change to to macro function  
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, nil), nil);//Change nil to macro function  
   for (c=non_terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, t), nil);//Change t to macro function
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
   for (c=single_escape_chars;*c!=0;c++)
       ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)

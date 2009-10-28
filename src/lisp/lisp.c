@@ -86,6 +86,16 @@ package *newpackage()
   return p;
 }
 
+compiled_function *newcompiled_function()
+{
+  compiled_function *f = malloc(sizeof(compiled_function));
+  f->type = COMPILED_FUNCTION;
+  f->plist = nil;
+  f->lambda_list = nil;
+  f->env = nil;
+  f->fun = 0;
+}
+
 base_char *ctolc(char c)
 {
   base_char *lc = newbase_char();
@@ -395,6 +405,14 @@ cons *lookup(char *namestr, cons *env)
   return eval((cons*)s, env);
 }
 
+cons *assoc(cons *key, cons *value)
+{
+  cons *a = newcons();
+  a->car = key;
+  a->cdr = value;
+  return a;
+}
+
 cons *eval(cons *exp, cons *env)
 {
   if (exp == nil)
@@ -431,9 +449,12 @@ cons *eval(cons *exp, cons *env)
       env = extend_env(env);
       env = evalambda(f->lambda_list, exp->cdr, env);
       if (f->type == FUNCTION)
-	return eval(f->function, f->env);
+	return eval(f->fun, f->env);
       else if (f->type == COMPILED_FUNCTION)
-	return (*(((compiled_function*)f)->function)) (f->env);
+	{
+	  compiled_function *cf = (compiled_function*)f;
+	  return ((compiled_function*)f)->fun(env);
+	}
       //though garbled, the previous just calls a C function pointer.
       else
 	return nil;//TODO error, not a function
@@ -496,14 +517,6 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
     return oldenv;//TODO error too many args
   else
     return env;
-}
-
-cons *assoc(cons *key, cons *value)
-{
-  cons *a = newcons();
-  a->car = key;
-  a->cdr = value;
-  return a;
 }
 
 int main ()

@@ -97,7 +97,7 @@ typedef struct compiled_function
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
-  struct cons *(*function)(struct cons*);
+  struct cons *(*fun)(cons* env);
 }__attribute__((packed)) compiled_function;
 
 typedef struct function
@@ -106,7 +106,7 @@ typedef struct function
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
-  struct cons *function;
+  struct cons *fun;
 }__attribute__((packed)) function;
 
 typedef struct symbol
@@ -160,6 +160,7 @@ extern single *newsingle();
 extern base_char *newbase_char();
 extern vector *newvector(int size);
 extern package *newpackage();
+compiled_function *newcompiled_function();
 extern vector *strtolstr(char *str);
 extern cons *null (cons *a);
 extern cons *numberp(cons *a);
@@ -178,8 +179,9 @@ extern cons *eq (cons *a, cons *b);
 extern cons *eql (cons *a, cons *b);
 extern cons *equal (cons *a, cons *b);
 extern cons *lookup(char *name, cons *env);
+extern cons *assoc(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
 extern cons *envbind(cons *env, cons *binding);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
-extern cons *assoc(cons *key, cons *value);
+extern cons *read(vector *string, cons *env);
