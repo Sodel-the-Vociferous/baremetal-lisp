@@ -146,6 +146,21 @@ typedef struct procinfo//Global stuff for each Lisp 'process'.
   //common-lisp is always first package, cl-user second, keyword third, followed by the rest.
 }__attribute__((packed)) procinfo;
 
+typedef struct stream
+{
+  unsigned short type;
+  struct cons *plist;
+  int i;
+  struct vector *v;
+}__attribute__((packed)) stream;
+
+typedef struct composite_stream
+{
+  unsigned short type;
+  struct cons *plist;
+  struct cons *streams;
+}
+
 #endif
 
 extern cons *nil;
