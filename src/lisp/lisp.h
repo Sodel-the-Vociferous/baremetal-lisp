@@ -159,7 +159,7 @@ typedef struct composite_stream
   unsigned short type;
   struct cons *plist;
   struct cons *streams;
-}
+}__attribute__((packed)) composite_stream;
 
 #endif
 
@@ -194,7 +194,7 @@ extern cons *eq (cons *a, cons *b);
 extern cons *eql (cons *a, cons *b);
 extern cons *equal (cons *a, cons *b);
 extern cons *lookup(char *name, cons *env);
-extern cons *assoc(cons *key, cons *value);
+extern cons *mkpair(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
 extern cons *envbind(cons *env, cons *binding);

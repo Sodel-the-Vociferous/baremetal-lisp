@@ -19,6 +19,16 @@ symbol *terminating_macro;
 symbol *non_terminating_macro;
 symbol *single_escape;
 symbol *multiple_escape;
+//Constituent traits
+symbol *invalid;
+symbol *alphabetic;
+symbol *alphadigit;
+symbol *package_marker;
+symbol *plus_sign;
+symbol *minus_sign;
+symbol *dot;
+symbol *decimal_point;
+symbol *ratio_marker;
 //Types
 symbol *ttype;
 symbol *constype;
@@ -63,12 +73,12 @@ symbol *initsym(char *name, package *p)
   symbol *a = fintern(a_name, p);
   if (p == keyword_pkg)
     {
-      a->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+      a->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
       a->value = (cons*)a;
     }
   else if (p == cl_pkg)
     {
-      a->plist = fcons(assoc((cons*)external, t), nil);
+      a->plist = fcons(mkpair((cons*)external, t), nil);
     }
   return a;
 }
@@ -76,10 +86,10 @@ symbol *initsym(char *name, package *p)
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
 {
   symbol *funsym = fintern(strtolstr(name), p);
-  funsym->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  funsym->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
   funsym->value = (cons*)newcompiled_function();
   compiled_function *f = (compiled_function*)funsym->value;
-  f->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  f->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
   f->lambda_list = lambda_list;
   f->fun = fun;
   return funsym;
@@ -100,8 +110,8 @@ procinfo *init()
   external->value = (cons*)external;
   constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
   constant->value = (cons*)constant;
-  external->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
-  constant->plist = fcons(assoc((cons*)external, t), fcons(assoc((cons*)constant, t), nil));
+  external->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+  constant->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
 
   //Other symbol attributes
   internal = initsym("INTERNAL", keyword_pkg);
@@ -115,6 +125,13 @@ procinfo *init()
   non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", keyword_pkg);
   single_escape = initsym("SINGLE-ESCAPE", keyword_pkg);
   multiple_escape = initsym("MULTIPLE-ESCAPE", keyword_pkg);
+
+  //Consituent traits
+  invalid = initsym("INVALID", keyword_pkg);
+  alphabetic = initsym("ALPHABETIC", keyword_pkg);
+  alphadigit = initsym("ALPHADIGIT", keyword_pkg);
+  package_marker = initsym("PACKAGE-MARKER", keyword_pkg);
+
 
   //Types
   ttype = initsym("T", keyword_pkg);
@@ -173,19 +190,19 @@ procinfo *init()
   
   //Create the default readtable
   for (c=uppercase_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)constituent, t), nil);
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);
   for (c=lowercase_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)constituent, t), nil);  
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);  
   for (c=whitespace_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)whitespace, t), nil);
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)whitespace, t), nil);
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)terminating_macro, nil), nil);//Change nil to macro function  
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
   for (c=non_terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
+    ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
   for (c=single_escape_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)single_escape, t), nil);  
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(assoc((cons*)multiple_escape, t), nil);
+      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)multiple_escape, t), nil);
 
   //Init lambda list control symbols
   optional = initsym("&OPTIONAL", cl_pkg);

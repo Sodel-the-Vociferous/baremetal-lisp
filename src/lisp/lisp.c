@@ -405,7 +405,7 @@ cons *lookup(char *namestr, cons *env)
   return eval((cons*)s, env);
 }
 
-cons *assoc(cons *key, cons *value)
+cons *mkpair(cons *key, cons *value)
 {
   cons *a = newcons();
   a->car = key;
@@ -518,6 +518,69 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   else
     return env;
 }
+
+cons *assoc(cons *key, cons *plist)
+{
+  while(plist != nil)
+    {
+      if (eql(key, plist->car->car) == t)
+	return plist->car;
+      else
+	plist = plist->cdr;
+    }
+  return nil;
+}
+
+
+//Stream functions, to support Read.
+base_char *read_char(stream *str)
+{
+  base_char *to_ret = (base_char*)str->v->v[str->i];
+  str->i++;
+  return to_ret;
+}
+
+base_char *peek_char(stream *str)
+{
+  return (base_char*)str->v->v[str->i];
+}
+
+//Abandon all hope, ye who eneter here.
+//Here be dragons...
+cons *read(stream *str, cons *env)
+{
+  base_char *c = read_char(str);
+
+  vector *readtable = lookup("*READTABLE*", find_package(strtolstr("COMMON-LISP"), (procinfo*)env->car))
+  package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
+
+  symbol *internal = fintern(strtolstr("INTERNAL", keyword_pkg));
+  symbol *external = fintern(strtolstr("EXTERNAL", keyword_pkg));
+  symbol *inherited = fintern(strtolstr("INHERITED", keyword_pkg));
+  symbol *dynamic = fintern(strtolstr("DYNAMIC", keyword_pkg));
+  symbol *constant = fintern(strtolstr("CONSTANT", keyword_pkg));
+  symbol *constituent = fintern(strtolstr("CONSTITUENT", keyword_pkg));
+  symbol *whitespace = fintern(strtolstr("WHITESPACE", keyword_pkg));
+  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO", keyword_pkg));
+  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO", keyword_pkg));
+  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE", keyword_pkg));
+  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE", keyword_pkg));
+
+  symbol *invalid = fintern(strtolstr("INVALID", keyword_pkg));
+  symbol *alphabetic = fintern(strtolstr("ALPHABETIC", keyword_pkg));
+  symbol *alphadigit = fintern(strtolstr("ALPHADIGIT", keyword_pkg));
+  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER", keyword_pkg));
+
+
+  while(assoc(whitespace, ((cons*)readtable->v->v[c->c])->plist)->car != nil)//Discard whitespace characters
+    {
+      c = read_char(str);
+    }
+
+}
+
+
+
 
 int main ()
 {
