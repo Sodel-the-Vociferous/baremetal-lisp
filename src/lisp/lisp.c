@@ -7,6 +7,7 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
+//Object allocation routines
 cons *newcons()
 {
   cons *c = malloc(sizeof(cons));
@@ -96,6 +97,7 @@ compiled_function *newcompiled_function()
   f->fun = 0;
 }
 
+//Helper functions to translate C stuff into Lisp objects
 base_char *ctolc(char c)
 {
   base_char *lc = newbase_char();
@@ -126,6 +128,7 @@ vector *strtolstr(char *str)
   return to_ret;
 }
 
+//Primitives
 cons *null (cons *a)
 {
   if (a == nil ||
@@ -398,6 +401,7 @@ cons *eql (cons *a, cons *b)
     return nil;
 }
 
+//Lookup a symbol in the current environment; can't do foreign packages yet. Wait 'till read() gets done.
 cons *lookup(char *namestr, cons *env)
 {
   vector *name = strtolstr(namestr);
@@ -405,6 +409,7 @@ cons *lookup(char *namestr, cons *env)
   return eval((cons*)s, env);
 }
 
+//Create an association pair
 cons *mkpair(cons *key, cons *value)
 {
   cons *a = newcons();
