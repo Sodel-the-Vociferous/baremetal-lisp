@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "lisp.h"
+#include "init.h"
 
 cons t_phys;
 cons nil_phys;
@@ -537,7 +538,7 @@ cons *assoc(cons *key, cons *plist)
 }
 
 
-//Stream functions, to support Read.
+//Read Functions
 base_char *read_char(stream *str)
 {
   base_char *to_ret = (base_char*)str->v->v[str->read_index];
@@ -570,7 +571,8 @@ cons *read_token(stream *str, cons *env)
   cons *a = to_ret;
   base_char *c = read_char(str);
 
-  vector *readtable = (vector*)((procinfo*)env->car)->package_sym->value;
+  vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
+  /*
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
   symbol *constituent = fintern(strtolstr("CONSTITUENT"), keyword_pkg);
@@ -580,19 +582,20 @@ cons *read_token(stream *str, cons *env)
   symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
   symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
   symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
+  */
 
   a->car = (cons*)c;
   while (1)
     {
-      if ((assoc((cons*)(cons*)constituent, ((cons*)readtable->v[c->c])) == t) ||
-	  (assoc((cons*)(cons*)non_terminating_macro, ((cons*)readtable->v[c->c])) == t))
+      if ((assoc((cons*)(cons*)constituent, ((cons*)readtable_value->v[c->c])) == t) ||
+	  (assoc((cons*)(cons*)non_terminating_macro, ((cons*)readtable_value->v[c->c])) == t))
 	{
 	  a->cdr = newcons();
 	  a = a->cdr;
 	  a->car = (cons*)c;
 	  i++;
 	}
-      else if (assoc((cons*)single_escape, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)single_escape, ((cons*)readtable_value->v[c->c])) == t)
 	{
 	  c = read_char(str);
 	  if ((cons*)c == nil)
@@ -601,17 +604,17 @@ cons *read_token(stream *str, cons *env)
 	  a = a->cdr;
 	  a->car = (cons*)c;
 	}
-      else if (assoc((cons*)multiple_escape, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)multiple_escape, ((cons*)readtable_value->v[c->c])) == t)
 	return nil;//TODO CLHS 2.2: step 9
-      else if (assoc((cons*)invalid, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)invalid, ((cons*)readtable_value->v[c->c])) == t)
 	return nil;//TODO reader_error
-      else if (assoc((cons*)terminating_macro, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)terminating_macro, ((cons*)readtable_value->v[c->c])) == t)
 	{
 	  unread_char(c, str);
 	  //TODO CLHS 2.2: step 10
 	  break;//Terminate token
 	}
-      else if (assoc((cons*)whitespace, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)whitespace, ((cons*)readtable_value->v[c->c])) == t)
 	{
 	  break;//Terminate token
 	}
@@ -652,7 +655,8 @@ cons *read(stream *str, cons *env)
 {
   base_char *c = read_char(str);
 
-  vector *readtable = (vector*)((procinfo*)env->car)->package_sym->value;
+  vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
+  /*
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
   symbol *internal = fintern(strtolstr("INTERNAL"), keyword_pkg);
@@ -670,21 +674,21 @@ cons *read(stream *str, cons *env)
   symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
   symbol *alphabetic = fintern(strtolstr("ALPHABETIC"), keyword_pkg);
   symbol *alphadigit = fintern(strtolstr("ALPHADIGIT"), keyword_pkg);
-  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER"), keyword_pkg);
+  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER"), keyword_pkg);*/
 
 
   while(1)
     {
-      if (assoc((cons*)invalid, ((cons*)readtable->v[c->c])) == t)
+      if (assoc((cons*)invalid, ((cons*)readtable_value->v[c->c])) == t)
 	return nil;//TODO reader error
-      else if (assoc((cons*)whitespace, ((cons*)readtable->v[c->c])) == t)
+      else if (assoc((cons*)whitespace, ((cons*)readtable_value->v[c->c])) == t)
 	continue;
-      else if ((assoc((cons*)terminating_macro, ((cons*)readtable->v[c->c])) == t) ||
-	       (assoc((cons*)non_terminating_macro, ((cons*)readtable->v[c->c])) == t))
+      else if ((assoc((cons*)terminating_macro, ((cons*)readtable_value->v[c->c])) == t) ||
+	       (assoc((cons*)non_terminating_macro, ((cons*)readtable_value->v[c->c])) == t))
 	return nil;//TODO call reader macro
-      else if ((assoc((cons*)single_escape, ((cons*)readtable->v[c->c])) == t) ||
-	       (assoc((cons*)multiple_escape, ((cons*)readtable->v[c->c])) == t)||
-	       (assoc((cons*)constituent, ((cons*)readtable->v[c->c])) == t))
+      else if ((assoc((cons*)single_escape, ((cons*)readtable_value->v[c->c])) == t) ||
+	       (assoc((cons*)multiple_escape, ((cons*)readtable_value->v[c->c])) == t)||
+	       (assoc((cons*)constituent, ((cons*)readtable_value->v[c->c])) == t))
 	return read_token(str, env);
     }
   //TODO reader error
