@@ -80,3 +80,15 @@ cons *leval(cons *env)
   cons *exp = lookup("EXP", env);
   return eval(exp, env);
 }
+
+cons *lread_cons(cons *env)
+{
+  stream *str = (stream*)lookup("STREAM", env);
+  return read_cons(str, env);
+}
+
+cons *lread(cons *env)
+{
+  stream *str = (stream*)lookup("STREAM", env);
+  return read(str, env);
+}

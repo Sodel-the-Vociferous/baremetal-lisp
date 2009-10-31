@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "lisp.h"
+#include "init.h"
+#include "lbind.h"
 
 package *keyword_pkg;
 package *cl_pkg;
@@ -63,7 +65,6 @@ symbol *aux;//&aux
 symbol *whole;//&whole
 symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
-
 
 
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
@@ -175,8 +176,8 @@ procinfo *init()
 
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
-  symbol *readtable_sym = fintern(readtable_name, cl_pkg);
-  readtable_sym->value = (cons*)newvector(255);
+  symbol *readtable = fintern(readtable_name, cl_pkg);
+  readtable->value = (cons*)newvector(255);
   char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
   char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   char lowercase_chars[] = "abcdefghijklmnopqrstuvwxyz";
@@ -189,20 +190,43 @@ procinfo *init()
   base_char *bc;
   
   //Create the default readtable
+
+  //Use the numerical ASCII values of each number as the index of a readtable, a vector.
+  //Each entry has an associated property list.
   for (c=uppercase_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);
+      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);
   for (c=lowercase_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);  
+      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);  
   for (c=whitespace_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)whitespace, t), nil);
+      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)whitespace, t), nil);
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
+    ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
+  //Deal with terminating macro characters specifically.
+
+
+
+
+
+
+  //Oh my goodness. I am SO sorry for what I am about to do to you. 
+  //Okay, so, here's what this code is *supposed* to do.
+  //Just like the others, we create a property list. This time, however,
+  //the value of the property is a reader macro.
+  ((vector*)readtable->value)->v['('] =  fcons(mkpair((cons*)terminating_macro, nil),
+					       (cons*)initcfun("READ-CONS", 
+							       fcons((cons*)fintern(strtolstr("STREAM"), cl_pkg),
+								     nil),
+							       cl_pkg,
+							       &lread_cons));
+  //Left-paren reads a cons
+  ((vector*)readtable->value)->v[')'] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//reader error
+
   for (c=non_terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
+    ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
   for (c=single_escape_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)single_escape, t), nil);  
+      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)
-      ((vector*)readtable_sym->value)->v[*c] =  fcons(mkpair((cons*)multiple_escape, t), nil);
+      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)multiple_escape, t), nil);
 
   //Init lambda list control symbols
   optional = initsym("&OPTIONAL", cl_pkg);

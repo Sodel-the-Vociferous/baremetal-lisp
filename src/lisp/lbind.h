@@ -11,3 +11,6 @@ extern cons *leq (cons *env);
 extern cons *leql (cons *env);
 extern cons *lequal (cons *env);
 extern cons *leval(cons *env);
+//extern cons *lread_token(cons*env);
+extern cons *lread_cons(cons*env);
+extern cons *lread(cons *env);

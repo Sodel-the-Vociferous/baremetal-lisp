@@ -535,52 +535,156 @@ cons *assoc(cons *key, cons *plist)
 //Stream functions, to support Read.
 base_char *read_char(stream *str)
 {
-  base_char *to_ret = (base_char*)str->v->v[str->i];
-  str->i++;
+  base_char *to_ret = (base_char*)str->v->v[str->read_index];
+  str->read_index++;
   return to_ret;
 }
 
 base_char *peek_char(stream *str)
 {
-  return (base_char*)str->v->v[str->i];
+  return (base_char*)str->v->v[str->read_index];
 }
+
+cons *unread_char(base_char *c, stream *str)
+{
+  str->read_index--;
+  str->v->v[str->read_index] = (cons*)c;
+  return nil;
+}
+
 
 //Abandon all hope, ye who eneter here.
 //Here be dragons...
+//The READER function!
+
+//Assumes opening parenthesis stripped.
+cons *read_token(stream *str, cons *env)
+{
+  int i=0;
+  cons *to_ret = newcons();
+  cons *a = to_ret;
+  base_char *c = read_char(str);
+
+  vector *readtable = (vector*)((procinfo*)env->car)->package_sym->value;
+  package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
+
+  symbol *constituent = fintern(strtolstr("CONSTITUENT"), keyword_pkg);
+  symbol *whitespace = fintern(strtolstr("WHITESPACE"), keyword_pkg);
+  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
+  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
+  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
+  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
+  symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
+
+  a->car = (cons*)c;
+  while (1)
+    {
+      if ((assoc((cons*)(cons*)constituent, ((cons*)readtable->v[c->c])) == t) ||
+	  (assoc((cons*)(cons*)non_terminating_macro, ((cons*)readtable->v[c->c])) == t))
+	{
+	  a->cdr = newcons();
+	  a = a->cdr;
+	  a->car = (cons*)c;
+	  i++;
+	}
+      else if (assoc((cons*)single_escape, ((cons*)readtable->v[c->c])) == t)
+	{
+	  c = read_char(str);
+	  if ((cons*)c == nil)
+	    return nil;//TODO reader error
+	  a->cdr = newcons();
+	  a = a->cdr;
+	  a->car = (cons*)c;
+	}
+      else if (assoc((cons*)multiple_escape, ((cons*)readtable->v[c->c])) == t)
+	return nil;//TODO CLHS 2.2: step 9
+      else if (assoc((cons*)invalid, ((cons*)readtable->v[c->c])) == t)
+	return nil;//TODO reader_error
+      else if (assoc((cons*)terminating_macro, ((cons*)readtable->v[c->c])) == t)
+	{
+	  unread_char(c, str);
+	  //TODO CLHS 2.2: step 10
+	  break;//Terminate token
+	}
+      else if (assoc((cons*)whitespace, ((cons*)readtable->v[c->c])) == t)
+	{
+	  break;//Terminate token
+	}
+    }
+  //Terminate token
+  a = to_ret;
+  vector *token = newvector(i+1);
+  for(i=0;a!=nil;i++)
+    token->v[i] = (cons*)a->car;
+  
+  token->v[i] = nil;
+  //interpret_token(token);
+}
+
+cons *read_cons(stream *str, cons *env)
+{
+  base_char *c = peek_char(str);
+  cons *to_ret = newcons();
+  cons *a = nil;
+
+  if (c->c != ')')
+    {
+      a = newcons();
+      a->car = read(str, env);
+    }
+
+  while (c->c != ')')
+    {
+      a->cdr = newcons();
+      a = a->cdr;
+      a->car = read(str, env);
+      c = peek_char(str);
+    } 
+  return to_ret;
+}
+
 cons *read(stream *str, cons *env)
 {
   base_char *c = read_char(str);
 
-  vector *readtable = lookup("*READTABLE*", find_package(strtolstr("COMMON-LISP"), (procinfo*)env->car))
+  vector *readtable = (vector*)((procinfo*)env->car)->package_sym->value;
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
-  symbol *internal = fintern(strtolstr("INTERNAL", keyword_pkg));
-  symbol *external = fintern(strtolstr("EXTERNAL", keyword_pkg));
-  symbol *inherited = fintern(strtolstr("INHERITED", keyword_pkg));
-  symbol *dynamic = fintern(strtolstr("DYNAMIC", keyword_pkg));
-  symbol *constant = fintern(strtolstr("CONSTANT", keyword_pkg));
-  symbol *constituent = fintern(strtolstr("CONSTITUENT", keyword_pkg));
-  symbol *whitespace = fintern(strtolstr("WHITESPACE", keyword_pkg));
-  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO", keyword_pkg));
-  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO", keyword_pkg));
-  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE", keyword_pkg));
-  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE", keyword_pkg));
+  symbol *internal = fintern(strtolstr("INTERNAL"), keyword_pkg);
+  symbol *external = fintern(strtolstr("EXTERNAL"), keyword_pkg);
+  symbol *inherited = fintern(strtolstr("INHERITED"), keyword_pkg);
+  symbol *dynamic = fintern(strtolstr("DYNAMIC"), keyword_pkg);
+  symbol *constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
+  symbol *constituent = fintern(strtolstr("CONSTITUENT"), keyword_pkg);
+  symbol *whitespace = fintern(strtolstr("WHITESPACE"), keyword_pkg);
+  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
+  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
+  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
+  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
 
-  symbol *invalid = fintern(strtolstr("INVALID", keyword_pkg));
-  symbol *alphabetic = fintern(strtolstr("ALPHABETIC", keyword_pkg));
-  symbol *alphadigit = fintern(strtolstr("ALPHADIGIT", keyword_pkg));
-  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER", keyword_pkg));
+  symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
+  symbol *alphabetic = fintern(strtolstr("ALPHABETIC"), keyword_pkg);
+  symbol *alphadigit = fintern(strtolstr("ALPHADIGIT"), keyword_pkg);
+  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER"), keyword_pkg);
 
 
-  while(assoc(whitespace, ((cons*)readtable->v->v[c->c])->plist)->car != nil)//Discard whitespace characters
+  while(1)
     {
-      c = read_char(str);
+      if (assoc((cons*)invalid, ((cons*)readtable->v[c->c])) == t)
+	return nil;//TODO reader error
+      else if (assoc((cons*)whitespace, ((cons*)readtable->v[c->c])) == t)
+	continue;
+      else if ((assoc((cons*)terminating_macro, ((cons*)readtable->v[c->c])) == t) ||
+	       (assoc((cons*)non_terminating_macro, ((cons*)readtable->v[c->c])) == t))
+	return nil;//TODO call reader macro
+      else if ((assoc((cons*)single_escape, ((cons*)readtable->v[c->c])) == t) ||
+	       (assoc((cons*)multiple_escape, ((cons*)readtable->v[c->c])) == t)||
+	       (assoc((cons*)constituent, ((cons*)readtable->v[c->c])) == t))
+	return read_token(str, env);
     }
-
+  //TODO reader error
+	
 }
-
-
-
 
 int main ()
 {
