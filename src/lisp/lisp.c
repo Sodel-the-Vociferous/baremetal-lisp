@@ -538,7 +538,7 @@ cons *assoc(cons *key, cons *plist)
 }
 
 
-//Read Functions
+//Stream functions
 base_char *read_char(stream *str)
 {
   base_char *to_ret = (base_char*)str->v->v[str->read_index];
@@ -571,7 +571,7 @@ cons *read_token(stream *str, cons *env)
   cons *a = to_ret;
   base_char *c = read_char(str);
 
-  vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
+  vector *readtable_value = (vector*)readtable->value;
   /*
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
@@ -698,5 +698,6 @@ cons *read(stream *str, cons *env)
 int main ()
 {
   procinfo *main = init();
+  
   return 0;
 }

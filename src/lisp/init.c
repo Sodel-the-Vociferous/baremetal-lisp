@@ -3,6 +3,8 @@
 #include "init.h"
 #include "lbind.h"
 
+
+/*Packages*/
 package *keyword_pkg;
 package *cl_pkg;
 package *cl_user_pkg;
@@ -56,7 +58,6 @@ symbol *ts;//T symbol
 symbol *nils;//NIL symbol
 symbol *package_sym;//*package*
 symbol *readtable;//*readtable*
-
 //Lambda list control symbols
 symbol *optional;//&optional
 symbol *rest;//&rest
@@ -65,6 +66,17 @@ symbol *aux;//&aux
 symbol *whole;//&whole
 symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
+//Functions
+
+/*Local functions*/
+symbol *initsym(char *name, package *p);
+symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
+
+void init_keyword_pkg();
+
+void init_cl_pkg();
+void init_readtable();
+void init_lambda_control();
 
 
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
@@ -96,11 +108,8 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
   return funsym;
 }
 
-procinfo *init()
+void init_keyword_pkg()
 {
-  long i;
-  long j;
-
   //Init keyword package
   vector *keyword_name = strtolstr("KEYWORD");
   keyword_pkg = newpackage();
@@ -133,7 +142,6 @@ procinfo *init()
   alphadigit = initsym("ALPHADIGIT", keyword_pkg);
   package_marker = initsym("PACKAGE-MARKER", keyword_pkg);
 
-
   //Types
   ttype = initsym("T", keyword_pkg);
   constype = initsym("CONS", keyword_pkg);
@@ -151,8 +159,10 @@ procinfo *init()
   hash_tabletype = initsym("HASH-TABLE", keyword_pkg);
   packagetype = initsym("PACKAGE", keyword_pkg);
   procinfotype = initsym("PROCESS-INFO-TABLE", keyword_pkg);
-  
+}
 
+void init_cl_pkg()
+{
   //Init cl package
   vector *cl_name = strtolstr("COMMON-LISP");
   cl_pkg = newpackage();
@@ -169,11 +179,17 @@ procinfo *init()
   nil->car = nil;
   nil->cdr = nil;
   nils = initsym("NIL", cl_pkg);
+
   nils->value = nil;
 
   package_sym = initsym("*PACKAGE*", cl_pkg);
   package_sym->value = (cons*)cl_pkg;
+  init_readtable();
+  init_lambda_control();
+}
 
+void init_readtable()
+{
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
   symbol *readtable = fintern(readtable_name, cl_pkg);
@@ -223,7 +239,10 @@ procinfo *init()
       ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)single_escape, t), nil);  
   for (c=multiple_escape_chars;*c!=0;c++)
       ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)multiple_escape, t), nil);
+}
 
+void init_lambda_control()
+{
   //Init lambda list control symbols
   optional = initsym("&OPTIONAL", cl_pkg);
   rest = initsym("&REST", cl_pkg);
@@ -232,12 +251,30 @@ procinfo *init()
   whole = initsym("&WHOLE", cl_pkg);
   body = initsym("&BODY", cl_pkg);
   allow_other_keys = initsym("&ALLOW-OTHER-KEYS", cl_pkg);
+}
 
+void init_list_funs()
+{
+  //symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
+  initcfun("CAR", 
+	   fcons((cons*)fintern(strtolstr("LIST"), cl_pkg),
+		 nil),
+	   cl_pkg,
+	   &lcar);
+}
+
+procinfo *init()
+{
+  long i;
+  long j;
+
+  init_keyword_pkg();
+  init_cl_pkg();
+  
   //Init cl-user package
   vector *cl_user_name = strtolstr("COMMON_LISP_USER");
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
-
 
   //init process info
   procinfo *main = malloc(sizeof(procinfo));
@@ -252,3 +289,4 @@ procinfo *init()
 
   return main;
 }
+

@@ -1,50 +1,59 @@
 #include "lisp.h"
 #include "lbind.h"
 
+//Major todo typechecking
+
+//Predicates
 cons *lnull(cons *env)
 {
-  cons *a = lookup("A", env);
+  cons *a = lookup("OBJECT", env);
   return null(a);
 }
 
 cons *lnumberp(cons *env)
 {
-  cons *a = lookup("A", env);
+  cons *a = lookup("OBJECT", env);
   return numberp(a);
 }
 
+//List operators
 cons *lcons(cons *env)
 {
-  cons *a = lookup("A", env);
-  cons *b = lookup("B", env);
+  cons *a = lookup("OB1", env);
+  cons *b = lookup("OB2", env);
   return fcons(a, b);
 }
 cons *lcar(cons *env)
 {
-  cons *a = lookup("A", env);
+  cons *a = lookup("LIST", env);
   return car(a);
 }
 
 cons *lrplaca(cons *env)
 {
-  cons *a = lookup("A", env);
-  cons *new = lookup("NEW", env);
+  cons *a = lookup("LIST", env);
+  cons *new = lookup("NEWCAR", env);
   return rplaca(a, new);
 }
 
 cons *lcdr(cons *env)
 {
-  cons *a = lookup("A", env);
+  cons *a = lookup("LIST", env);
   return cdr(a);
 }
 
 cons *lrplacd(cons *env)
 {
-  cons *a = lookup("A", env);
-  cons *new = lookup("NEW", env);
+  cons *a = lookup("LIST", env);
+  cons *new = lookup("NEWCDR", env);
   return rplacd(a, new);
 }
 
+//Mathematics
+//TODO does not yet support bignums.
+//TODO add math functions.
+
+//Environment operators
 symbol *lintern(cons *env)
 {
   vector *name = (vector*)lookup("NAME", env);
@@ -59,6 +68,7 @@ package *lfind_package(cons *env)
   return find_package(name, p);
 }
   
+//Equality
 cons *leq (cons *env)
 {
   cons *a = lookup("A", env);
@@ -75,12 +85,14 @@ cons *leql (cons *env)
 
 cons *lequal (cons *env);
 
+//Evaluation
 cons *leval(cons *env)
 {
   cons *exp = lookup("EXP", env);
   return eval(exp, env);
 }
 
+//Reading
 cons *lread_cons(cons *env)
 {
   stream *str = (stream*)lookup("STREAM", env);
