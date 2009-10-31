@@ -192,7 +192,7 @@ procinfo *init()
   //Create the default readtable
 
   //Use the numerical ASCII values of each number as the index of a readtable, a vector.
-  //Each entry has an associated property list.
+  //Each entry has an associated property list, as per CLHS 2.1.4.
   for (c=uppercase_chars;*c!=0;c++)
       ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);
   for (c=lowercase_chars;*c!=0;c++)
@@ -202,23 +202,19 @@ procinfo *init()
   for (c=terminating_macro_chars;*c!=0;c++)
     ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
   //Deal with terminating macro characters specifically.
-
-
-
-
-
-
   //Oh my goodness. I am SO sorry for what I am about to do to you. 
   //Okay, so, here's what this code is *supposed* to do.
   //Just like the others, we create a property list. This time, however,
   //the value of the property is a reader macro.
+
   ((vector*)readtable->value)->v['('] =  fcons(mkpair((cons*)terminating_macro, nil),
 					       (cons*)initcfun("READ-CONS", 
 							       fcons((cons*)fintern(strtolstr("STREAM"), cl_pkg),
 								     nil),
 							       cl_pkg,
 							       &lread_cons));
-  //Left-paren reads a cons
+  //Left-paren reads a list
+
   ((vector*)readtable->value)->v[')'] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//reader error
 
   for (c=non_terminating_macro_chars;*c!=0;c++)
