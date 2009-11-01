@@ -246,6 +246,7 @@ symbol *fintern(vector *name, package *p)
       entry = p->global->v[index];
     }
   s = (symbol*)entry->car;
+  s->plist = nil;
   s->type = SYMBOL;
   s->name = name;
   s->home_package = p;
