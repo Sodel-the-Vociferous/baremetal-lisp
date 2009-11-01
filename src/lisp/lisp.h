@@ -200,6 +200,7 @@ extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
 extern cons *envbind(cons *env, cons *binding);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
+extern cons *interpret_token(vector *token);
 extern cons *read_token(stream *str, cons *env);
 extern cons *read_cons(stream *str, cons *env);
 extern cons *read(stream *str, cons *env);

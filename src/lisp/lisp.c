@@ -113,6 +113,7 @@ vector *strtolstr(char *str)
   for(string_len=1;*(str+string_len-1)!=0;string_len++);
 
   vector *to_ret = newvector(string_len);
+  to_ret->type = STRING;
   to_ret->datatype = BASE_CHAR;
  
   base_char *c = 0;
@@ -567,6 +568,15 @@ cons *unread_char(base_char *c, stream *str)
 //Here be dragons...
 //The READER function!
 
+cons *interpret_token(vector *token)
+{
+  int i = 0;
+
+  if (assoc((cons*)(cons*)alphanumeric, ((cons*)readtable_value->v[token->v[i]])) == t)
+    {
+    }
+}
+
 //Assumes opening parenthesis stripped.
 cons *read_token(stream *str, cons *env)
 {
@@ -626,11 +636,13 @@ cons *read_token(stream *str, cons *env)
   //Terminate token
   a = to_ret;
   vector *token = newvector(i+1);
+  token->type = STRING;
+  token->datatype = BASE_CHAR;
   for(i=0;a!=nil;i++)
     token->v[i] = (cons*)a->car;
   
   token->v[i] = nil;
-  //interpret_token(token);
+  interpret_token(token);
 }
 
 cons *read_cons(stream *str, cons *env)

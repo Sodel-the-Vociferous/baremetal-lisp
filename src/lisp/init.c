@@ -205,6 +205,7 @@ void init_readtable()
   char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
   char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   char lowercase_chars[] = "abcdefghijklmnopqrstuvwxyz";
+  char number_chars[] = "0123456789";
   char whitespace_chars[] = "\t\n";
   char terminating_macro_chars[] = "\"\'(),;`";
   char non_terminating_macro_chars[] = "#";
@@ -218,11 +219,13 @@ void init_readtable()
   //Use the numerical ASCII values of each number as the index of a readtable, a vector.
   //Each entry has an associated property list, as per CLHS 2.1.4.
   for (c=uppercase_chars;*c!=0;c++)
-      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);
+    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphanumeric, t), nil));
   for (c=lowercase_chars;*c!=0;c++)
-      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)constituent, t), nil);  
-  for (c=whitespace_chars;*c!=0;c++)
-      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)whitespace, t), nil);
+    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphanumeric, t), nil));
+  for (c=number_chars;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphadigit, t), nil));
+  for (c=number_chars;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)whitespace, t), nil;
   for (c=terminating_macro_chars;*c!=0;c++)
     ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
   //Deal with terminating macro characters specifically.
