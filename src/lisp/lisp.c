@@ -205,9 +205,8 @@ cons *rplacd(cons *a, cons *new)
     return nil;//TODO error
 }
 
-/*This is all infrastructure for the intern function. ('f' prefixed because this one uses
-  C calling convention.) One day, I will re-implement this in Lisp.*/
-symbol *fintern(vector *name, package *p)
+/*This is all infrastructure for the intern function. */
+symbol *intern(vector *name, package *p)
 {//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int i;
   char hashed_name[4];
@@ -229,7 +228,7 @@ symbol *fintern(vector *name, package *p)
 
       while(entry != nil)
 	{
-	  if (fstringequal(name, s->name) == t)
+	  if (stringequal(name, s->name) == t)
 	    return s;
 	  else if (entry->cdr == nil)
 	    {
@@ -258,7 +257,7 @@ symbol *fintern(vector *name, package *p)
   return s;
 }
 
-cons *fchareq(base_char *a, base_char *b)
+cons *chareq(base_char *a, base_char *b)
 {
   if (a==b)
     return t;
@@ -272,7 +271,7 @@ cons *fchareq(base_char *a, base_char *b)
     return nil;
 }
 
-cons *fcharequal(base_char *a, base_char *b)
+cons *charequal(base_char *a, base_char *b)
 {
   char ac;
   char bc;
@@ -297,7 +296,7 @@ cons *fcharequal(base_char *a, base_char *b)
     return nil;
 }
 
-cons *fstringeq(vector *a, vector *b)
+cons *stringeq(vector *a, vector *b)
 {
   int i=0;
   if(a==b)
@@ -308,7 +307,7 @@ cons *fstringeq(vector *a, vector *b)
   //  return nil;
   while(1)
     {
-      if (fchareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (chareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -317,7 +316,7 @@ cons *fstringeq(vector *a, vector *b)
     }
 }
 
-cons *fstringequal(vector *a, vector *b)
+cons *stringequal(vector *a, vector *b)
 {
   int i=0;
   if (a==b)
@@ -328,7 +327,7 @@ cons *fstringequal(vector *a, vector *b)
   //  return nil;
   while(1)
     {
-      if (fcharequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (charequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -342,7 +341,7 @@ package *find_package(vector *name, procinfo *pinfo)
   cons *p = pinfo->packages;
   for (p;p!=nil;p=p->cdr)
     {
-      if (fstringequal(((package*)p->car)->name, name) == t)
+      if (stringequal(((package*)p->car)->name, name) == t)
 	return (package*)p->car;
     }
   return (package*)nil;
@@ -410,7 +409,7 @@ cons *eql (cons *a, cons *b)
 cons *lookup(char *namestr, cons *env)
 {
   vector *name = strtolstr(namestr);
-  symbol *s = fintern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+  symbol *s = intern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
   return eval((cons*)s, env);
 }
 
@@ -431,7 +430,7 @@ cons *eval(cons *exp, cons *env)
     return t;
   else if (exp->type == SYMBOL)
     {
-      symbol *s = fintern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      symbol *s = intern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       //symbol *s = (symbol*)exp;
       cons *c = env->cdr;
       //current environment node
@@ -451,7 +450,7 @@ cons *eval(cons *exp, cons *env)
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS))
     {
-      symbol *s = fintern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      symbol *s = intern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       function *f = (function*)s->fun;
       if (f == (function*)nil)
 	return nil;//TODO error no function binding
@@ -512,7 +511,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   while((null(lambda_list) == nil) && (null(args) == nil))
     {
       varname = ((symbol*)lambda_list->car)->name;
-      varsym = fintern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      varsym = intern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       
       binding = newcons();
       binding->car = (cons*)varsym;
@@ -571,30 +570,29 @@ cons *unread_char(base_char *c, stream *str)
 //The READER function!
 
 cons *interpret_token(vector *token)
-{
+{//TODO: NOT conformant to CLHS 2.3. 
   int i = 0;
   vector *readtable_value = (vector*)readtable->value;
 }
 
 //Assumes opening parenthesis stripped.
-cons *read_token(stream *str, cons *env)
+cons *read_token(stream *str, base_char *c, cons *env)
 {
   int i=0;
   cons *to_ret = newcons();
   cons *a = to_ret;
-  base_char *c = read_char(str);
 
   vector *readtable_value = (vector*)readtable->value;
   /*
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
-  symbol *constituent = fintern(strtolstr("CONSTITUENT"), keyword_pkg);
-  symbol *whitespace = fintern(strtolstr("WHITESPACE"), keyword_pkg);
-  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
-  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
-  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
-  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
-  symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
+  symbol *constituent = intern(strtolstr("CONSTITUENT"), keyword_pkg);
+  symbol *whitespace = intern(strtolstr("WHITESPACE"), keyword_pkg);
+  symbol *terminating_macro = intern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
+  symbol *non_terminating_macro = intern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
+  symbol *single_escape = intern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
+  symbol *multiple_escape = intern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
+  symbol *invalid = intern(strtolstr("INVALID"), keyword_pkg);
   */
 
   a->car = (cons*)c;
@@ -644,9 +642,9 @@ cons *read_token(stream *str, cons *env)
   interpret_token(token);
 }
 
-cons *read_cons(stream *str, cons *env)
+cons *read_cons(stream *str, base_char *c, cons *env)
 {
-  base_char *c = peek_char(str);
+  c = peek_char(str);
   cons *to_ret = newcons();
   cons *a = nil;
 
@@ -667,29 +665,29 @@ cons *read_cons(stream *str, cons *env)
 }
 
 cons *read(stream *str, cons *env)
-{
+{//READ is not yet CLHS 2.* conformant.
   base_char *c = read_char(str);
 
   vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
   /*
   package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
 
-  symbol *internal = fintern(strtolstr("INTERNAL"), keyword_pkg);
-  symbol *external = fintern(strtolstr("EXTERNAL"), keyword_pkg);
-  symbol *inherited = fintern(strtolstr("INHERITED"), keyword_pkg);
-  symbol *dynamic = fintern(strtolstr("DYNAMIC"), keyword_pkg);
-  symbol *constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
-  symbol *constituent = fintern(strtolstr("CONSTITUENT"), keyword_pkg);
-  symbol *whitespace = fintern(strtolstr("WHITESPACE"), keyword_pkg);
-  symbol *terminating_macro = fintern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
-  symbol *non_terminating_macro = fintern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
-  symbol *single_escape = fintern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
-  symbol *multiple_escape = fintern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
+  symbol *internal = intern(strtolstr("INTERNAL"), keyword_pkg);
+  symbol *external = intern(strtolstr("EXTERNAL"), keyword_pkg);
+  symbol *inherited = intern(strtolstr("INHERITED"), keyword_pkg);
+  symbol *dynamic = intern(strtolstr("DYNAMIC"), keyword_pkg);
+  symbol *constant = intern(strtolstr("CONSTANT"), keyword_pkg);
+  symbol *constituent = intern(strtolstr("CONSTITUENT"), keyword_pkg);
+  symbol *whitespace = intern(strtolstr("WHITESPACE"), keyword_pkg);
+  symbol *terminating_macro = intern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
+  symbol *non_terminating_macro = intern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
+  symbol *single_escape = intern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
+  symbol *multiple_escape = intern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
 
-  symbol *invalid = fintern(strtolstr("INVALID"), keyword_pkg);
-  symbol *alphabetic = fintern(strtolstr("ALPHABETIC"), keyword_pkg);
-  symbol *alphadigit = fintern(strtolstr("ALPHADIGIT"), keyword_pkg);
-  symbol *package_marker = fintern(strtolstr("PACKAGE-MARKER"), keyword_pkg);*/
+  symbol *invalid = intern(strtolstr("INVALID"), keyword_pkg);
+  symbol *alphabetic = intern(strtolstr("ALPHABETIC"), keyword_pkg);
+  symbol *alphadigit = intern(strtolstr("ALPHADIGIT"), keyword_pkg);
+  symbol *package_marker = intern(strtolstr("PACKAGE-MARKER"), keyword_pkg);*/
 
 
   while(1)
@@ -704,7 +702,7 @@ cons *read(stream *str, cons *env)
       else if ((assoc((cons*)single_escape, ((cons*)readtable_value->v[c->c])) == t) ||
 	       (assoc((cons*)multiple_escape, ((cons*)readtable_value->v[c->c])) == t)||
 	       (assoc((cons*)constituent, ((cons*)readtable_value->v[c->c])) == t))
-	return read_token(str, env);
+	return read_token(str, c, env);
     }
   //TODO reader error
 	

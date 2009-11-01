@@ -58,7 +58,7 @@ symbol *lintern(cons *env)
 {
   vector *name = (vector*)lookup("NAME", env);
   package *p = (package*)((procinfo*)env->car)->package_sym->value;
-  return fintern(name, p);
+  return intern(name, p);
 }
   
 package *lfind_package(cons *env)
@@ -102,7 +102,8 @@ cons *leval(cons *env)
 cons *lread_cons(cons *env)
 {
   stream *str = (stream*)lookup("STREAM", env);
-  return read_cons(str, env);
+  base_char *c = (base_char*)lookup("CHARACTER", env);
+  return read_cons(str, c, env);
 }
 
 cons *lread(cons *env)

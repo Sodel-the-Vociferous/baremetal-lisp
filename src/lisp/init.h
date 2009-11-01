@@ -29,8 +29,6 @@ extern symbol *ratio_marker;
 //Types
 extern symbol *ttype;
 extern symbol *constype;
-extern symbol *ttype;
-extern symbol *constype;
 extern symbol *fixnumtype;
 extern symbol *bignumtype;
 extern symbol *ratiotype;

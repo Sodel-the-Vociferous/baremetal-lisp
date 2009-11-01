@@ -37,8 +37,9 @@ symbol *dot;
 symbol *decimal_point;
 symbol *ratio_marker;
 //Types
-symbol *ttype;
-symbol *constype;
+symbol *numtype;
+symbol *realtype;
+symbol *rattype;//rational
 symbol *ttype;
 symbol *constype;
 symbol *fixnumtype;
@@ -61,6 +62,7 @@ symbol *ts;//T symbol
 symbol *nils;//NIL symbol
 symbol *package_sym;//*package*
 symbol *readtable;//*readtable*
+symbol *types;//Internal  list of types.
 //Lambda list control symbols
 symbol *optional;//&optional
 symbol *rest;//&rest
@@ -89,7 +91,7 @@ void init_list_funs();
 symbol *initsym(char *name, package *p)
 {
   vector *a_name = strtolstr(name);
-  symbol *a = fintern(a_name, p);
+  symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
     {
       a->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
@@ -104,7 +106,7 @@ symbol *initsym(char *name, package *p)
 
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
 {
-  symbol *funsym = fintern(strtolstr(name), p);
+  symbol *funsym = intern(strtolstr(name), p);
   funsym->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
   funsym->fun = (function*)newcompiled_function();
   compiled_function *f = (compiled_function*)funsym->fun;
@@ -123,9 +125,9 @@ void init_keyword_pkg()
   keyword_pkg->name = keyword_name;
 
   //External and constant must be initialized manually, because they depend on themselves.
-  external = fintern(strtolstr("EXTERNAL"), keyword_pkg);
+  external = intern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
-  constant = fintern(strtolstr("CONSTANT"), keyword_pkg);
+  constant = intern(strtolstr("CONSTANT"), keyword_pkg);
   constant->value = (cons*)constant;
   external->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
   constant->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
@@ -200,7 +202,7 @@ void init_readtable()
 {
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
-  symbol *readtable = fintern(readtable_name, cl_pkg);
+  symbol *readtable = intern(readtable_name, cl_pkg);
   readtable->value = (cons*)newvector(255);
   char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
   char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -236,7 +238,7 @@ void init_readtable()
 
   ((vector*)readtable->value)->v['('] =  fcons(mkpair((cons*)terminating_macro, nil),
 					       (cons*)initcfun("READ-CONS", 
-							       fcons((cons*)fintern(strtolstr("STREAM"), cl_pkg),
+							       fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
 								     nil),
 							       cl_pkg,
 							       &lread_cons));
@@ -268,16 +270,16 @@ void init_list_funs()
 {
   //symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
   cars = initcfun("CAR", 
-		 fcons((cons*)fintern(strtolstr("LIST"), cl_pkg),
+		 fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
 		       nil),
 		 cl_pkg,
 		 &lcar);
   quote = initcfun("QUOTE", 
-		   fcons((cons*)fintern(strtolstr("EXP"), cl_pkg),
+		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),
 		   cl_pkg,
 		   &lquote);  
-}
+}  
 
 procinfo *init()
 {
