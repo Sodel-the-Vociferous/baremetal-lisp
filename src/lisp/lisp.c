@@ -94,7 +94,7 @@ compiled_function *newcompiled_function()
   f->type = COMPILED_FUNCTION;
   f->plist = nil;
   f->lambda_list = nil;
-  f->env = nil;
+  f->env = 0;
   f->fun = 0;
 }
 
@@ -250,7 +250,7 @@ symbol *fintern(vector *name, package *p)
   s->name = name;
   s->home_package = p;
   s->value = nil;
-  s->function = nil;
+  s->fun = (function*)nil;
   return s;
 }
 
@@ -436,8 +436,8 @@ cons *eval(cons *exp, cons *env)
 	{//Loop through the lexical environment
 	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
-	  else if (c->cdr == nil)
-	    c = c->car->cdr;
+	  else if (c->cdr == nil)//If this env level is empty, go down one level
+	    c = c->car->cdr
 	  else
 	    c = c->cdr;
 	}
@@ -448,18 +448,22 @@ cons *eval(cons *exp, cons *env)
 	   (exp->car->type != CONS))
     {
       symbol *s = fintern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
-      function *f = (function*)s->function;
+      function *f = (function*)s->fun;
       if (f == (function*)nil)
 	return nil;//TODO error no function binding
       
-      env = extend_env(env);
-      env = evalambda(f->lambda_list, exp->cdr, env);
       if (f->type == FUNCTION)
-	return eval(f->fun, f->env);
+	{
+	  cons *newenv = extend_env(f->env);
+	  newenv = evalambda(f->lambda_list, exp->cdr, newenv);
+	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
+	}
       else if (f->type == COMPILED_FUNCTION)
 	{
 	  compiled_function *cf = (compiled_function*)f;
-	  return ((compiled_function*)f)->fun(env);
+	  cons *newenv = extend_env(cf->env);
+	  newenv = evalambda(cf->lambda_list, exp->cdr, newenv);
+	  return cf->fun(newenv);
 	}
       //though garbled, the previous just calls a C function pointer.
       else
@@ -473,15 +477,14 @@ cons *extend_env(cons *env)
 {
   cons *oldenv = env;
   cons *newenv = newcons();
-  newenv->car = oldenv->car;//Package list
+  newenv->car = oldenv->car;//procinfo
   newenv->cdr = newcons();
   newenv->cdr->car = oldenv;
   //Last entry in the lexical environment. Points to the previous environment "level".
   //New lexical bindings will be pushed in before this. When the evaluator, looking for bindings,
   //reaches a lexical binding whose cdr is nil, it will know to descend to the next level.
   //When both the car and cdr are nil, there's nowhere else to go.
-  env = newenv;
-  return env;
+  return newenv;
 }
 
 cons *envbind(cons *env, cons *binding)
@@ -697,7 +700,15 @@ cons *read(stream *str, cons *env)
 
 int main ()
 {
-  procinfo *main = init();
+  procinfo *proc = init();
   
+  //Test
+  cons *env = extend_env(nil);
+  env->car = (cons*)proc;
+
+  cons *exp = fcons((cons*)quote, fcons((cons*)quote, nil));
+
+  cons *hope = eval(exp, env);
+
   return 0;
 }

@@ -51,7 +51,6 @@ extern symbol *ts;//T symbol
 extern symbol *nils;//NIL symbol
 extern symbol *package_sym;//*package*
 extern symbol *readtable;//*readtable*
-
 //Lambda list control symbols
 extern symbol *optional;//&optional
 extern symbol *rest;//&rest
@@ -60,3 +59,6 @@ extern symbol *aux;//&aux
 extern symbol *whole;//&whole
 extern symbol *body;//&body
 extern symbol *allow_other_keys;//&allow-other-keys
+//Function symbols
+extern symbol *cars;
+extern symbol *quote;

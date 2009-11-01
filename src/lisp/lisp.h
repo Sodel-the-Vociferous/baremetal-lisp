@@ -116,7 +116,7 @@ typedef struct symbol
   struct cons *plist;
   struct package *home_package;
   struct cons *value;
-  struct cons *function;
+  struct function *fun;
 }__attribute__((packed)) symbol;
 
 typedef struct hash_table

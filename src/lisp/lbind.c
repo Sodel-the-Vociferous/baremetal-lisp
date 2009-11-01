@@ -86,6 +86,12 @@ cons *leql (cons *env)
 cons *lequal (cons *env);
 
 //Evaluation
+cons *lquote(cons *env)
+{
+  cons *exp = lookup("EXP", env);
+  return exp;
+}
+
 cons *leval(cons *env)
 {
   cons *exp = lookup("EXP", env);

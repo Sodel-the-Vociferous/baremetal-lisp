@@ -3,6 +3,8 @@
 #include "init.h"
 #include "lbind.h"
 
+procinfo *proc;
+cons *basic_env;
 
 /*Packages*/
 package *keyword_pkg;
@@ -66,7 +68,9 @@ symbol *aux;//&aux
 symbol *whole;//&whole
 symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
-//Functions
+//Function names
+symbol *cars;//CAR symbol
+symbol *quote;//QUOTE symbol
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -77,6 +81,7 @@ void init_keyword_pkg();
 void init_cl_pkg();
 void init_readtable();
 void init_lambda_control();
+void init_list_funs();
 
 
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
@@ -100,9 +105,10 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
 {
   symbol *funsym = fintern(strtolstr(name), p);
   funsym->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
-  funsym->value = (cons*)newcompiled_function();
-  compiled_function *f = (compiled_function*)funsym->value;
+  funsym->fun = (function*)newcompiled_function();
+  compiled_function *f = (compiled_function*)funsym->fun;
   f->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+  f->env = basic_env;
   f->lambda_list = lambda_list;
   f->fun = fun;
   return funsym;
@@ -186,6 +192,7 @@ void init_cl_pkg()
   package_sym->value = (cons*)cl_pkg;
   init_readtable();
   init_lambda_control();
+  init_list_funs();
 }
 
 void init_readtable()
@@ -256,17 +263,26 @@ void init_lambda_control()
 void init_list_funs()
 {
   //symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
-  initcfun("CAR", 
-	   fcons((cons*)fintern(strtolstr("LIST"), cl_pkg),
-		 nil),
-	   cl_pkg,
-	   &lcar);
+  cars = initcfun("CAR", 
+		 fcons((cons*)fintern(strtolstr("LIST"), cl_pkg),
+		       nil),
+		 cl_pkg,
+		 &lcar);
+  quote = initcfun("QUOTE", 
+		   fcons((cons*)fintern(strtolstr("EXP"), cl_pkg),
+			 nil),
+		   cl_pkg,
+		   &lquote);  
 }
 
 procinfo *init()
 {
   long i;
   long j;
+
+  basic_env = extend_env(nil);
+  proc = malloc(sizeof(procinfo));
+  basic_env->car = (cons*)proc;
 
   init_keyword_pkg();
   init_cl_pkg();
@@ -277,16 +293,15 @@ procinfo *init()
   cl_user_pkg->name = cl_user_name;
 
   //init process info
-  procinfo *main = malloc(sizeof(procinfo));
-  main->type = PROCINFO;
-  main->package_sym  = package_sym;
-  main->packages = newcons();
-  main->packages->car = (cons*)cl_pkg;
-  main->packages->cdr = newcons();
-  main->packages->cdr->car = (cons*)cl_user_pkg;
-  main->packages->cdr->cdr = newcons();
-  main->packages->cdr->cdr->car = (cons*)keyword_pkg;  
+  proc->type = PROCINFO;
+  proc->package_sym  = package_sym;
+  proc->packages = newcons();
+  proc->packages->car = (cons*)cl_pkg;
+  proc->packages->cdr = newcons();
+  proc->packages->cdr->car = (cons*)cl_user_pkg;
+  proc->packages->cdr->cdr = newcons();
+  proc->packages->cdr->cdr->car = (cons*)keyword_pkg;  
 
-  return main;
+  return proc;
 }
 
