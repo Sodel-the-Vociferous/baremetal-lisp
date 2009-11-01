@@ -574,10 +574,6 @@ cons *interpret_token(vector *token)
 {
   int i = 0;
   vector *readtable_value = (vector*)readtable->value;
-
-  if (assoc((cons*)(cons*)alphabetic, ((cons*)readtable_value->v[((base_char*)token->v[i])->c])) == t)
-    {
-    }
 }
 
 //Assumes opening parenthesis stripped.
