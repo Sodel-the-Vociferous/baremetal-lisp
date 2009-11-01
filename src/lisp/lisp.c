@@ -99,8 +99,9 @@ compiled_function *newcompiled_function()
 }
 
 //Helper functions to translate C stuff into Lisp objects
+
 base_char *ctolc(char c)
-{
+{//Char to Lisp Charx
   base_char *lc = newbase_char();
   lc->c = c;
   return lc;
@@ -111,6 +112,7 @@ vector *strtolstr(char *str)
   int string_len;
   int i;
   for(string_len=1;*(str+string_len-1)!=0;string_len++);
+  //Find the string length.
 
   vector *to_ret = newvector(string_len);
   to_ret->type = STRING;
@@ -118,7 +120,7 @@ vector *strtolstr(char *str)
  
   base_char *c = 0;
   for(i=0;*str!=0;i++)
-    {
+    {//Add the base_chars to the string vector.
       c = newbase_char();
       to_ret->v[i] = (cons*)c;
       c->c = *str;
@@ -203,8 +205,8 @@ cons *rplacd(cons *a, cons *new)
     return nil;//TODO error
 }
 
-//This is all infrastructure for the intern function. ('f' prefixed because this one uses
-//C calling convention.) One day, I will re-implement this in Lisp.
+/*This is all infrastructure for the intern function. ('f' prefixed because this one uses
+  C calling convention.) One day, I will re-implement this in Lisp.*/
 symbol *fintern(vector *name, package *p)
 {//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int i;
@@ -227,7 +229,7 @@ symbol *fintern(vector *name, package *p)
 
       while(entry != nil)
 	{
-	  if (bstringequal(name, s->name) == t)
+	  if (fstringequal(name, s->name) == t)
 	    return s;
 	  else if (entry->cdr == nil)
 	    {
@@ -256,7 +258,7 @@ symbol *fintern(vector *name, package *p)
   return s;
 }
 
-cons *bchareq(base_char *a, base_char *b)
+cons *fchareq(base_char *a, base_char *b)
 {
   if (a==b)
     return t;
@@ -270,7 +272,7 @@ cons *bchareq(base_char *a, base_char *b)
     return nil;
 }
 
-cons *bcharequal(base_char *a, base_char *b)
+cons *fcharequal(base_char *a, base_char *b)
 {
   char ac;
   char bc;
@@ -295,7 +297,7 @@ cons *bcharequal(base_char *a, base_char *b)
     return nil;
 }
 
-cons *bstringeq(vector *a, vector *b)
+cons *fstringeq(vector *a, vector *b)
 {
   int i=0;
   if(a==b)
@@ -306,7 +308,7 @@ cons *bstringeq(vector *a, vector *b)
   //  return nil;
   while(1)
     {
-      if (bchareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (fchareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -315,7 +317,7 @@ cons *bstringeq(vector *a, vector *b)
     }
 }
 
-cons *bstringequal(vector *a, vector *b)
+cons *fstringequal(vector *a, vector *b)
 {
   int i=0;
   if (a==b)
@@ -326,7 +328,7 @@ cons *bstringequal(vector *a, vector *b)
   //  return nil;
   while(1)
     {
-      if (bcharequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (fcharequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
 	return nil;
       else if (a->v[i] == 0) 
 	return t;
@@ -340,7 +342,7 @@ package *find_package(vector *name, procinfo *pinfo)
   cons *p = pinfo->packages;
   for (p;p!=nil;p=p->cdr)
     {
-      if (bstringequal(((package*)p->car)->name, name) == t)
+      if (fstringequal(((package*)p->car)->name, name) == t)
 	return (package*)p->car;
     }
   return (package*)nil;
@@ -571,8 +573,9 @@ cons *unread_char(base_char *c, stream *str)
 cons *interpret_token(vector *token)
 {
   int i = 0;
+  vector *readtable_value = (vector*)readtable->value;
 
-  if (assoc((cons*)(cons*)alphanumeric, ((cons*)readtable_value->v[token->v[i]])) == t)
+  if (assoc((cons*)(cons*)alphabetic, ((cons*)readtable_value->v[((base_char*)token->v[i])->c])) == t)
     {
     }
 }
