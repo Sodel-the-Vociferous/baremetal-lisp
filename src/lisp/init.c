@@ -3,6 +3,7 @@
 #include "init.h"
 #include "lbind.h"
 
+/*For initializaton, these don't need to be flexible.*/
 procinfo *proc;
 cons *basic_env;
 
