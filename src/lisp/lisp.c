@@ -301,8 +301,8 @@ cons *bstringeq(vector *a, vector *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  else if (a->type != STRING)
-    return nil;
+  // else if (a->type != STRING)
+  //  return nil;
   while(1)
     {
       if (bchareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
@@ -321,8 +321,8 @@ cons *bstringequal(vector *a, vector *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  else if (a->type != STRING)
-    return nil;
+  //else if (a->type != STRING)
+  //  return nil;
   while(1)
     {
       if (bcharequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
@@ -438,7 +438,7 @@ cons *eval(cons *exp, cons *env)
 	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
 	  else if (c->cdr == nil)//If this env level is empty, go down one level
-	    c = c->car->cdr
+	    c = c->car->cdr;
 	  else
 	    c = c->cdr;
 	}
