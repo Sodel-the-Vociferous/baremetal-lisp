@@ -108,7 +108,7 @@ base_char *ctolc(char c)
 }
 
 vector *strtolstr(char *str)
-{
+{//C string to Lisp string.
   int string_len;
   int i;
   for(string_len=1;*(str+string_len-1)!=0;string_len++);
@@ -134,7 +134,7 @@ vector *strtolstr(char *str)
 
 //Primitives
 cons *null (cons *a)
-{
+{//Is object nil?
   if (a == nil ||
       (a->type = CONS &&
        a->car == nil &&
@@ -145,7 +145,7 @@ cons *null (cons *a)
 }
 
 cons *numberp(cons *a)
-{
+{//Is object a number?
   switch (a->type)
     {
     case (FIXNUM):
@@ -218,6 +218,7 @@ symbol *intern(vector *name, package *p)
 	hashed_name[i] = ((base_char*)name->v[i])->c;
     }
   unsigned int index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
+  //Hash the first four characters of the name.
   
   cons *entry = p->global->v[index];
   symbol *s;
@@ -227,22 +228,22 @@ symbol *intern(vector *name, package *p)
       s = (symbol*)entry->car;
 
       while(entry != nil)
-	{
+	{//Try to find a a symbol of the same name already interned into p
 	  if (stringequal(name, s->name) == t)
 	    return s;
 	  else if (entry->cdr == nil)
-	    {
+	    {//If we've run out of entries, add a new one
 	      entry->cdr = newcons();
 	      entry = entry->cdr;
 	      entry->car = (cons*)malloc(sizeof(symbol));
 	      break;
 	    }
 	  else
-	    entry = entry->cdr;
+	    entry = entry->cdr;//next entry
 	}
     }
   else if (entry == nil)
-    {
+    {//Create a new entry for the hash value
       p->global->v[index] = newcons();
       p->global->v[index]->car = (cons*)malloc(sizeof(symbol));
       entry = p->global->v[index];
@@ -347,8 +348,9 @@ package *find_package(vector *name, procinfo *pinfo)
   return (package*)nil;
 }
 
+//Equality checkers
 cons *eq (cons *a, cons *b)
-{//ACTUAL Lisp equality checkers
+{
   if (a==b)
     return t;
   else
@@ -430,8 +432,8 @@ cons *eval(cons *exp, cons *env)
     return t;
   else if (exp->type == SYMBOL)
     {
-      symbol *s = intern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
-      //symbol *s = (symbol*)exp;
+      //symbol *s = intern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      symbol *s = (symbol*)exp;
       cons *c = env->cdr;
       //current environment node
       
@@ -439,7 +441,8 @@ cons *eval(cons *exp, cons *env)
 	{//Loop through the lexical environment
 	  if ((symbol*)c->car->car == s)
 	    return c->car->cdr->car;
-	  else if (c->cdr == nil)//If this env level is empty, go down one level
+	  else if (c->cdr == nil)
+	    //If this env level is empty, go down one level
 	    c = c->car->cdr;
 	  else
 	    c = c->cdr;
