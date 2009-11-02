@@ -202,7 +202,7 @@ void init_readtable()
 {
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
-  symbol *readtable = intern(readtable_name, cl_pkg);
+  readtable = intern(readtable_name, cl_pkg);
   readtable->value = (cons*)newvector(255);
   char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
   char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

@@ -253,8 +253,8 @@ symbol *intern(vector *name, package *p)
   s->type = SYMBOL;
   s->name = name;
   s->home_package = p;
-  s->value = nil;
-  s->fun = (function*)nil;
+  s->value = 0;
+  s->fun = (function*)0;
   return s;
 }
 
@@ -436,6 +436,14 @@ cons *eval(cons *exp, cons *env)
       symbol *s = (symbol*)exp;
       cons *c = env->cdr;
       //current environment node
+
+      if (assoc((cons*)dynamic, s->plist) != nil)
+	{
+	  if (s->value != 0)
+	    return s->value;
+	  else
+	    return nil;//TODO no value error
+	}
       
       while (c!=nil)
 	{//Loop through the lexical environment
@@ -447,7 +455,10 @@ cons *eval(cons *exp, cons *env)
 	  else
 	    c = c->cdr;
 	}
-      return s->value;
+      if (s->value != 0)
+	return s->value;
+      else
+	return nil;//TODO no value error
       //If there's no binding in the lexical environment, return the dynamic binding.
     }
   else if ((exp->type == CONS) && 
@@ -455,7 +466,7 @@ cons *eval(cons *exp, cons *env)
     {
       symbol *s = intern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       function *f = (function*)s->fun;
-      if (f == (function*)nil)
+      if (f == (function*)0)
 	return nil;//TODO error no function binding
       
       if (f->type == FUNCTION)
@@ -572,10 +583,22 @@ cons *unread_char(base_char *c, stream *str)
 //Here be dragons...
 //The READER function!
 
-cons *interpret_token(vector *token)
+cons *interpret_token(vector *token, cons *env)
 {//TODO: NOT conformant to CLHS 2.3. 
   int i = 0;
   vector *readtable_value = (vector*)readtable->value;
+  char c = ((base_char*)readtable_value->v[0])->c;
+  procinfo *p = (procinfo*)env->car;
+  
+  if ((c >= '0') && (c <= '9'))
+    {
+      //parse_number();
+      return nil;//TODO
+    }
+  else if (c == ':')
+    return (cons*)intern(token, keyword_pkg);
+  else
+    return (cons*)intern(token, (package*)p->package_sym->value);  
 }
 
 //Assumes opening parenthesis stripped.
@@ -586,30 +609,19 @@ cons *read_token(stream *str, base_char *c, cons *env)
   cons *a = to_ret;
 
   vector *readtable_value = (vector*)readtable->value;
-  /*
-  package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
-
-  symbol *constituent = intern(strtolstr("CONSTITUENT"), keyword_pkg);
-  symbol *whitespace = intern(strtolstr("WHITESPACE"), keyword_pkg);
-  symbol *terminating_macro = intern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
-  symbol *non_terminating_macro = intern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
-  symbol *single_escape = intern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
-  symbol *multiple_escape = intern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
-  symbol *invalid = intern(strtolstr("INVALID"), keyword_pkg);
-  */
 
   a->car = (cons*)c;
   while (1)
     {
-      if ((assoc((cons*)(cons*)constituent, ((cons*)readtable_value->v[c->c])) == t) ||
-	  (assoc((cons*)(cons*)non_terminating_macro, ((cons*)readtable_value->v[c->c])) == t))
+      if ((assoc((cons*)constituent, (cons*)((vector*)readtable_value)->v[c->c]) == t) ||
+	  (assoc((cons*)non_terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) == t))
 	{
 	  a->cdr = newcons();
 	  a = a->cdr;
 	  a->car = (cons*)c;
 	  i++;
 	}
-      else if (assoc((cons*)single_escape, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)single_escape, (cons*)((vector*)readtable_value)->v[c->c]) == t)
 	{
 	  c = read_char(str);
 	  if ((cons*)c == nil)
@@ -618,17 +630,17 @@ cons *read_token(stream *str, base_char *c, cons *env)
 	  a = a->cdr;
 	  a->car = (cons*)c;
 	}
-      else if (assoc((cons*)multiple_escape, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)multiple_escape, (cons*)((vector*)readtable_value)->v[c->c]) == t)
 	return nil;//TODO CLHS 2.2: step 9
-      else if (assoc((cons*)invalid, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)invalid, (cons*)((vector*)readtable_value)->v[c->c]) == t)
 	return nil;//TODO reader_error
-      else if (assoc((cons*)terminating_macro, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) == t)
 	{
 	  unread_char(c, str);
 	  //TODO CLHS 2.2: step 10
 	  break;//Terminate token
 	}
-      else if (assoc((cons*)whitespace, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)whitespace, (cons*)((vector*)readtable_value)->v[c->c]) == t)
 	{
 	  break;//Terminate token
 	}
@@ -642,7 +654,7 @@ cons *read_token(stream *str, base_char *c, cons *env)
     token->v[i] = (cons*)a->car;
   
   token->v[i] = nil;
-  interpret_token(token);
+  interpret_token(token, env);
 }
 
 cons *read_cons(stream *str, base_char *c, cons *env)
@@ -671,40 +683,20 @@ cons *read(stream *str, cons *env)
 {//READ is not yet CLHS 2.* conformant.
   base_char *c = read_char(str);
 
-  vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
-  /*
-  package *keyword_pkg = find_package(strtolstr("KEYWORD"), (procinfo*)env->car);
-
-  symbol *internal = intern(strtolstr("INTERNAL"), keyword_pkg);
-  symbol *external = intern(strtolstr("EXTERNAL"), keyword_pkg);
-  symbol *inherited = intern(strtolstr("INHERITED"), keyword_pkg);
-  symbol *dynamic = intern(strtolstr("DYNAMIC"), keyword_pkg);
-  symbol *constant = intern(strtolstr("CONSTANT"), keyword_pkg);
-  symbol *constituent = intern(strtolstr("CONSTITUENT"), keyword_pkg);
-  symbol *whitespace = intern(strtolstr("WHITESPACE"), keyword_pkg);
-  symbol *terminating_macro = intern(strtolstr("TERMINATING-MACRO"), keyword_pkg);
-  symbol *non_terminating_macro = intern(strtolstr("NON-TERMINATING-MACRO"), keyword_pkg);
-  symbol *single_escape = intern(strtolstr("SINGLE-ESCAPE"), keyword_pkg);
-  symbol *multiple_escape = intern(strtolstr("MULTIPLE-ESCAPE"), keyword_pkg);
-
-  symbol *invalid = intern(strtolstr("INVALID"), keyword_pkg);
-  symbol *alphabetic = intern(strtolstr("ALPHABETIC"), keyword_pkg);
-  symbol *alphadigit = intern(strtolstr("ALPHADIGIT"), keyword_pkg);
-  symbol *package_marker = intern(strtolstr("PACKAGE-MARKER"), keyword_pkg);*/
-
-
+  //vector *readtable_value = (vector*)((procinfo*)env->car)->package_sym->value;
+  vector *readtable_value = (vector*)readtable->value;
   while(1)
     {
-      if (assoc((cons*)invalid, ((cons*)readtable_value->v[c->c])) == t)
+      if (assoc((cons*)invalid, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	return nil;//TODO reader error
-      else if (assoc((cons*)whitespace, ((cons*)readtable_value->v[c->c])) == t)
+      else if (assoc((cons*)whitespace, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	continue;
-      else if ((assoc((cons*)terminating_macro, ((cons*)readtable_value->v[c->c])) == t) ||
-	       (assoc((cons*)non_terminating_macro, ((cons*)readtable_value->v[c->c])) == t))
+      else if ((assoc((cons*)terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) != nil) ||
+	       (assoc((cons*)non_terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) != nil))
 	return nil;//TODO call reader macro
-      else if ((assoc((cons*)single_escape, ((cons*)readtable_value->v[c->c])) == t) ||
-	       (assoc((cons*)multiple_escape, ((cons*)readtable_value->v[c->c])) == t)||
-	       (assoc((cons*)constituent, ((cons*)readtable_value->v[c->c])) == t))
+      else if ((assoc((cons*)single_escape, (cons*)((vector*)readtable_value)->v[c->c]) != nil) ||
+	       (assoc((cons*)multiple_escape, (cons*)((vector*)readtable_value)->v[c->c]) != nil)||
+	       (assoc((cons*)constituent, (cons*)((vector*)readtable_value)->v[c->c]) != nil))
 	return read_token(str, c, env);
     }
   //TODO reader error
@@ -722,6 +714,13 @@ int main ()
   cons *exp = fcons((cons*)quote, fcons((cons*)quote, nil));
 
   cons *hope = eval(exp, env);
+
+  stream *str = malloc(sizeof(stream));
+  str->read_index = 0;
+  str->v = strtolstr(":keyword");
+  str->write_index = 9;
+
+  cons *second_hope = read(str, env);
 
   return 0;
 }
