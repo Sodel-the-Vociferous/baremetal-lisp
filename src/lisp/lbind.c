@@ -56,14 +56,14 @@ cons *lrplacd(cons *env)
 //Environment operators
 symbol *lintern(cons *env)
 {
-  vector *name = (vector*)lookup("NAME", env);
+  simple_vector *name = (simple_vector*)lookup("NAME", env);
   package *p = (package*)((procinfo*)env->car)->package_sym->value;
   return intern(name, p);
 }
   
 package *lfind_package(cons *env)
 {
-  vector *name = (vector*)lookup("NAME", env);
+  simple_vector *name = (simple_vector*)lookup("NAME", env);
   procinfo *p = (procinfo*)env->car;
   return find_package(name, p);
 }

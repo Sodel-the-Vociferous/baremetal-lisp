@@ -90,7 +90,7 @@ void init_list_funs();
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
 symbol *initsym(char *name, package *p)
 {
-  vector *a_name = strtolstr(name);
+  simple_vector *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
     {
@@ -120,7 +120,7 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
 void init_keyword_pkg()
 {
   //Init keyword package
-  vector *keyword_name = strtolstr("KEYWORD");
+  simple_vector *keyword_name = strtolstr("KEYWORD");
   keyword_pkg = newpackage();
   keyword_pkg->name = keyword_name;
 
@@ -159,7 +159,7 @@ void init_keyword_pkg()
   ratiotype = initsym("RATIO", keyword_pkg);
   singletype = initsym("SINGLE", keyword_pkg);
   base_chartype = initsym("BASE-CHARACTER", keyword_pkg);
-  vectortype = initsym("VECTOR", keyword_pkg);
+  vectortype = initsym("SIMPLE_VECTOR", keyword_pkg);
   arraytype = initsym("ARRAY", keyword_pkg);
   compiled_functiontype = initsym("COMPILED-FUNCTION", keyword_pkg);
   stringtype = initsym("STRING", keyword_pkg);
@@ -173,7 +173,7 @@ void init_keyword_pkg()
 void init_cl_pkg()
 {
   //Init cl package
-  vector *cl_name = strtolstr("COMMON-LISP");
+  simple_vector *cl_name = strtolstr("COMMON-LISP");
   cl_pkg = newpackage();
   cl_pkg->name = cl_name;
 
@@ -183,7 +183,7 @@ void init_cl_pkg()
   ts->value = t;
   
   //Init nil
-  //vector *nil_name = strtolstr("NIL");
+  //simple_vector *nil_name = strtolstr("NIL");
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
@@ -203,9 +203,9 @@ void init_readtable()
   int i;
 
   //Init *readtable*
-  vector *readtable_name = strtolstr("*READTABLE*");
+  simple_vector *readtable_name = strtolstr("*READTABLE*");
   readtable = intern(readtable_name, cl_pkg);
-  readtable->value = (cons*)newvector(255);
+  readtable->value = (cons*)newsimple_vector(255);
   char alphabetic_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   char alphadigit_chars[] = "0123456789";
   char whitespace_chars[] = "\t\n";
@@ -219,26 +219,26 @@ void init_readtable()
   base_char *bc;
 
   //Create the default readtable
-  //Use the numerical ASCII values of each number as the index of a readtable, a vector.
+  //Use the numerical ASCII values of each number as the index of a readtable, a simple_vector.
   //Each entry has an associated property list, as per CLHS 2.1.4.
 
   for (i=0;i<' ';i++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)invalid, t), ((vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[*c]);
 
   for (c=constituents;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((simple_vector*)readtable->value)->v[*c]);
   //init constituents
-  ((vector*)readtable->value)->v[':'] =  fcons(fcons((cons*)package_marker, t), ((vector*)readtable->value)->v[':']);
+  ((simple_vector*)readtable->value)->v[':'] =  fcons(fcons((cons*)package_marker, t), ((simple_vector*)readtable->value)->v[':']);
 
   /*Init specific attributes*/
   for (c=alphabetic_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphabetic, t), ((vector*)readtable->value)->v[*c]);	       
+    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphabetic, t), ((simple_vector*)readtable->value)->v[*c]);	       
 
   for (c=alphadigit_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphadigit, t), ((vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphadigit, t), ((simple_vector*)readtable->value)->v[*c]);
 
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);
 
   //TODO Change nil paired with terminating_macro to macro function individually.
   //Deal with terminating macro characters specifically.
@@ -246,30 +246,30 @@ void init_readtable()
   //Okay, so, here's what this code is *supposed* to do.
   //Just like the others, we create a property list. This time, however,
   //the value of the property is a reader macro.
-  ((vector*)readtable->value)->v['('] =  fcons(fcons((cons*)terminating_macro, 
+  ((simple_vector*)readtable->value)->v['('] =  fcons(fcons((cons*)terminating_macro, 
 						     (cons*)initcfun("READ-CONS", 
 								     fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
 									   nil),
 								     cl_pkg,
 								     &lread_cons)),
-					       ((vector*)readtable->value)->v[*c]);
+					       ((simple_vector*)readtable->value)->v[*c]);
   //Left-paren reads a list
 
-  ((vector*)readtable->value)->v[')'] =  fcons(fcons((cons*)terminating_macro, nil), ((vector*)readtable->value)->v[*c]);//TODO reader error
+  ((simple_vector*)readtable->value)->v[')'] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);//TODO reader error
   // ')' can ONLY terminate, and has no function to be called.
 
   for (c=whitespace_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((vector*)readtable->value)->v[*c]));
+    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((simple_vector*)readtable->value)->v[*c]));
 
   for (c=single_escape_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)single_escape, t), ((vector*)readtable->value)->v[*c]); 
+    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)single_escape, t), ((simple_vector*)readtable->value)->v[*c]); 
 
   for (c=multiple_escape_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)multiple_escape, t), ((vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)multiple_escape, t), ((simple_vector*)readtable->value)->v[*c]);
 
-  for(i=0;i<((vector*)readtable->value)->size;i++)
-    if (((vector*)readtable->value)->v[i] == nil)
-      ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)invalid, t), ((vector*)readtable->value)->v[*c]);
+  for(i=0;i<((simple_vector*)readtable->value)->size;i++)
+    if (((simple_vector*)readtable->value)->v[i] == nil)
+      ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[*c]);
   //Invalidate the rest, the wretched lot...  
 }
 
@@ -313,7 +313,7 @@ procinfo *init()
   init_cl_pkg();
   
   //Init cl-user package
-  vector *cl_user_name = strtolstr("COMMON_LISP_USER");
+  simple_vector *cl_user_name = strtolstr("COMMON_LISP_USER");
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
 
