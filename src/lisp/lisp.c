@@ -563,6 +563,7 @@ cons *assoc(cons *key, cons *plist)
 base_char *read_char(stream *str)
 {
   base_char *to_ret = (base_char*)str->v->v[str->read_index];
+  (base_char*)str->v->v[str->read_index] == 0;
   str->read_index++;
   return to_ret;
 }
@@ -578,7 +579,6 @@ cons *unread_char(base_char *c, stream *str)
   str->v->v[str->read_index] = (cons*)c;
   return nil;
 }
-
 
 //Abandon all hope, ye who eneter here.
 //Here be dragons...
@@ -602,8 +602,7 @@ cons *interpret_token(vector *token, cons *env)
     return (cons*)intern(token, (package*)p->package_sym->value);  
 }
 
-//Assumes opening parenthesis stripped.
-cons *read_token(stream *str, base_char *c, cons *env)
+/*cons *read_token(stream *str, base_char *c, cons *env)
 {
   int i=0;
   cons *to_ret = newcons();
@@ -612,7 +611,7 @@ cons *read_token(stream *str, base_char *c, cons *env)
   vector *readtable_value = (vector*)readtable->value;
 
   a->car = (cons*)c;
-  while (1)
+  while (c!=(base_char*)nil)
     {
       if ((assoc((cons*)constituent, (cons*)((vector*)readtable_value)->v[c->c]) != nil) ||
 	  (assoc((cons*)non_terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) != nil))
@@ -655,11 +654,13 @@ cons *read_token(stream *str, base_char *c, cons *env)
   token->datatype = BASE_CHAR;
   for(i=0;a!=nil;i++)
     token->v[i] = (cons*)a->car;
-  
+    
   token->v[i] = nil;
   return interpret_token(token, env);
-}
+  }*/
 
+
+//Assumes opening parenthesis stripped.
 cons *read_cons(stream *str, base_char *c, cons *env)
 {
   c = peek_char(str);

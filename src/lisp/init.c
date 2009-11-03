@@ -19,17 +19,17 @@ symbol *external;
 symbol *inherited;
 symbol *dynamic;
 symbol *constant;
-//Readtable attributes
+//Syntax Types
 symbol *constituent;
 symbol *whitespace;
 symbol *terminating_macro;
 symbol *non_terminating_macro;
 symbol *single_escape;
 symbol *multiple_escape;
-//Constituent traits
-symbol *invalid;
 symbol *alphabetic;
 symbol *alphadigit;
+//Constituent traits
+symbol *invalid;
 symbol *package_marker;
 symbol *plus_sign;
 symbol *minus_sign;
@@ -200,6 +200,8 @@ void init_cl_pkg()
 
 void init_readtable()
 {
+  int i;
+
   //Init *readtable*
   vector *readtable_name = strtolstr("*READTABLE*");
   readtable = intern(readtable_name, cl_pkg);
@@ -220,9 +222,13 @@ void init_readtable()
   //Use the numerical ASCII values of each number as the index of a readtable, a vector.
   //Each entry has an associated property list, as per CLHS 2.1.4.
 
+  for (i=0;i<' ';i++)
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)invalid, t), ((vector*)readtable->value)->v[*c]);
+
   for (c=constituents;*c!=0;c++)
     ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((vector*)readtable->value)->v[*c]);
   //init constituents
+  ((vector*)readtable->value)->v[':'] =  fcons(fcons((cons*)package_marker, t), ((vector*)readtable->value)->v[':']);
 
   /*Init specific attributes*/
   for (c=alphabetic_chars;*c!=0;c++)
@@ -253,13 +259,18 @@ void init_readtable()
   // ')' can ONLY terminate, and has no function to be called.
 
   for (c=whitespace_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), ((vector*)readtable->value)->v[*c]);
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((vector*)readtable->value)->v[*c]));
 
   for (c=single_escape_chars;*c!=0;c++)
     ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)single_escape, t), ((vector*)readtable->value)->v[*c]); 
 
   for (c=multiple_escape_chars;*c!=0;c++)
     ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)multiple_escape, t), ((vector*)readtable->value)->v[*c]);
+
+  for(i=0;i<((vector*)readtable->value)->size;i++)
+    if (((vector*)readtable->value)->v[i] == nil)
+      ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)invalid, t), ((vector*)readtable->value)->v[*c]);
+  //Invalidate the rest, the wretched lot...  
 }
 
 void init_lambda_control()
