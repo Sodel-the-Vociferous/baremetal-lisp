@@ -420,7 +420,8 @@ cons *mkpair(cons *key, cons *value)
 {
   cons *a = newcons();
   a->car = key;
-  a->cdr = value;
+  a->cdr = newcons();
+  a->cdr->car = value;
   return a;
 }
 
@@ -549,10 +550,10 @@ cons *assoc(cons *key, cons *plist)
 {
   while(plist != nil)
     {
-      if (eql(key, plist->car->car) == t)
+      if (key == plist->car->car)
 	return plist->car;
       else
-	plist = plist->cdr;
+	plist  = plist->cdr;
     }
   return nil;
 }
@@ -613,15 +614,16 @@ cons *read_token(stream *str, base_char *c, cons *env)
   a->car = (cons*)c;
   while (1)
     {
-      if ((assoc((cons*)constituent, (cons*)((vector*)readtable_value)->v[c->c]) == t) ||
-	  (assoc((cons*)non_terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) == t))
+      if ((assoc((cons*)constituent, (cons*)((vector*)readtable_value)->v[c->c]) != nil) ||
+	  (assoc((cons*)non_terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) != nil))
 	{
 	  a->cdr = newcons();
 	  a = a->cdr;
 	  a->car = (cons*)c;
 	  i++;
+	  c = read_char(str);
 	}
-      else if (assoc((cons*)single_escape, (cons*)((vector*)readtable_value)->v[c->c]) == t)
+      else if (assoc((cons*)single_escape, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	{
 	  c = read_char(str);
 	  if ((cons*)c == nil)
@@ -629,18 +631,19 @@ cons *read_token(stream *str, base_char *c, cons *env)
 	  a->cdr = newcons();
 	  a = a->cdr;
 	  a->car = (cons*)c;
+	  c = read_char(str);
 	}
-      else if (assoc((cons*)multiple_escape, (cons*)((vector*)readtable_value)->v[c->c]) == t)
+      else if (assoc((cons*)multiple_escape, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	return nil;//TODO CLHS 2.2: step 9
-      else if (assoc((cons*)invalid, (cons*)((vector*)readtable_value)->v[c->c]) == t)
+      else if (assoc((cons*)invalid, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	return nil;//TODO reader_error
-      else if (assoc((cons*)terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) == t)
+      else if (assoc((cons*)terminating_macro, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	{
 	  unread_char(c, str);
 	  //TODO CLHS 2.2: step 10
 	  break;//Terminate token
 	}
-      else if (assoc((cons*)whitespace, (cons*)((vector*)readtable_value)->v[c->c]) == t)
+      else if (assoc((cons*)whitespace, (cons*)((vector*)readtable_value)->v[c->c]) != nil)
 	{
 	  break;//Terminate token
 	}
@@ -654,7 +657,7 @@ cons *read_token(stream *str, base_char *c, cons *env)
     token->v[i] = (cons*)a->car;
   
   token->v[i] = nil;
-  interpret_token(token, env);
+  return interpret_token(token, env);
 }
 
 cons *read_cons(stream *str, base_char *c, cons *env)
@@ -717,10 +720,10 @@ int main ()
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->v = strtolstr(":keyword");
+  str->v = strtolstr("*READTABLE*");
   str->write_index = 9;
 
-  cons *second_hope = read(str, env);
+  cons *xyzzy = read(str, env);
 
   return 0;
 }

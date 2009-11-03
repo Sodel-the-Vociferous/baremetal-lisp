@@ -94,12 +94,12 @@ symbol *initsym(char *name, package *p)
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
     {
-      a->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+      a->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
       a->value = (cons*)a;
     }
   else if (p == cl_pkg)
     {
-      a->plist = fcons(mkpair((cons*)external, t), nil);
+      a->plist = fcons(fcons((cons*)external, t), nil);
     }
   return a;
 }
@@ -107,10 +107,10 @@ symbol *initsym(char *name, package *p)
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
 {
   symbol *funsym = intern(strtolstr(name), p);
-  funsym->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+  funsym->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   funsym->fun = (function*)newcompiled_function();
   compiled_function *f = (compiled_function*)funsym->fun;
-  f->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+  f->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   f->env = basic_env;
   f->lambda_list = lambda_list;
   f->fun = fun;
@@ -129,8 +129,8 @@ void init_keyword_pkg()
   external->value = (cons*)external;
   constant = intern(strtolstr("CONSTANT"), keyword_pkg);
   constant->value = (cons*)constant;
-  external->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
-  constant->plist = fcons(mkpair((cons*)external, t), fcons(mkpair((cons*)constant, t), nil));
+  external->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+  constant->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
 
   //Other symbol attributes
   internal = initsym("INTERNAL", keyword_pkg);
@@ -204,54 +204,62 @@ void init_readtable()
   vector *readtable_name = strtolstr("*READTABLE*");
   readtable = intern(readtable_name, cl_pkg);
   readtable->value = (cons*)newvector(255);
-  char standard_chars[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$\"'(),_-./:;?+<=>#%&*@[\\]{|}`^~\b\t\n ";
-  char uppercase_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  char lowercase_chars[] = "abcdefghijklmnopqrstuvwxyz";
-  char number_chars[] = "0123456789";
+  char alphabetic_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  char alphadigit_chars[] = "0123456789";
   char whitespace_chars[] = "\t\n";
   char terminating_macro_chars[] = "\"\'(),;`";
   char non_terminating_macro_chars[] = "#";
   char single_escape_chars[] = "\\";
   char multiple_escape_chars[] = "|";
+  char constituents[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$_-./:;?+<=>#%&*@[]{}^~";
+
   char *c;
   base_char *bc;
-  
-  //Create the default readtable
 
+  //Create the default readtable
   //Use the numerical ASCII values of each number as the index of a readtable, a vector.
   //Each entry has an associated property list, as per CLHS 2.1.4.
-  for (c=uppercase_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphabetic, t), nil));
-  for (c=lowercase_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphabetic, t), nil));
-  for (c=number_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)constituent, t), fcons(mkpair((cons*)alphadigit, t), nil));
-  for (c=number_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] = fcons(mkpair((cons*)whitespace, t), nil);
+
+  for (c=constituents;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((vector*)readtable->value)->v[*c]);
+  //init constituents
+
+  /*Init specific attributes*/
+  for (c=alphabetic_chars;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphabetic, t), ((vector*)readtable->value)->v[*c]);	       
+
+  for (c=alphadigit_chars;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphadigit, t), ((vector*)readtable->value)->v[*c]);
+
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//Change nil to macro function  
+    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((vector*)readtable->value)->v[*c]);
+
+  //TODO Change nil paired with terminating_macro to macro function individually.
   //Deal with terminating macro characters specifically.
   //Oh my goodness. I am SO sorry for what I am about to do to you. 
   //Okay, so, here's what this code is *supposed* to do.
   //Just like the others, we create a property list. This time, however,
   //the value of the property is a reader macro.
-
-  ((vector*)readtable->value)->v['('] =  fcons(mkpair((cons*)terminating_macro, nil),
-					       (cons*)initcfun("READ-CONS", 
-							       fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
-								     nil),
-							       cl_pkg,
-							       &lread_cons));
+  ((vector*)readtable->value)->v['('] =  fcons(fcons((cons*)terminating_macro, 
+						     (cons*)initcfun("READ-CONS", 
+								     fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
+									   nil),
+								     cl_pkg,
+								     &lread_cons)),
+					       ((vector*)readtable->value)->v[*c]);
   //Left-paren reads a list
 
-  ((vector*)readtable->value)->v[')'] =  fcons(mkpair((cons*)terminating_macro, nil), nil);//reader error
+  ((vector*)readtable->value)->v[')'] =  fcons(fcons((cons*)terminating_macro, nil), ((vector*)readtable->value)->v[*c]);//TODO reader error
+  // ')' can ONLY terminate, and has no function to be called.
 
-  for (c=non_terminating_macro_chars;*c!=0;c++)
-    ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)non_terminating_macro, nil), nil);//Change nil to macro function
+  for (c=whitespace_chars;*c!=0;c++)
+    ((vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), ((vector*)readtable->value)->v[*c]);
+
   for (c=single_escape_chars;*c!=0;c++)
-      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)single_escape, t), nil);  
+    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)single_escape, t), ((vector*)readtable->value)->v[*c]); 
+
   for (c=multiple_escape_chars;*c!=0;c++)
-      ((vector*)readtable->value)->v[*c] =  fcons(mkpair((cons*)multiple_escape, t), nil);
+    ((vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)multiple_escape, t), ((vector*)readtable->value)->v[*c]);
 }
 
 void init_lambda_control()
