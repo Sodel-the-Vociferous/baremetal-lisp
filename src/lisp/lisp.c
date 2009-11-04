@@ -619,6 +619,8 @@ cons *read_token(stream *str, base_char *c, cons *env)
 
   while (1)
     {
+      if (c == (base_char*)nil)
+	break;
       if (assoc((cons*)package_marker, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
 	{//Handle package markers.
 	  package_markers++;
@@ -640,7 +642,7 @@ cons *read_token(stream *str, base_char *c, cons *env)
 	      c = read_char(str);
 	    }
 	  else
-	    {
+	    {//Expand the buffer
 	      buffer_len = 2*buffer_len;
 	      buffer = malloc(buffer_len);
 	      int x;
@@ -658,9 +660,12 @@ cons *read_token(stream *str, base_char *c, cons *env)
 	      c = read_char(str);
 	    }
 	  else
-	    {
+	    {//Expand the buffer
 	      buffer_len = 2*buffer_len;
 	      buffer = malloc(buffer_len);
+	      int x;
+	      for(x=i;x<buffer_len;x++)
+		buffer[x] = 0;
 	    }
 	}
       else if (assoc((cons*)multiple_escape, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
@@ -681,7 +686,7 @@ cons *read_token(stream *str, base_char *c, cons *env)
   if ((buffer[0] >= '0') && (buffer[0] <= '9'))
     {
       //parse_number();
-      return nil;//TODO
+      return 0;//TODO
     }
   else
     {
@@ -690,6 +695,8 @@ cons *read_token(stream *str, base_char *c, cons *env)
 	  (package_markers == 1))
 	return (cons*)sym;
       else if (package_markers == 2)
+	return (cons*)sym;
+      else
 	return (cons*)sym;
     }
 }
@@ -726,10 +733,15 @@ cons *read(stream *str, cons *env)
   simple_vector *readtable_value = (simple_vector*)readtable->value;
   while(1)
     {
-      if (assoc((cons*)invalid, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
+      if (c == (base_char*)nil)
+	break;
+      else if (assoc((cons*)invalid, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
 	return nil;//TODO reader error
       else if (assoc((cons*)whitespace, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	continue;
+	{
+	  c = read_char(str);
+	  continue;
+	}
       else if ((assoc((cons*)terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil) ||
 	       (assoc((cons*)non_terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil))
 	return nil;//TODO call reader macro
@@ -756,10 +768,12 @@ int main ()
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->rv = strtolstr("*READTABLE*");
-  str->write_index = 9;
+  str->rv = strtolstr("*READTABLE* ");
+  str->write_index = 20;
 
   cons *xyzzy = read(str, env);
+  cons *wow = eval(xyzzy, env);
+  cons *lesser = eval((cons*)readtable, env);
 
   return 0;
 }

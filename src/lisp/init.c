@@ -208,7 +208,7 @@ void init_readtable()
   readtable->value = (cons*)newsimple_vector(255);
   char alphabetic_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   char alphadigit_chars[] = "0123456789";
-  char whitespace_chars[] = "\t\n";
+  char whitespace_chars[] = " \t\n";
   char terminating_macro_chars[] = "\"\'(),;`";
   char non_terminating_macro_chars[] = "#";
   char single_escape_chars[] = "\\";
@@ -223,7 +223,7 @@ void init_readtable()
   //Each entry has an associated property list, as per CLHS 2.1.4.
 
   for (i=0;i<' ';i++)
-    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[*c]);
+    ((simple_vector*)readtable->value)->v[i] = fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[i]);
 
   for (c=constituents;*c!=0;c++)
     ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((simple_vector*)readtable->value)->v[*c]);
