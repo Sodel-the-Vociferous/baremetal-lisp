@@ -99,15 +99,4 @@ cons *leval(cons *env)
 }
 
 //Reading
-cons *lread_cons(cons *env)
-{
-  stream *str = (stream*)lookup("STREAM", env);
-  base_char *c = (base_char*)lookup("CHARACTER", env);
-  return read_cons(str, c, env);
-}
 
-cons *lread(cons *env)
-{
-  stream *str = (stream*)lookup("STREAM", env);
-  return read(str, env);
-}

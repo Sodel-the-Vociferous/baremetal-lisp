@@ -240,6 +240,7 @@ void init_readtable()
   for (c=terminating_macro_chars;*c!=0;c++)
     ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);
 
+  /*
   //TODO Change nil paired with terminating_macro to macro function individually.
   //Deal with terminating macro characters specifically.
   //Oh my goodness. I am SO sorry for what I am about to do to you. 
@@ -253,7 +254,7 @@ void init_readtable()
 										 nil)),
 								     cl_pkg,
 								     &lread_cons)),
-					       ((simple_vector*)readtable->value)->v[*c]);
+								     ((simple_vector*)readtable->value)->v[*c]);*/
   //Left-paren reads a list
 
   ((simple_vector*)readtable->value)->v[')'] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);//TODO reader error

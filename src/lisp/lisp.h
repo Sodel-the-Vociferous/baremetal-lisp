@@ -202,6 +202,3 @@ extern cons *extend_env(cons *env);
 extern cons *envbind(cons *env, cons *binding);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
 extern cons *assoc(cons *key, cons *plist);
-extern cons *read_token(stream *str, base_char *c, cons *env);
-extern cons *read_cons(stream *str, base_char *c, cons *env);
-extern cons *read(stream *str, cons *env);
