@@ -249,7 +249,8 @@ void init_readtable()
   ((simple_vector*)readtable->value)->v['('] =  fcons(fcons((cons*)terminating_macro, 
 						     (cons*)initcfun("READ-CONS", 
 								     fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
-									   nil),
+									   fcons((cons*)intern(strtolstr("CHARACTER"), cl_pkg),
+										 nil)),
 								     cl_pkg,
 								     &lread_cons)),
 					       ((simple_vector*)readtable->value)->v[*c]);

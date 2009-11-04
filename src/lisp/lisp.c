@@ -465,10 +465,19 @@ cons *eval(cons *exp, cons *env)
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS))
     {
-      symbol *s = intern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
-      function *f = (function*)s->fun;
-      if (f == (function*)0)
-	return nil;//TODO error no function binding
+      //symbol *s = intern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      
+      symbol *s = (symbol*)exp->car;
+      function *f;
+      if (exp->car->type == SYMBOL)
+	{
+	  f = (function*)s->fun;
+	  if (f == (function*)0)
+	    return nil;//TODO error no function binding
+	}
+      else if ((exp->car->type == FUNCTION) ||
+	       (exp->car->type == COMPILED_FUNCTION))
+	f = (function*)exp->car;
       
       if (f->type == FUNCTION)
 	{
@@ -601,158 +610,6 @@ cons *unread_char(base_char *c, stream *str)
 //Here be dragons...
 //The READER function!
 
-cons *read_token(stream *str, base_char *c, cons *env)
-{
-
-  int buffer_len = 64;
-  int i=0;
-  cons *to_ret = newcons();
-  cons *a = to_ret;
-  char *buffer = malloc(buffer_len);
-  simple_vector *readtable_value = (simple_vector*)readtable->value;
-  package *p = (package*)((procinfo*)env->car)->package_sym->value;
-  
-  int package_markers = 0;
-
-  if (assoc((cons*)package_marker, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-    p = keyword_pkg;
-
-  while (1)
-    {
-      if (c == (base_char*)nil)
-	break;
-      if (assoc((cons*)package_marker, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	{//Handle package markers.
-	  package_markers++;
-	  c = read_char(str);
-	  p = find_package(strtolstr(buffer), (procinfo*)env->car);
-	  if (assoc((cons*)package_marker, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	      package_markers++;
-	  
-	  for(i;i>=0;i--)
-	    buffer[i] = 0;	    
-	}
-      if ((assoc((cons*)constituent, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil) ||
-	  (assoc((cons*)non_terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil))
-	{
-	  if (i<=buffer_len)
-	    {
-	      buffer[i] = c->c;
-	      i++;
-	      c = read_char(str);
-	    }
-	  else
-	    {//Expand the buffer
-	      buffer_len = 2*buffer_len;
-	      buffer = malloc(buffer_len);
-	      int x;
-	      for(x=i;x<buffer_len;x++)
-		buffer[x] = 0;
-	    }
-	}
-      else if (assoc((cons*)single_escape, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	{
-	  if (i<=buffer_len)
-	    {
-	      c = read_char(str);
-	      buffer[i] = c->c;
-	      i++;
-	      c = read_char(str);
-	    }
-	  else
-	    {//Expand the buffer
-	      buffer_len = 2*buffer_len;
-	      buffer = malloc(buffer_len);
-	      int x;
-	      for(x=i;x<buffer_len;x++)
-		buffer[x] = 0;
-	    }
-	}
-      else if (assoc((cons*)multiple_escape, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	return nil;//TODO CLHS 2.2: step 9
-      else if (assoc((cons*)invalid, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	return nil;//TODO reader_error
-      else if (assoc((cons*)terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	{
-	  unread_char(c, str);
-	  //TODO CLHS 2.2: step 10
-	  break;//Terminate token
-	}
-      else if (assoc((cons*)whitespace, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	{
-	  break;//Terminate token
-	}
-    }
-  if ((buffer[0] >= '0') && (buffer[0] <= '9'))
-    {
-      //parse_number();
-      return 0;//TODO
-    }
-  else
-    {
-      symbol *sym = intern(strtolstr(buffer), p);
-      if ((assoc((cons*)external, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil) &&
-	  (package_markers == 1))
-	return (cons*)sym;
-      else if (package_markers == 2)
-	return (cons*)sym;
-      else
-	return (cons*)sym;
-    }
-}
-
-
-//Assumes opening parenthesis stripped.
-cons *read_cons(stream *str, base_char *c, cons *env)
-{
-  c = peek_char(str);
-  cons *to_ret = newcons();
-  cons *a = nil;
-
-  if (c->c != ')')
-    {
-      a = newcons();
-      a->car = read(str, env);
-    }
-
-  while (c->c != ')')
-    {
-      a->cdr = newcons();
-      a = a->cdr;
-      a->car = read(str, env);
-      c = peek_char(str);
-    } 
-  return to_ret;
-}
-
-cons *read(stream *str, cons *env)
-{//READ is not yet CLHS 2.* conformant.
-  base_char *c = read_char(str);
-
-  //simple_vector *readtable_value = (simple_vector*)((procinfo*)env->car)->package_sym->value;
-  simple_vector *readtable_value = (simple_vector*)readtable->value;
-  while(1)
-    {
-      if (c == (base_char*)nil)
-	break;
-      else if (assoc((cons*)invalid, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	return nil;//TODO reader error
-      else if (assoc((cons*)whitespace, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)
-	{
-	  c = read_char(str);
-	  continue;
-	}
-      else if ((assoc((cons*)terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil) ||
-	       (assoc((cons*)non_terminating_macro, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil))
-	return nil;//TODO call reader macro
-      else if ((assoc((cons*)single_escape, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil) ||
-	       (assoc((cons*)multiple_escape, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil)||
-	       (assoc((cons*)constituent, (cons*)((simple_vector*)readtable_value)->v[c->c]) != nil))
-	return read_token(str, c, env);
-    }
-  //TODO reader error
-	
-}
 
 int main ()
 {
@@ -768,12 +625,12 @@ int main ()
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->rv = strtolstr("*READTABLE* ");
+  str->rv = strtolstr("(*READTABLE*) ");
   str->write_index = 20;
 
   cons *xyzzy = read(str, env);
-  cons *wow = eval(xyzzy, env);
-  cons *lesser = eval((cons*)readtable, env);
+  //cons *wow = eval(xyzzy, env);
+  //cons *lesser = eval((cons*)readtable, env);
 
   return 0;
 }
