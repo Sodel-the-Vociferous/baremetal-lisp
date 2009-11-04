@@ -64,6 +64,7 @@ symbol *package_sym;//*package*
 symbol *readtable;//*readtable*
 symbol *types;//Internal  list of types.
 //Lambda list control symbols
+symbol *lambda_list_keywords;
 symbol *optional;//&optional
 symbol *rest;//&rest
 symbol *keyword;//&keyword
@@ -71,9 +72,12 @@ symbol *aux;//&aux
 symbol *whole;//&whole
 symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
-//Function names
+//List function anmes
 symbol *cars;//CAR symbol
 symbol *quote;//QUOTE symbol
+//Equality function names
+symbol *eqs;
+symbol *eqls;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -85,6 +89,7 @@ void init_cl_pkg();
 void init_readtable();
 void init_lambda_control();
 void init_list_funs();
+void init_eq_funs();
 
 
 //This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
@@ -196,6 +201,7 @@ void init_cl_pkg()
   init_readtable();
   init_lambda_control();
   init_list_funs();
+  init_eq_funs();
 }
 
 void init_readtable()
@@ -240,26 +246,6 @@ void init_readtable()
   for (c=terminating_macro_chars;*c!=0;c++)
     ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);
 
-  /*
-  //TODO Change nil paired with terminating_macro to macro function individually.
-  //Deal with terminating macro characters specifically.
-  //Oh my goodness. I am SO sorry for what I am about to do to you. 
-  //Okay, so, here's what this code is *supposed* to do.
-  //Just like the others, we create a property list. This time, however,
-  //the value of the property is a reader macro.
-  ((simple_vector*)readtable->value)->v['('] =  fcons(fcons((cons*)terminating_macro, 
-						     (cons*)initcfun("READ-CONS", 
-								     fcons((cons*)intern(strtolstr("STREAM"), cl_pkg),
-									   fcons((cons*)intern(strtolstr("CHARACTER"), cl_pkg),
-										 nil)),
-								     cl_pkg,
-								     &lread_cons)),
-								     ((simple_vector*)readtable->value)->v[*c]);*/
-  //Left-paren reads a list
-
-  ((simple_vector*)readtable->value)->v[')'] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);//TODO reader error
-  // ')' can ONLY terminate, and has no function to be called.
-
   for (c=whitespace_chars;*c!=0;c++)
     ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((simple_vector*)readtable->value)->v[*c]));
 
@@ -285,6 +271,15 @@ void init_lambda_control()
   whole = initsym("&WHOLE", cl_pkg);
   body = initsym("&BODY", cl_pkg);
   allow_other_keys = initsym("&ALLOW-OTHER-KEYS", cl_pkg);
+
+  lambda_list_keywords = initsym("LAMBDA-LIST-KEYWORDS", cl_pkg);
+  lambda_list_keywords->value = fcons((cons*)optional,
+				      fcons((cons*)rest,
+					    fcons((cons*)keyword,
+						  fcons((cons*)aux,
+							fcons((cons*)whole,
+							      fcons((cons*)body,
+								    fcons((cons*)allow_other_keys, nil)))))));
 }
 
 void init_list_funs()
@@ -301,6 +296,23 @@ void init_list_funs()
 		   cl_pkg,
 		   &lquote);  
 }  
+
+void init_eq_funs()
+{
+  eqs = initcfun("EQ",
+		fcons((cons*)intern(strtolstr("A"), cl_pkg),
+		      fcons((cons*)intern(strtolstr("B"), cl_pkg),
+			    nil)),
+		cl_pkg,
+		&leq);
+  eqls = initcfun("EQL",
+		 fcons((cons*)intern(strtolstr("A"), cl_pkg),
+		       fcons((cons*)intern(strtolstr("B"), cl_pkg),
+			     nil)),
+		 cl_pkg,
+		 &leql);
+}
+  
 
 procinfo *init()
 {

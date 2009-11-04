@@ -524,18 +524,24 @@ cons *envbind(cons *env, cons *binding)
   return env;
 }
 
-//This needs to be updated, in accordance with new environment infrastructure.
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
-{
+{//TODO update to use lambda control characters.
   cons *oldenv = env;
   simple_vector *varname;
   symbol *varsym;
   cons *binding;
+  char in_opt = 0;//If we're into optional arguments
   
-  while((null(lambda_list) == nil) && (null(args) == nil))
+  while((null(lambda_list) == nil) && 
+	(null(args) == nil) &&
+	(lambda_list->car != (cons*)optional) &&
+	(lambda_list->car != (cons*)rest) &&
+	(lambda_list->car != (cons*)keyword) &&
+	(lambda_list->car != (cons*)aux))
     {
-      varname = ((symbol*)lambda_list->car)->name;
-      varsym = intern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      //varname = ((symbol*)lambda_list->car)->name;
+      //varsym = intern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+      varsym = (symbol*)lambda_list->car;
       
       binding = newcons();
       binding->car = (cons*)varsym;
@@ -547,6 +553,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       lambda_list = lambda_list->cdr;
       args = args->cdr;
     }
+
   if (lambda_list != nil)
     return oldenv;//TODO error too few args
   else if (args != nil)
@@ -615,7 +622,7 @@ int main ()
 {
   procinfo *proc = init();
   
-  //Test
+  /*Tests*/
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
 
@@ -628,9 +635,9 @@ int main ()
   str->rv = strtolstr("(*READTABLE*) ");
   str->write_index = 20;
 
-  cons *xyzzy = read(str, env);
+  //cons *xyzzy = (cons*)read(str, env);
   //cons *wow = eval(xyzzy, env);
-  //cons *lesser = eval((cons*)readtable, env);
+  cons *lesser = eval((cons*)readtable, env);
 
   return 0;
 }

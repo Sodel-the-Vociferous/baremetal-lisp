@@ -85,6 +85,21 @@ cons *leql (cons *env)
 
 cons *lequal (cons *env);
 
+//Flow control
+cons *lcond(cons *env)
+{
+  cons *clauses = lookup("CLAUSES", env);
+  cons *clause = clauses;
+  while (1)
+    {
+      if (eval(clause->car->car, env) != nil)
+	return eval(clause->car->cdr, env);
+      else
+	clause = clause->cdr;
+    }
+  return 0;//ERROR!
+}
+
 //Evaluation
 cons *lquote(cons *env)
 {
