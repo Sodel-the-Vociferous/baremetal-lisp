@@ -1,3 +1,6 @@
+#define CASE_DIFFERENCE = 32
+
+
 extern package *keyword_pkg;
 extern package *cl_pkg;
 extern package *cl_user_pkg;

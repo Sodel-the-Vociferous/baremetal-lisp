@@ -76,11 +76,16 @@ symbol *allow_other_keys;//&allow-other-keys
 symbol *cars;//CAR symbol
 symbol *quote;//QUOTE symbol
 //Equality function names
+symbol *chareqs;
+symbol *charequals;
+symbol *stringeqs;
+symbol *stringequals;
 symbol *eqs;
 symbol *eqls;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
+symbol *initintsym(char *name, package *p);
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
 
 void init_keyword_pkg();
@@ -90,9 +95,14 @@ void init_readtable();
 void init_lambda_control();
 void init_list_funs();
 void init_eq_funs();
+void init_read_funs();
+void init_set_funs();
+void init_types();
+
+cons *initread(char *str, cons *env);
 
 
-//This adorable little function saved me so much manual work. Global variables, here, are acceptable. :]
+/*Initialization helper functions*/
 symbol *initsym(char *name, package *p)
 {
   simple_vector *a_name = strtolstr(name);
@@ -109,12 +119,32 @@ symbol *initsym(char *name, package *p)
   return a;
 }
 
+symbol *initintsym(char *name, package *p)
+{
+  simple_vector *a_name = strtolstr(name);
+  symbol *a = intern(a_name, p);
+  if (p == keyword_pkg)
+    {
+      a->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+      a->value = (cons*)a;
+    }
+  else if (p == cl_pkg)
+    {
+      a->plist = fcons(fcons((cons*)internal, t), nil);
+    }
+  return a;
+}
+
+
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
 {
-  symbol *funsym = intern(strtolstr(name), p);
+  symbol *funsym;
+  compiled_function *f;
+
+  funsym = intern(strtolstr(name), p);
   funsym->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   funsym->fun = (function*)newcompiled_function();
-  compiled_function *f = (compiled_function*)funsym->fun;
+  f = (compiled_function*)funsym->fun;
   f->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   f->env = basic_env;
   f->lambda_list = lambda_list;
@@ -122,6 +152,69 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
   return funsym;
 }
 
+cons *initread(char *str, cons *env)
+{//Inflexible read. A big kludge. The only code it ever reads is hard-coded bootstrap. 
+  package *p = (package*)((procinfo*)env->car)->package_sym->value;
+  
+  while (1)
+    {
+      if ((*str >= 'a') 
+	  && (*str <='z'))
+	*str = *str - 'A';//convert to uppercase.
+      if (*str == 0)
+	//Seriously, man. If this even happens, it's _your_ fault.
+	return 0;
+      else if (*str == ' ')
+	str++;
+      else if (*str == '(')
+	{
+	  cons *foo = newcons();
+
+	  while ((*str != ')') &&
+		 (*str != ' ') &&
+		 (*str != 0))
+	    {
+	      foo->car = (cons*)initread(str, env);
+	      foo->cdr = newcons();
+	      foo = foo->cdr;
+	    }
+	  return foo;
+	}
+      else if (*str >='0' && *str <='9')
+	return 0;//TODO parse number.
+      else if (*str == '#')
+	{//Read macro character.
+	  str++;
+	  if (*str == '\\')
+	    {//read character
+	      str++;
+	      return (cons*)ctolc(*str);
+	    }
+	  else
+	    str++;
+	}
+      else
+	{
+	  int i;
+	  char name[100];
+	  while ((*str != '(') &&
+		 (*str != ')') &&
+		 (*str != ' ') &&
+		 (*str != 0))
+	    {
+	      if (i >= 100)
+		return 0;
+	      name[i] = *str;
+	      str++;
+	      i++;
+	    }
+	  return (cons*)intern(strtolstr(name), p);
+	}
+    }
+}
+      
+
+/*Initialization*/
 void init_keyword_pkg()
 {
   //Init keyword package
@@ -202,6 +295,7 @@ void init_cl_pkg()
   init_lambda_control();
   init_list_funs();
   init_eq_funs();
+  init_read_funs();
 }
 
 void init_readtable()
@@ -236,7 +330,6 @@ void init_readtable()
   //init constituents
   ((simple_vector*)readtable->value)->v[':'] =  fcons(fcons((cons*)package_marker, t), ((simple_vector*)readtable->value)->v[':']);
 
-  /*Init specific attributes*/
   for (c=alphabetic_chars;*c!=0;c++)
     ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphabetic, t), ((simple_vector*)readtable->value)->v[*c]);	       
 
@@ -286,10 +379,10 @@ void init_list_funs()
 {
   //symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
   cars = initcfun("CAR", 
-		 fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
-		       nil),
-		 cl_pkg,
-		 &lcar);
+		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
+			nil),
+		  cl_pkg,
+		  &lcar);
   quote = initcfun("QUOTE", 
 		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),
@@ -299,20 +392,66 @@ void init_list_funs()
 
 void init_eq_funs()
 {
+  chareqs = initcfun("CHAR=",
+		     fcons((cons*)intern(strtolstr("A"), cl_pkg),
+			   fcons((cons*)intern(strtolstr("B"), cl_pkg),
+				 nil)),
+		     cl_pkg,
+		     &lchareq);
+  charequals = initcfun("CHAR-EQUAL",
+			fcons((cons*)intern(strtolstr("A"), cl_pkg),
+			      fcons((cons*)intern(strtolstr("B"), cl_pkg),
+				    nil)),
+			cl_pkg,
+			&lcharequal);
+
+  stringeqs = initcfun("STRING=",
+		       fcons((cons*)intern(strtolstr("A"), cl_pkg),
+			     fcons((cons*)intern(strtolstr("B"), cl_pkg),
+				   nil)),
+		       cl_pkg,
+		       &lstringeq);
+
+  stringequals = initcfun("STRING-EQUAL",
+			  fcons((cons*)intern(strtolstr("A"), cl_pkg),
+				fcons((cons*)intern(strtolstr("B"), cl_pkg),
+				      nil)),
+			  cl_pkg,
+			  &lstringequal);
+
   eqs = initcfun("EQ",
-		fcons((cons*)intern(strtolstr("A"), cl_pkg),
-		      fcons((cons*)intern(strtolstr("B"), cl_pkg),
-			    nil)),
-		cl_pkg,
-		&leq);
-  eqls = initcfun("EQL",
 		 fcons((cons*)intern(strtolstr("A"), cl_pkg),
 		       fcons((cons*)intern(strtolstr("B"), cl_pkg),
 			     nil)),
 		 cl_pkg,
-		 &leql);
+		 &leq);
+  eqls = initcfun("EQL",
+		  fcons((cons*)intern(strtolstr("A"), cl_pkg),
+			fcons((cons*)intern(strtolstr("B"), cl_pkg),
+			      nil)),
+		  cl_pkg,
+		  &leql);
 }
-  
+
+void init_read_funs()
+{
+}  
+
+void init_set_funs()
+{
+  eqls = initcfun("DEFUN",
+		  fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
+			fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
+			      fcons((cons*)intern(strtolstr("FORM"), cl_pkg),
+				    nil))),
+		  cl_pkg,
+		  &leql);
+}
+
+void init_types()
+{
+  return;
+}
 
 procinfo *init()
 {

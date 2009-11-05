@@ -2,6 +2,10 @@
 #include "lisp.h"
 #include "init.h"
 
+//I KNOW there are memory leaks EVERYWHERE.
+//Fret not.
+//It will be garbage collected.
+
 cons t_phys;
 cons nil_phys;
 
@@ -98,27 +102,39 @@ compiled_function *newcompiled_function()
   f->fun = 0;
 }
 
+function *newfunction()
+{
+  function *f = malloc(sizeof(function));
+  f->type = FUNCTION;
+  f->plist = nil;
+  f->lambda_list = nil;
+  f->env = 0;
+  f->fun = 0;
+}
+
 //Helper functions to translate C stuff into Lisp objects
 
 base_char *ctolc(char c)
 {//Char to Lisp Charx
-  base_char *lc = newbase_char();
-  lc->c = c;
-  return lc;
+  base_char *fred = newbase_char();
+  fred->c = c;
+  return fred;
 }
 
 simple_vector *strtolstr(char *str)
 {//C string to Lisp string.
   int string_len;
   int i;
+  base_char *c = 0;
+  simple_vector *to_ret;
+
   for(string_len=1;*(str+string_len-1)!=0;string_len++);
   //Find the string length.
+  to_ret = newsimple_vector(string_len);
 
-  simple_vector *to_ret = newsimple_vector(string_len);
   to_ret->type = STRING;
   to_ret->datatype = BASE_CHAR;
  
-  base_char *c = 0;
   for(i=0;*str!=0;i++)
     {//Add the base_chars to the string simple_vector.
       c = newbase_char();
@@ -209,7 +225,11 @@ cons *rplacd(cons *a, cons *new)
 symbol *intern(simple_vector *name, package *p)
 {//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
   int i;
+  unsigned int index ;
   char hashed_name[4];
+  cons *entry;
+  symbol *s;
+
   for (i=0;i<3;i++)
     {
       if (i >= name->size)
@@ -217,11 +237,9 @@ symbol *intern(simple_vector *name, package *p)
       else
 	hashed_name[i] = ((base_char*)name->v[i])->c;
     }
-  unsigned int index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
+  index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
   //Hash the first four characters of the name.
-  
-  cons *entry = p->global->v[index];
-  symbol *s;
+  entry = p->global->v[index];
 
   if (entry != nil)
     {
@@ -239,11 +257,12 @@ symbol *intern(simple_vector *name, package *p)
 	      break;
 	    }
 	  else
-	    entry = entry->cdr;//next entry
+	    entry = entry->cdr;
+	  //next entry
 	}
     }
   else if (entry == nil)
-    {//Create a new entry for the hash value
+    {//Create a new entry for the hash value in the table
       p->global->v[index] = newcons();
       p->global->v[index]->car = (cons*)malloc(sizeof(symbol));
       entry = p->global->v[index];
@@ -527,9 +546,10 @@ cons *envbind(cons *env, cons *binding)
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
 {//TODO update to use lambda control characters.
   cons *oldenv = env;
+  cons *binding;
+  cons *foo;
   simple_vector *varname;
   symbol *varsym;
-  cons *binding;
   char in_opt = 0;//If we're into optional arguments
   
   while((null(lambda_list) == nil) && 
@@ -574,6 +594,19 @@ cons *assoc(cons *key, cons *plist)
   return nil;
 }
 
+symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env)
+{
+  function *f;
+
+  sym->fun = newfunction();
+  f = (function*)sym->fun;
+  f->plist = nil;
+  f->env = env;
+  f->lambda_list = lambda_list;
+  f->fun = form;
+  return sym;
+}
+
 
 //Stream functions
 base_char *read_char(stream *str)
@@ -616,7 +649,6 @@ cons *unread_char(base_char *c, stream *str)
 //Abandon all hope, ye who enter here.
 //Here be dragons...
 //The READER function!
-
 
 int main ()
 {

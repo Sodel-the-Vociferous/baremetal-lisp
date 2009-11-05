@@ -69,6 +69,34 @@ package *lfind_package(cons *env)
 }
   
 //Equality
+
+cons *lchareq(cons *env)
+{
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
+  return chareq((base_char*)a, (base_char*)b);
+}
+
+cons *lcharequal(cons *env)
+{
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
+  return charequal((base_char*)a, (base_char*)b);
+}
+
+cons *lstringeq(cons *env)
+{
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
+  return stringeq((simple_vector*)a, (simple_vector*)b);
+}
+cons *lstringequal(cons *env)
+{
+  cons *a = lookup("A", env);
+  cons *b = lookup("B", env);
+  return stringequal((simple_vector*)a, (simple_vector*)b);
+}
+
 cons *leq (cons *env)
 {
   cons *a = lookup("A", env);
@@ -112,6 +140,15 @@ cons *leval(cons *env)
   cons *exp = lookup("EXP", env);
   return eval(exp, env);
 }
+
+cons *ldefun(cons *env)
+{
+  symbol *name = (symbol*)lookup("SYMBOL", env);
+  cons *lambda_list = lookup("LAMBDA-LIST", env);
+  cons *form = lookup("FORM", env);
+  return (cons*)defun(name, lambda_list, form, env);
+}
+  
 
 //Reading
 
