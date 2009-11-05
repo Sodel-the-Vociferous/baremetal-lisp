@@ -1,9 +1,9 @@
 #include "lisp.h"
 #include "lbind.h"
 
-//Major todo typechecking
+//Major TODO typechecking
 
-//Predicates
+/*Predicates*/
 cons *lnull(cons *env)
 {
   cons *a = lookup("OBJECT", env);
@@ -16,7 +16,7 @@ cons *lnumberp(cons *env)
   return numberp(a);
 }
 
-//List operators
+/*List operators*/
 cons *lcons(cons *env)
 {
   cons *a = lookup("OB1", env);
@@ -49,7 +49,7 @@ cons *lrplacd(cons *env)
   return rplacd(a, new);
 }
 
-//Mathematics
+/*Mathematics*/
 //TODO does not yet support bignums.
 //TODO add math functions.
 
@@ -68,7 +68,7 @@ package *lfind_package(cons *env)
   return find_package(name, p);
 }
   
-//Equality
+/*Equality*/
 
 cons *lchareq(cons *env)
 {
@@ -113,7 +113,7 @@ cons *leql (cons *env)
 
 cons *lequal (cons *env);
 
-//Flow control
+/*Flow control*/
 cons *lcond(cons *env)
 {
   cons *clauses = lookup("CLAUSES", env);
@@ -128,7 +128,7 @@ cons *lcond(cons *env)
   return 0;//ERROR!
 }
 
-//Evaluation
+/*Evaluation*/
 cons *lquote(cons *env)
 {
   cons *exp = lookup("EXP", env);
@@ -141,6 +141,7 @@ cons *leval(cons *env)
   return eval(exp, env);
 }
 
+/*Assignment*/
 cons *ldefun(cons *env)
 {
   symbol *name = (symbol*)lookup("SYMBOL", env);
