@@ -49,6 +49,24 @@ cons *lrplacd(cons *env)
   return rplacd(a, new);
 }
 
+cons *llist(cons *env)
+{
+  cons *args = lookup("ARGS", env);
+  cons *to_ret = newcons();
+  cons *foo = to_ret;
+
+  foo->car = args;
+  args = args->cdr;
+
+  for (args;args!=nil;args=args->cdr)
+    {
+      foo->cdr = newcons();
+      foo = foo->cdr;
+      foo->car = args;
+    }
+  return to_ret;  
+}  
+
 /*Mathematics*/
 //TODO does not yet support bignums.
 //TODO add math functions.
@@ -56,14 +74,14 @@ cons *lrplacd(cons *env)
 //Environment operators
 symbol *lintern(cons *env)
 {
-  simple_vector *name = (simple_vector*)lookup("NAME", env);
+  array *name = (array*)lookup("NAME", env);
   package *p = (package*)((procinfo*)env->car)->package_sym->value;
   return intern(name, p);
 }
   
 package *lfind_package(cons *env)
 {
-  simple_vector *name = (simple_vector*)lookup("NAME", env);
+  array *name = (array*)lookup("NAME", env);
   procinfo *p = (procinfo*)env->car;
   return find_package(name, p);
 }
@@ -88,13 +106,13 @@ cons *lstringeq(cons *env)
 {
   cons *a = lookup("A", env);
   cons *b = lookup("B", env);
-  return stringeq((simple_vector*)a, (simple_vector*)b);
+  return stringeq((array*)a, (array*)b);
 }
 cons *lstringequal(cons *env)
 {
   cons *a = lookup("A", env);
   cons *b = lookup("B", env);
-  return stringequal((simple_vector*)a, (simple_vector*)b);
+  return stringequal((array*)a, (array*)b);
 }
 
 cons *leq (cons *env)

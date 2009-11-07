@@ -5,6 +5,8 @@ extern cons *lcar(cons *env);
 extern cons *lrplaca(cons *env);
 extern cons *lcdr(cons *env);
 extern cons *lrplacd(cons *env);
+extern cons *llist(cons *env);
+
 extern symbol *lintern(cons *env);
 extern package *lfind_package(cons *env);
 

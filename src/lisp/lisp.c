@@ -3,8 +3,15 @@
 #include "init.h"
 
 //I KNOW there are memory leaks EVERYWHERE.
+//In fact there isn't a single de-allocation in this code.
 //Fret not.
 //It will be garbage collected.
+
+//TODO add special operators
+
+
+
+
 
 cons t_phys;
 cons nil_phys;
@@ -22,11 +29,11 @@ cons *newcons()
   return c;
 }
 
-fixnum *newfixnum()
+fixnum *newfixnum(long num)
 {
   fixnum *f = malloc(sizeof(fixnum));
   f->type = FIXNUM;
-  f->num = 0;
+  f->num = num;
   return f;
 }
 
@@ -67,18 +74,32 @@ base_char *newbase_char()
   return c;
 }
 
-simple_vector *newsimple_vector(int size)
+array *newarray(long rank, int length)
 {
-  simple_vector *v = malloc(sizeof(simple_vector));
-  int i;
+  long i;
+  array *a = malloc(sizeof(array));
+  a->type = ARRAY;
+  a->plist = nil;
+  a->rank = newfixnum(rank);
+  a->length = newfixnum(length);
+  a->a = malloc(rank * sizeof(cons*));
+  for(i=0;i<rank;i++)
+    a->a[i] = malloc(length * sizeof(cons*));
+  //Loops forever here. This is bizarre. FIX.
+  
+  for (rank--;rank>=0;rank--)
+    {
+      for (i=0;i<length;i++)
+	a->a[rank][i] = nil;
+    }
+  a->next = (array*)0;
+  return a;
+}
+
+array *newsimple_vector(int length)
+{
+  array *v = newarray(1, length);
   v->type = SIMPLE_VECTOR;
-  v->plist = nil;
-  v->size = size;
-  v->datatype = T;
-  v->v = malloc(((size) * sizeof(cons*)));
-  for (i=0;i<size;i++)
-    v->v[i] = nil;
-  v->next = (simple_vector*)0;
   return v;
 }
 
@@ -87,7 +108,7 @@ package *newpackage()
   package *p = malloc(sizeof(package));
   p->type = PACKAGE;
   p->plist = nil;
-  p->name = (simple_vector*)nil;
+  p->name = (array*)nil;
   p->global = newsimple_vector(HASH_TABLE_SIZE);
   return p;
 }
@@ -121,29 +142,28 @@ base_char *ctolc(char c)
   return fred;
 }
 
-simple_vector *strtolstr(char *str)
+array *strtolstr(char *str)
 {//C string to Lisp string.
   int string_len;
-  int i;
+  long i;
   base_char *c = 0;
-  simple_vector *to_ret;
+  array *to_ret;
 
   for(string_len=1;*(str+string_len-1)!=0;string_len++);
   //Find the string length.
   to_ret = newsimple_vector(string_len);
 
   to_ret->type = STRING;
-  to_ret->datatype = BASE_CHAR;
  
   for(i=0;*str!=0;i++)
-    {//Add the base_chars to the string simple_vector.
+    {//Add the base_chars to the string.
       c = newbase_char();
-      to_ret->v[i] = (cons*)c;
+      to_ret->a[0][i] = (cons*)c;
       c->c = *str;
       str++;
     }
   c = newbase_char();
-  to_ret->v[i] = (cons*)c;
+  to_ret->a[0][i] = (cons*)c;
   c->c = 0;
   return to_ret;
 }
@@ -222,24 +242,24 @@ cons *rplacd(cons *a, cons *new)
 }
 
 /*This is all infrastructure for the intern function. */
-symbol *intern(simple_vector *name, package *p)
+symbol *intern(array *name, package *p)
 {//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax. Change this later. :]
-  int i;
-  unsigned int index ;
+  long i;
+  unsigned long index ;
   char hashed_name[4];
   cons *entry;
   symbol *s;
 
   for (i=0;i<3;i++)
     {
-      if (i >= name->size)
+      if (i >= name->length->num)
 	hashed_name[i] = 0;
       else
-	hashed_name[i] = ((base_char*)name->v[i])->c;
+	hashed_name[i] = ((base_char*)name->a[0][i])->c;
     }
   index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
   //Hash the first four characters of the name.
-  entry = p->global->v[index];
+  entry = p->global->a[0][index];
 
   if (entry != nil)
     {
@@ -263,9 +283,9 @@ symbol *intern(simple_vector *name, package *p)
     }
   else if (entry == nil)
     {//Create a new entry for the hash value in the table
-      p->global->v[index] = newcons();
-      p->global->v[index]->car = (cons*)malloc(sizeof(symbol));
-      entry = p->global->v[index];
+      p->global->a[0][index] = newcons();
+      p->global->a[0][index]->car = (cons*)malloc(sizeof(symbol));
+      entry = p->global->a[0][index];
     }
   s = (symbol*)entry->car;
   s->plist = nil;
@@ -316,9 +336,9 @@ cons *charequal(base_char *a, base_char *b)
     return nil;
 }
 
-cons *stringeq(simple_vector *a, simple_vector *b)
+cons *stringeq(array *a, array *b)
 {
-  int i=0;
+  long i=0;
   if(a==b)
     return t;
   else if (a->type != b->type)
@@ -327,18 +347,18 @@ cons *stringeq(simple_vector *a, simple_vector *b)
   //  return nil;
   while(1)
     {
-      if (chareq((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
 	return nil;
-      else if (a->v[i] == 0) 
+      else if (a->a[0][i] == 0) 
 	return t;
       else
 	i++;
     }
 }
 
-cons *stringequal(simple_vector *a, simple_vector *b)
+cons *stringequal(array *a, array *b)
 {
-  int i=0;
+  long i=0;
   if (a==b)
     return t;
   else if (a->type != b->type)
@@ -347,16 +367,16 @@ cons *stringequal(simple_vector *a, simple_vector *b)
   //  return nil;
   while(1)
     {
-      if (charequal((base_char*)a->v[i], (base_char*)b->v[i]) == nil)
+      if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
 	return nil;
-      else if (a->v[i] == 0) 
+      else if (a->a[0][i] == 0) 
 	return t;
       else
 	i++;
     }
 }
 
-package *find_package(simple_vector *name, procinfo *pinfo)
+package *find_package(array *name, procinfo *pinfo)
 {
   cons *p = pinfo->packages;
   for (p;p!=nil;p=p->cdr)
@@ -429,7 +449,7 @@ cons *eql (cons *a, cons *b)
 //Lookup a symbol in the current environment; can't do foreign packages yet. Wait 'till read() gets done.
 cons *lookup(char *namestr, cons *env)
 {
-  simple_vector *name = strtolstr(namestr);
+  array *name = strtolstr(namestr);
   symbol *s = intern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
   return eval((cons*)s, env);
 }
@@ -451,8 +471,7 @@ cons *eval(cons *exp, cons *env)
   else if (exp == t)
     return t;
   else if (exp->type == SYMBOL)
-    {
-      //symbol *s = intern((((symbol*)exp)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+    {//
       symbol *s = (symbol*)exp;
       cons *c = env->cdr;
       //current environment node
@@ -482,10 +501,9 @@ cons *eval(cons *exp, cons *env)
       //If there's no binding in the lexical environment, return the dynamic binding.
     }
   else if ((exp->type == CONS) && 
-	   (exp->car->type != CONS))
+	   (exp->car->type != CONS) &&
+	   (assoc(exp->car->car, special_operators) == nil))
     {
-      //symbol *s = intern((((symbol*)exp->car)->name), (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
-      
       symbol *s = (symbol*)exp->car;
       function *f;
       if (exp->car->type == SYMBOL)
@@ -515,6 +533,12 @@ cons *eval(cons *exp, cons *env)
       else
 	return nil;//TODO error, not a function
     }
+ else if ((exp->type == CONS) && 
+	   (exp->car->type != CONS) &&
+	   (assoc(exp->car->car, special_operators) == nil))
+   {//TODO
+     return 0; 
+   }
   else
     return nil;//TODO should be error
 }
@@ -533,7 +557,7 @@ cons *extend_env(cons *env)
   return newenv;
 }
 
-cons *envbind(cons *env, cons *binding)
+cons *envbind(cons *binding,cons *env)
 {
   cons *first = env;  
   cons *newenv = newcons();
@@ -544,13 +568,12 @@ cons *envbind(cons *env, cons *binding)
 }
 
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
-{//TODO update to use lambda control characters.
+{//Clean this up. This is the worst code I've ever written. :(
   cons *oldenv = env;
   cons *binding;
   cons *foo;
-  simple_vector *varname;
+  array *varname;
   symbol *varsym;
-  char in_opt = 0;//If we're into optional arguments
   
   while((null(lambda_list) == nil) && 
 	(null(args) == nil) &&
@@ -562,24 +585,87 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       //varname = ((symbol*)lambda_list->car)->name;
       //varsym = intern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       varsym = (symbol*)lambda_list->car;
-      
-      binding = newcons();
-      binding->car = (cons*)varsym;
-      binding->cdr = newcons();
-      binding->cdr->car = args->car;
-
-      envbind(env, binding);
+      envbind(fcons((cons*)varsym, eval(args->car, env)), env);
 
       lambda_list = lambda_list->cdr;
       args = args->cdr;
     }
 
-  if (lambda_list != nil)
-    return oldenv;//TODO error too few args
-  else if (args != nil)
-    return oldenv;//TODO error too many args
-  else
-    return env;
+  if (lambda_list->car != (cons*)optional)
+    {
+      lambda_list = lambda_list->cdr;
+      while((null(lambda_list) == nil) && 
+	    (null(args) == nil) &&
+	    (lambda_list->car != (cons*)rest) &&
+	    (lambda_list->car != (cons*)keyword) &&
+	    (lambda_list->car != (cons*)aux))
+	{//While there are values for the optional arguments...
+	  if (lambda_list->car->type == SYMBOL)
+	    varsym = (symbol*)lambda_list->car;
+	  else if ((lambda_list->car->type == CONS) &&
+		   (lambda_list->car->car->type == SYMBOL))
+	    varsym = (symbol*)lambda_list->car->car;
+	  else
+	    return 0;//TODO error
+
+	  envbind(fcons((cons*)varsym, eval(args->car, env)), env);
+
+	  lambda_list = lambda_list->cdr;
+	  args = args->cdr;
+	}
+      while((null(lambda_list) == nil) && 
+	    (null(args) == t) &&
+	    (lambda_list->car != (cons*)rest) &&
+	    (lambda_list->car != (cons*)keyword) &&
+	    (lambda_list->car != (cons*)aux))
+	{//If we've run out of args, initialize the optionals to their default values.
+	  if (lambda_list->car->type == SYMBOL)
+	    {
+	      varsym = (symbol*)lambda_list->car;
+	      envbind(fcons((cons*)varsym, nil), env);
+	      lambda_list = lambda_list->cdr;
+	      args = args->cdr;
+	    }
+	  else if ((lambda_list->car->type == CONS) &&
+		   (lambda_list->car->car->type == SYMBOL))
+	    {
+	      varsym = (symbol*)lambda_list->car->car;
+	      envbind(fcons((cons*)varsym, eval(lambda_list->car->cdr, env)), env);
+	      lambda_list = lambda_list->cdr;
+	      args = args->cdr;
+	    }
+	  else
+	    return 0;//TODO error
+	}
+    }
+  if (lambda_list->car != (cons*)rest)
+    //    env = evalrest(lambda_list, args, env);
+    {
+      lambda_list = lambda_list->cdr;
+  
+      if((null(lambda_list) == nil) && 
+	 (null(args) == nil) &&
+	 (lambda_list->car != (cons*)optional) &&
+	 (lambda_list->car != (cons*)rest) &&
+	 (lambda_list->car != (cons*)keyword) &&
+	 (lambda_list->car != (cons*)aux))
+	{
+	  if (lambda_list->car->type == SYMBOL)
+	    varsym = (symbol*)lambda_list->car;
+	  else
+	    return 0;//TODO error
+
+	  envbind(fcons((cons*)varsym, args), env);
+	  lambda_list = lambda_list->cdr;
+	  args = args->cdr;
+	}
+    }
+  /* if (lambda_list->car != (cons*)keyword) */
+  /*   env = evalkeyword(lambda_list, args, env); */
+  /* if (lambda_list->car != (cons*)aux) */
+  /*   env = env; */
+
+  return env;
 }
 
 cons *assoc(cons *key, cons *plist)
@@ -607,13 +693,12 @@ symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env)
   return sym;
 }
 
-
 //Stream functions
 base_char *read_char(stream *str)
 {
-  base_char *to_ret = (base_char*)str->rv->v[str->read_index];
-  (base_char*)str->rv->v[str->read_index] == 0;
-  if (str->read_index < str->rv->size)
+  base_char *to_ret = (base_char*)str->rv->a[0][str->read_index];
+  (base_char*)str->rv->a[0][str->read_index] == 0;
+  if (str->read_index < str->rv->length->num)
     str->read_index++;
   else if (str->rv->next != 0)
     {
@@ -627,7 +712,7 @@ base_char *read_char(stream *str)
 
 base_char *peek_char(stream *str)
 {
-  return (base_char*)str->rv->v[str->read_index];
+  return (base_char*)str->rv->a[0][str->read_index];
 }
 
 cons *unread_char(base_char *c, stream *str)
@@ -636,13 +721,14 @@ cons *unread_char(base_char *c, stream *str)
     str->read_index--;
   else
     {
-      simple_vector *old_rv = str->rv;
+      array *old_rv = str->rv;
       str->rv = newsimple_vector(10);
+      //Add a small new vector, and assume we won't be unreading many chars.
       str->rv->next = old_rv;
       str->read_index = 9;
-      str->rv->v[9] = (cons*)c;
+      str->rv->a[0][9] = (cons*)c;
     }    
-  str->rv->v[str->read_index] = (cons*)c;
+  str->rv->a[0][str->read_index] = (cons*)c;
   return nil;
 }
 

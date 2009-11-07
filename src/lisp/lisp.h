@@ -62,7 +62,6 @@ typedef struct single
   struct fixnum *integer;
 } __attribute__((packed)) single;
 
-
 //Characters
 //Standard character
 typedef struct base_char
@@ -71,23 +70,14 @@ typedef struct base_char
   char c;
 }__attribute__((packed)) base_char;
 
-typedef struct simple_vector
-{
-  unsigned short type;
-  struct cons *plist;
-  int size;
-  unsigned short datatype;
-  struct cons **v;
-  struct simple_vector *next;
-}__attribute__((packed)) simple_vector;
-
 typedef struct array
 {
   unsigned short type;
   struct cons *plist;
-  unsigned short rank;
-  struct simple_vector **a;
-  struct array *next;
+  struct fixnum *rank;
+  struct fixnum *length;
+  struct cons ***a;//Array
+  struct array *next;//Just in case we want to expand it.
 }__attribute__((packed)) array;
 
 //Functions
@@ -112,7 +102,7 @@ typedef struct function
 typedef struct symbol
 {
   unsigned short type;
-  struct simple_vector *name;
+  struct array *name;
   struct cons *plist;
   struct package *home_package;
   struct cons *value;
@@ -130,8 +120,8 @@ typedef struct package
 {
   unsigned short type;
   struct cons *plist;
-  struct simple_vector *name;
-  struct simple_vector *global;//Change to hash table one day
+  struct array *name;
+  struct array *global;//Change to hash table one day
 }__attribute__((packed)) package;
 
 typedef struct procinfo//Global stuff for each Lisp 'process'.
@@ -152,8 +142,8 @@ typedef struct stream
   struct cons *plist;
   int read_index;
   int write_index;
-  struct simple_vector *rv;//read vector
-  struct simple_vector *wv;//write vector
+  struct array *rv;//read vector
+  struct array *wv;//write vector
 }__attribute__((packed)) stream;
 
 typedef struct composite_stream
@@ -170,16 +160,17 @@ extern cons *t;
 
 extern procinfo *init();
 extern cons *newcons();
-extern fixnum *newfixnum();
+extern fixnum *newfixnum(long i); 
 extern bignum *newbignum();
 extern ratio *newratio(fixnum *n, fixnum *d);
 extern single *newsingle();
 extern base_char *newbase_char();
-extern simple_vector *newsimple_vector(int size);
+extern array *newarray(long rank, int length);
+extern array *newsimple_vector(int size);
 extern package *newpackage();
 extern compiled_function *newcompiled_function();
 extern base_char *ctolc(char c);
-extern simple_vector *strtolstr(char *str);
+extern array *strtolstr(char *str);
 extern cons *null (cons *a);
 extern cons *numberp(cons *a);
 extern cons *fcons(cons *a, cons *b);
@@ -187,12 +178,12 @@ extern cons *car(cons *a);
 extern cons *rplaca(cons *a, cons *new);
 extern cons *cdr(cons *a);
 extern cons *rplacd(cons *a, cons *new);
-extern symbol *intern(simple_vector *name, package *p);
+extern symbol *intern(array *name, package *p);
 extern cons *chareq(base_char *a, base_char *b);
 extern cons *charequal(base_char *a, base_char *b);
-extern cons *stringeq(simple_vector *a, simple_vector *b);
-extern cons *stringequal(simple_vector *a, simple_vector *b);
-extern package *find_package(simple_vector *name, procinfo *pinfo);
+extern cons *stringeq(array *a, array *b);
+extern cons *stringequal(array *a, array *b);
+extern package *find_package(array *name, procinfo *pinfo);
 extern cons *eq (cons *a, cons *b);
 extern cons *eql (cons *a, cons *b);
 extern cons *equal (cons *a, cons *b);
@@ -200,7 +191,8 @@ extern cons *lookup(char *name, cons *env);
 extern cons *mkpair(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
-extern cons *envbind(cons *env, cons *binding);
+extern cons *envbind(cons *binding, cons *env);
+//extern cons *evalopt(cons **lambda_list, cons **args, cons **newenv);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
 extern cons *assoc(cons *key, cons *plist);

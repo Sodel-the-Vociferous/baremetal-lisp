@@ -58,6 +58,9 @@ symbol *packagetype;
 symbol *procinfotype;
 
 /*Common-Lisp symbols*/
+//Internal symbols, for me.
+symbol special_operators;
+//Defined symbols
 symbol *ts;//T symbol
 symbol *nils;//NIL symbol
 symbol *package_sym;//*package*
@@ -105,7 +108,7 @@ cons *initread(char *str, cons *env);
 /*Initialization helper functions*/
 symbol *initsym(char *name, package *p)
 {
-  simple_vector *a_name = strtolstr(name);
+  array *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
     {
@@ -121,7 +124,7 @@ symbol *initsym(char *name, package *p)
 
 symbol *initintsym(char *name, package *p)
 {
-  simple_vector *a_name = strtolstr(name);
+  array *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
     {
@@ -162,7 +165,7 @@ cons *initread(char *str, cons *env)
 	  && (*str <='z'))
 	*str = *str - 'A';//convert to uppercase.
       if (*str == 0)
-	//Seriously, man. If this even happens, it's _your_ fault.
+	//Seriously, man. If this even happens, it's _your_ fault. Watch your parens.
 	return 0;
       else if (*str == ' ')
 	str++;
@@ -212,13 +215,12 @@ cons *initread(char *str, cons *env)
 	}
     }
 }
-      
 
 /*Initialization*/
 void init_keyword_pkg()
 {
   //Init keyword package
-  simple_vector *keyword_name = strtolstr("KEYWORD");
+  array *keyword_name = strtolstr("KEYWORD");
   keyword_pkg = newpackage();
   keyword_pkg->name = keyword_name;
 
@@ -257,7 +259,7 @@ void init_keyword_pkg()
   ratiotype = initsym("RATIO", keyword_pkg);
   singletype = initsym("SINGLE", keyword_pkg);
   base_chartype = initsym("BASE-CHARACTER", keyword_pkg);
-  vectortype = initsym("SIMPLE_VECTOR", keyword_pkg);
+  vectortype = initsym("ARRAY", keyword_pkg);
   arraytype = initsym("ARRAY", keyword_pkg);
   compiled_functiontype = initsym("COMPILED-FUNCTION", keyword_pkg);
   stringtype = initsym("STRING", keyword_pkg);
@@ -271,7 +273,7 @@ void init_keyword_pkg()
 void init_cl_pkg()
 {
   //Init cl package
-  simple_vector *cl_name = strtolstr("COMMON-LISP");
+  array *cl_name = strtolstr("COMMON-LISP");
   cl_pkg = newpackage();
   cl_pkg->name = cl_name;
 
@@ -281,7 +283,7 @@ void init_cl_pkg()
   ts->value = t;
   
   //Init nil
-  //simple_vector *nil_name = strtolstr("NIL");
+  //array *nil_name = strtolstr("NIL");
   nil->type = CONS;
   nil->car = nil;
   nil->cdr = nil;
@@ -300,10 +302,10 @@ void init_cl_pkg()
 
 void init_readtable()
 {
-  int i;
+  long i;
 
   //Init *readtable*
-  simple_vector *readtable_name = strtolstr("*READTABLE*");
+  array *readtable_name = strtolstr("*READTABLE*");
   readtable = intern(readtable_name, cl_pkg);
   readtable->value = (cons*)newsimple_vector(255);
   char alphabetic_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -314,43 +316,44 @@ void init_readtable()
   char single_escape_chars[] = "\\";
   char multiple_escape_chars[] = "|";
   char constituents[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$_-./:;?+<=>#%&*@[]{}^~";
+  long readtable_length = ((array*)readtable->value)->length->num;
 
   char *c;
   base_char *bc;
 
   //Create the default readtable
-  //Use the numerical ASCII values of each number as the index of a readtable, a simple_vector.
+  //Use the numerical ASCII values of each number as the index of a readtable, a simple vector.
   //Each entry has an associated property list, as per CLHS 2.1.4.
 
   for (i=0;i<' ';i++)
-    ((simple_vector*)readtable->value)->v[i] = fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[i]);
+    ((array*)readtable->value)->a[0][i] = fcons(fcons((cons*)invalid, t), ((array*)readtable->value)->a[0][i]);
 
   for (c=constituents;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)constituent, t), ((simple_vector*)readtable->value)->v[*c]);
+    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)constituent, t), ((array*)readtable->value)->a[0][*c]);
   //init constituents
-  ((simple_vector*)readtable->value)->v[':'] =  fcons(fcons((cons*)package_marker, t), ((simple_vector*)readtable->value)->v[':']);
+  ((array*)readtable->value)->a[0][':'] =  fcons(fcons((cons*)package_marker, t), ((array*)readtable->value)->a[0][':']);
 
   for (c=alphabetic_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphabetic, t), ((simple_vector*)readtable->value)->v[*c]);	       
+    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)alphabetic, t), ((array*)readtable->value)->a[0][*c]);	       
 
   for (c=alphadigit_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)alphadigit, t), ((simple_vector*)readtable->value)->v[*c]);
+    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)alphadigit, t), ((array*)readtable->value)->a[0][*c]);
 
   for (c=terminating_macro_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)terminating_macro, nil), ((simple_vector*)readtable->value)->v[*c]);
+    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)terminating_macro, nil), ((array*)readtable->value)->a[0][*c]);
 
   for (c=whitespace_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((simple_vector*)readtable->value)->v[*c]));
+    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((array*)readtable->value)->a[0][*c]));
 
   for (c=single_escape_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)single_escape, t), ((simple_vector*)readtable->value)->v[*c]); 
+    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)single_escape, t), ((array*)readtable->value)->a[0][*c]); 
 
   for (c=multiple_escape_chars;*c!=0;c++)
-    ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)multiple_escape, t), ((simple_vector*)readtable->value)->v[*c]);
+    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)multiple_escape, t), ((array*)readtable->value)->a[0][*c]);
 
-  for(i=0;i<((simple_vector*)readtable->value)->size;i++)
-    if (((simple_vector*)readtable->value)->v[i] == nil)
-      ((simple_vector*)readtable->value)->v[*c] =  fcons(fcons((cons*)invalid, t), ((simple_vector*)readtable->value)->v[*c]);
+  for(i=0;i<readtable_length;i++)
+    if (((array*)readtable->value)->a[0][i] == nil)
+      ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)invalid, t), ((array*)readtable->value)->a[0][*c]);
   //Invalidate the rest, the wretched lot...  
 }
 
@@ -383,6 +386,11 @@ void init_list_funs()
 			nil),
 		  cl_pkg,
 		  &lcar);
+  cdrs =initcfun("CDR", 
+		 fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
+		       nil),
+		 cl_pkg,
+		 &lcar);X
   quote = initcfun("QUOTE", 
 		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),
@@ -466,7 +474,7 @@ procinfo *init()
   init_cl_pkg();
   
   //Init cl-user package
-  simple_vector *cl_user_name = strtolstr("COMMON_LISP_USER");
+  array *cl_user_name = strtolstr("COMMON_LISP_USER");
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
 
