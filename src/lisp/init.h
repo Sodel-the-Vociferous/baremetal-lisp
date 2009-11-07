@@ -52,7 +52,7 @@ extern symbol *procinfotype;
 
 /*Common-Lisp symbols*/
 //Internal symbols, for me.
-extern symbol special_operators;
+extern symbol *special_operators;
 //Defined symbols
 extern symbol *ts;//T symbol
 extern symbol *nils;//NIL symbol
@@ -68,8 +68,9 @@ extern symbol *aux;//&aux
 extern symbol *whole;//&whole
 extern symbol *body;//&body
 extern symbol *allow_other_keys;//&allow-other-keys
-//List function anmes
+//List function names
 extern symbol *cars;//CAR symbol
+extern symbol *cdrs;
 extern symbol *quote;//QUOTE symbol
 //Equality function names
 extern symbol *chareqs;

@@ -59,7 +59,7 @@ symbol *procinfotype;
 
 /*Common-Lisp symbols*/
 //Internal symbols, for me.
-symbol special_operators;
+symbol *special_operators;
 //Defined symbols
 symbol *ts;//T symbol
 symbol *nils;//NIL symbol
@@ -75,8 +75,9 @@ symbol *aux;//&aux
 symbol *whole;//&whole
 symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
-//List function anmes
+//List function names
 symbol *cars;//CAR symbol
+symbol *cdrs;
 symbol *quote;//QUOTE symbol
 //Equality function names
 symbol *chareqs;
@@ -386,11 +387,11 @@ void init_list_funs()
 			nil),
 		  cl_pkg,
 		  &lcar);
-  cdrs =initcfun("CDR", 
-		 fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
-		       nil),
-		 cl_pkg,
-		 &lcar);X
+  cdrs = initcfun("CDR", 
+		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
+			nil),
+		  cl_pkg,
+		  &lcar);
   quote = initcfun("QUOTE", 
 		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),

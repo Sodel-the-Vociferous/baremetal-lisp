@@ -502,7 +502,7 @@ cons *eval(cons *exp, cons *env)
     }
   else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS) &&
-	   (assoc(exp->car->car, special_operators) == nil))
+	   (assoc(exp->car->car, special_operators->value) == nil))
     {
       symbol *s = (symbol*)exp->car;
       function *f;
@@ -535,7 +535,7 @@ cons *eval(cons *exp, cons *env)
     }
  else if ((exp->type == CONS) && 
 	   (exp->car->type != CONS) &&
-	   (assoc(exp->car->car, special_operators) == nil))
+	  (assoc(exp->car->car, (cons*)special_operators->value) == nil))
    {//TODO
      return 0; 
    }
