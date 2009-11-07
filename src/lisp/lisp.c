@@ -23,7 +23,7 @@ cons *nil = &nil_phys;
 cons *newcons()
 {
   cons *c = malloc(sizeof(cons));
-  c->type = STRING;
+  c->type = LIST;
   c->car = nil;
   c->cdr = nil;
   return c;
@@ -172,7 +172,7 @@ array *strtolstr(char *str)
 cons *null (cons *a)
 {//Is object nil?
   if (a == nil ||
-      (a->type = STRING &&
+      (a->type = LIST &&
        a->car == nil &&
        a->cdr == nil))
     return t;
@@ -197,7 +197,7 @@ cons *numberp(cons *a)
 cons *fcons(cons *a, cons *b)
 {//f added to prevent collision
   cons *to_ret = malloc(sizeof(cons));
-  to_ret->type = STRING;  
+  to_ret->type = LIST;  
   to_ret->car = a;
   to_ret->cdr = b;
   return to_ret;
@@ -205,7 +205,7 @@ cons *fcons(cons *a, cons *b)
 
 cons *car(cons *a)
 {
-  if (a->type == STRING)
+  if (a->type == LIST)
     return a->car;
   else
     return nil;//TODO error
@@ -213,7 +213,7 @@ cons *car(cons *a)
 
 cons *rplaca(cons *a, cons *new)
 {
-  if (a->type == STRING && a != nil)
+  if (a->type == LIST && a != nil)
     {
       a->car = new;
       return a;
@@ -224,7 +224,7 @@ cons *rplaca(cons *a, cons *new)
 
 cons *cdr(cons *a)
 {
-  if (a->type == STRING)
+  if (a->type == LIST)
     return a->cdr;
   else
     return nil;//TODO error
@@ -232,7 +232,7 @@ cons *cdr(cons *a)
 
 cons *rplacd(cons *a, cons *new)
 {
-  if (a->type == STRING && a != nil)
+  if (a->type == LIST && a != nil)
     {
       a->cdr = new;
       return a;
@@ -500,8 +500,8 @@ cons *eval(cons *exp, cons *env)
 	return nil;//TODO no value error
       //If there's no binding in the lexical environment, return the dynamic binding.
     }
-  else if ((exp->type == STRING) && 
-	   (exp->car->type != STRING) &&
+  else if ((exp->type == LIST) && 
+	   (exp->car->type != LIST) &&
 	   (assoc(exp->car->car, special_operators->value) == nil))
     {
       symbol *s = (symbol*)exp->car;
@@ -533,8 +533,8 @@ cons *eval(cons *exp, cons *env)
       else
 	return nil;//TODO error, not a function
     }
- else if ((exp->type == STRING) && 
-	   (exp->car->type != STRING) &&
+ else if ((exp->type == LIST) && 
+	   (exp->car->type != LIST) &&
 	  (assoc(exp->car->car, (cons*)special_operators->value) == nil))
    {//TODO
      return 0; 
@@ -557,11 +557,11 @@ cons *extend_env(cons *env)
   return newenv;
 }
 
-cons *envbind(cons *binding,cons *env)
+cons *envbind(cons *key, cons *value, cons *env)
 {
   cons *first = env;  
   cons *newenv = newcons();
-  newenv->car = binding;
+  newenv->car = fcons(key, fcons(value, nil));
   newenv->cdr = env->cdr;
   env->cdr = newenv;
   return env;
@@ -577,7 +577,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   
   while((null(lambda_list) == nil) && 
 	(null(args) == nil) &&
-	(lambda_list->car != (cons*)optional) &&
+	(lambda_list->car != (cons*)optional) &&//Break on 
 	(lambda_list->car != (cons*)rest) &&
 	(lambda_list->car != (cons*)keyword) &&
 	(lambda_list->car != (cons*)aux))
@@ -585,8 +585,8 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       //varname = ((symbol*)lambda_list->car)->name;
       //varsym = intern(varname, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
       varsym = (symbol*)lambda_list->car;
-      envbind(fcons((cons*)varsym, eval(args->car, env)), env);
-
+      envbind((cons*)varsym, eval(args->car, env), env);
+      
       lambda_list = lambda_list->cdr;
       args = args->cdr;
     }
@@ -602,13 +602,13 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	{//While there are values for the optional arguments...
 	  if (lambda_list->car->type == SYMBOL)
 	    varsym = (symbol*)lambda_list->car;
-	  else if ((lambda_list->car->type == STRING) &&
+	  else if ((lambda_list->car->type == LIST) &&
 		   (lambda_list->car->car->type == SYMBOL))
 	    varsym = (symbol*)lambda_list->car->car;
 	  else
 	    return 0;//TODO error
 
-	  envbind(fcons((cons*)varsym, eval(args->car, env)), env);
+	  envbind((cons*)varsym, eval(args->car, env), env);
 
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
@@ -622,15 +622,15 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	  if (lambda_list->car->type == SYMBOL)
 	    {
 	      varsym = (symbol*)lambda_list->car;
-	      envbind(fcons((cons*)varsym, nil), env);
+	      envbind((cons*)varsym, nil, env);
 	      lambda_list = lambda_list->cdr;
 	      args = args->cdr;
 	    }
-	  else if ((lambda_list->car->type == STRING) &&
+	  else if ((lambda_list->car->type == LIST) &&
 		   (lambda_list->car->car->type == SYMBOL))
 	    {
 	      varsym = (symbol*)lambda_list->car->car;
-	      envbind(fcons((cons*)varsym, eval(lambda_list->car->cdr, env)), env);
+	      envbind((cons*)varsym, eval(lambda_list->car->cdr, env), env);
 	      lambda_list = lambda_list->cdr;
 	      args = args->cdr;
 	    }
@@ -655,7 +655,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	  else
 	    return 0;//TODO error
 
-	  envbind(fcons((cons*)varsym, args), env);
+	  envbind((cons*)varsym, args, env);
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
 	}

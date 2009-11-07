@@ -147,12 +147,6 @@ cons *lcond(cons *env)
 }
 
 /*Evaluation*/
-cons *lquote(cons *env)
-{
-  cons *exp = lookup("EXP", env);
-  return exp;
-}
-
 cons *leval(cons *env)
 {
   cons *exp = lookup("EXP", env);
@@ -167,6 +161,14 @@ cons *ldefun(cons *env)
   cons *form = lookup("FORM", env);
   return (cons*)defun(name, lambda_list, form, env);
 }
+
+/*Special Operators*/
+cons *lquote(cons *env)
+{
+  cons *exp = lookup("EXP", env);
+  return exp;
+}
+
   
 
 //Reading

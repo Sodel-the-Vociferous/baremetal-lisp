@@ -41,7 +41,7 @@ symbol *numtype;
 symbol *realtype;
 symbol *rattype;//rational
 symbol *ttype;
-symbol *liststype;
+symbol *listtype;
 symbol *fixnumtype;
 symbol *bignumtype;
 symbol *ratiotype;
@@ -231,7 +231,7 @@ void init_keyword_pkg()
   //External and constant must be initialized manually, because they depend on themselves.
   external = intern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
-  constant = intern(strtolstr("STRINGTANT"), keyword_pkg);
+  constant = intern(strtolstr("CONSTANT"), keyword_pkg);
   constant->value = (cons*)constant;
   external->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   constant->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
@@ -242,7 +242,7 @@ void init_keyword_pkg()
   dynamic = initsym("DYNAMIC", keyword_pkg);
 
   //Readtable character attributes
-  constituent = initsym("STRINGTITUENT", keyword_pkg);
+  constituent = initsym("CONSTITUENT", keyword_pkg);
   whitespace = initsym("WHITESPACE", keyword_pkg);
   terminating_macro = initsym("TERMINATING-MACRO-CHARACTER", keyword_pkg);
   non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", keyword_pkg);
@@ -257,7 +257,7 @@ void init_keyword_pkg()
 
   //Types
   ttype = initsym("T", keyword_pkg);
-  constype = initsym("STRING", keyword_pkg);
+  listtype = initsym("LIST", keyword_pkg);
   fixnumtype = initsym("FIXNUM", keyword_pkg);
   bignumtype = initsym("BIGNUM", keyword_pkg);
   ratiotype = initsym("RATIO", keyword_pkg);
@@ -288,7 +288,7 @@ void init_cl_pkg()
   
   //Init nil
   //array *nil_name = strtolstr("NIL");
-  nil->type = STRING;
+  nil->type = LIST;
   nil->car = nil;
   nil->cdr = nil;
   nils = initsym("NIL", cl_pkg);
@@ -432,20 +432,21 @@ void init_eq_funs()
 				   nil)),
 		       cl_pkg,
 		       &lstringeq);
-
+  
   stringequals = initcfun("STRING-EQUAL",
 			  fcons((cons*)intern(strtolstr("A"), cl_pkg),
 				fcons((cons*)intern(strtolstr("B"), cl_pkg),
 				      nil)),
 			  cl_pkg,
 			  &lstringequal);
-
-  eqs = initcfun("EQ",
-		 fcons((cons*)intern(strtolstr("A"), cl_pkg),
-		       fcons((cons*)intern(strtolstr("B"), cl_pkg),
-			     nil)),
-		 cl_pkg,
+  
+  eqs = initcfun("EQ", 
+		 fcons((cons*)intern(strtolstr("A"), cl_pkg), 
+		       fcons((cons*)intern(strtolstr("B"), cl_pkg), 
+			     nil)), 
+		 cl_pkg, 
 		 &leq);
+
   eqls = initcfun("EQL",
 		  fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			fcons((cons*)intern(strtolstr("B"), cl_pkg),
@@ -474,8 +475,8 @@ void init_types()
   array *tv;//Tpyes vector
   
   types = initintsym("TYPES", cl_pkg);
-  types->value = newsimple_vector(1024);
-  tv=types->value;
+  types->value = (cons*)newsimple_vector(1024);
+  tv=(array*)types->value;
   //Initialize type hierarchies
 
 }

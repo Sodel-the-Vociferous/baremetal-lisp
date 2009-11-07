@@ -2,7 +2,7 @@
 
 //Types
 #define T 1
-#define STRING 2
+#define LIST 2
 #define FIXNUM 3
 #define BIGNUM 4
 #define RATIO 5
@@ -191,7 +191,7 @@ extern cons *lookup(char *name, cons *env);
 extern cons *mkpair(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
-extern cons *envbind(cons *binding, cons *env);
+extern cons *envbind(cons *key, cons *value, cons *env);
 //extern cons *evalopt(cons **lambda_list, cons **args, cons **newenv);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
