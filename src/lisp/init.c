@@ -41,7 +41,7 @@ symbol *numtype;
 symbol *realtype;
 symbol *rattype;//rational
 symbol *ttype;
-symbol *constype;
+symbol *liststype;
 symbol *fixnumtype;
 symbol *bignumtype;
 symbol *ratiotype;
@@ -78,6 +78,7 @@ symbol *allow_other_keys;//&allow-other-keys
 //List function names
 symbol *cars;//CAR symbol
 symbol *cdrs;
+//Special operators
 symbol *quote;//QUOTE symbol
 //Equality function names
 symbol *chareqs;
@@ -86,6 +87,8 @@ symbol *stringeqs;
 symbol *stringequals;
 symbol *eqs;
 symbol *eqls;
+symbol *equals;
+symbol *equalps;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -125,7 +128,7 @@ symbol *initsym(char *name, package *p)
 }
 
 symbol *initintsym(char *name, package *p)
-{
+{//Init internal symbol
   array *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
@@ -139,7 +142,6 @@ symbol *initintsym(char *name, package *p)
     }
   return a;
 }
-
 
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
 {
@@ -172,7 +174,7 @@ cons *initread(char *str, cons *env)
       else if (*str == ' ')
 	str++;
       else if (*str == '(')
-	{
+	{//Read a list
 	  cons *foo = newcons();
 
 	  while ((*str != ')') &&
@@ -229,7 +231,7 @@ void init_keyword_pkg()
   //External and constant must be initialized manually, because they depend on themselves.
   external = intern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
-  constant = intern(strtolstr("CONSTANT"), keyword_pkg);
+  constant = intern(strtolstr("STRINGTANT"), keyword_pkg);
   constant->value = (cons*)constant;
   external->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
   constant->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
@@ -240,7 +242,7 @@ void init_keyword_pkg()
   dynamic = initsym("DYNAMIC", keyword_pkg);
 
   //Readtable character attributes
-  constituent = initsym("CONSTITUENT", keyword_pkg);
+  constituent = initsym("STRINGTITUENT", keyword_pkg);
   whitespace = initsym("WHITESPACE", keyword_pkg);
   terminating_macro = initsym("TERMINATING-MACRO-CHARACTER", keyword_pkg);
   non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", keyword_pkg);
@@ -255,7 +257,7 @@ void init_keyword_pkg()
 
   //Types
   ttype = initsym("T", keyword_pkg);
-  constype = initsym("CONS", keyword_pkg);
+  constype = initsym("STRING", keyword_pkg);
   fixnumtype = initsym("FIXNUM", keyword_pkg);
   bignumtype = initsym("BIGNUM", keyword_pkg);
   ratiotype = initsym("RATIO", keyword_pkg);
@@ -286,7 +288,7 @@ void init_cl_pkg()
   
   //Init nil
   //array *nil_name = strtolstr("NIL");
-  nil->type = CONS;
+  nil->type = STRING;
   nil->car = nil;
   nil->cdr = nil;
   nils = initsym("NIL", cl_pkg);
@@ -469,7 +471,13 @@ void init_set_funs()
 
 void init_types()
 {
-  return;
+  array *tv;//Tpyes vector
+  
+  types = initintsym("TYPES", cl_pkg);
+  types->value = newsimple_vector(1024);
+  tv=types->value;
+  //Initialize type hierarchies
+
 }
 
 procinfo *init()

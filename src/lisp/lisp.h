@@ -2,7 +2,7 @@
 
 //Types
 #define T 1
-#define CONS 2
+#define STRING 2
 #define FIXNUM 3
 #define BIGNUM 4
 #define RATIO 5
