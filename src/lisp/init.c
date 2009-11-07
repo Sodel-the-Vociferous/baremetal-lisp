@@ -97,6 +97,7 @@ void init_keyword_pkg();
 void init_cl_pkg();
 void init_readtable();
 void init_lambda_control();
+void init_special_operators();
 void init_list_funs();
 void init_eq_funs();
 void init_read_funs();
@@ -296,9 +297,12 @@ void init_cl_pkg()
   package_sym->value = (cons*)cl_pkg;
   init_readtable();
   init_lambda_control();
+  init_special_operators();
   init_list_funs();
   init_eq_funs();
   init_read_funs();
+  init_set_funs();
+  init_types();
 }
 
 void init_readtable()
@@ -377,6 +381,12 @@ void init_lambda_control()
 							fcons((cons*)whole,
 							      fcons((cons*)body,
 								    fcons((cons*)allow_other_keys, nil)))))));
+}
+
+void init_special_operators()
+{
+  special_operators = initintsym("SPECIAL-OPERATORS", cl_pkg);
+  special_operators->value = nil;
 }
 
 void init_list_funs()
