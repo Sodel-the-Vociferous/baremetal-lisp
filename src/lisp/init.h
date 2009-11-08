@@ -71,6 +71,7 @@ extern symbol *allow_other_keys;//&allow-other-keys
 //List function names
 extern symbol *cars;//CAR symbol
 extern symbol *cdrs;
+extern symbol *lists;//LIST symbol
 //Special aoperators
 extern symbol *quote;//QUOTE symbol
 //Equality function names

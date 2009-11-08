@@ -77,7 +77,8 @@ symbol *body;//&body
 symbol *allow_other_keys;//&allow-other-keys
 //List function names
 symbol *cars;//CAR symbol
-symbol *cdrs;
+symbol *cdrs;//CDR symbol
+symbol *lists;//LIST symbol
 //Special operators
 symbol *quote;//QUOTE symbol
 //Equality function names
@@ -115,39 +116,34 @@ cons *initread(stream *str, cons *env);
 
 /*Initialization helper functions*/
 symbol *initsym(char *name, package *p)
-{
+{/* Initialize an external symbol named name in package p.
+  */
   array *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
   if (p == keyword_pkg)
-    {
+    {/* Keywords suffer from apartheid, as per CLHS: 
+      */
       a->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
       a->value = (cons*)a;
     }
-  else if (p == cl_pkg)
-    {
+  else
       a->plist = fcons(fcons((cons*)external, t), nil);
-    }
   return a;
 }
 
 symbol *initintsym(char *name, package *p)
-{//Init internal symbol
+{/*Initialize an internal symbol named name in package p.
+  */
   array *a_name = strtolstr(name);
   symbol *a = intern(a_name, p);
-  if (p == keyword_pkg)
-    {
-      a->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
-      a->value = (cons*)a;
-    }
-  else if (p == cl_pkg)
-    {
-      a->plist = fcons(fcons((cons*)internal, t), nil);
-    }
+  
+  a->plist = fcons(fcons((cons*)internal, t), nil);
   return a;
 }
 
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
-{
+{/* Initialize a compiled C function in package p. 
+  */
   symbol *funsym;
   compiled_function *f;
 
@@ -163,38 +159,53 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
 }
 
 cons *initread(stream *str, cons *env)
-{//Inflexible read. A big kludge. The only code it ever reads is hard-coded bootstrap. 
+{/* An inflexible, incomplete implementation of read. Just what the programmer
+  * needs to get the system off the ground, and not an iota more. To be
+  * extended at the programmer's whim for convenience.
+  * Currently recognizes: lists, characters, symbols
+  *
+  * Stream support is rudimentary.
+  */
   package *p = (package*)((procinfo*)env->car)->package_sym->value;
   base_char *c = read_char(str);
 
   while (1)
     {
-      if ((c->c >= 'a') 
-	  && (c->c <='z'))
-	c->c = c->c - 'A';//convert to uppercase.
       if (c->c == 0 || c->c == ')')
-	{
+	{/* Terminate a list, or a read.
+	  */
 	  if (c->c == 0)
+	    /* If the character is the null character, unread it, or else
+	     * successive reads won't know that the stream has ended.
+	     */
 	    unread_char(c, str);
 	  return nil;
 	}
-      else if (c->c == ' ')
+      else if (c->c == ' ' || c->c == '\t')
+	/* Skip over whitespace.
+	 */
 	c = read_char(str);
       else if (c->c == '(')
-	{//Read a list
+	{/* Read a list.
+	  */
 	  cons *foo = newcons();
 	  cons *bar;
 	  cons *to_ret = foo;
 
 	  bar = (cons*)initread(str, env);
 	  if (bar == nil)
+	    /*Recognize when the list is null.
+	     */
 	    return nil;
 	  else
+	    /* Otherwise, start reading a list!
+	     */
 	    foo->car = bar;
 	  
 	  while ((c->c != ')') &&
 		 (c->c != 0))
-	    {
+	    {/* Read a list, until a read returns nil, terminating the list.
+	      */
 	      bar = (cons*)initread(str, env);
 	      if (bar == nil)
 		return to_ret;
@@ -204,12 +215,16 @@ cons *initread(stream *str, cons *env)
 	    }
 	}
       else if (c->c >='0' && c->c <='9')
-	return 0;//TODO parse number.
+	/* If the token begins with a digit, parse a number.
+	 */
+	return 0;//TODO 
       else if (c->c == '#')
-	{//Read macro character.
+	{/* If the character is the macro sharpsign, interpret it.
+	  */
 	  c = read_char(str);
 	  if (c->c == '\\')
-	    {//read character
+	    {/* If #\ is the reader macro combination, read a character.
+	      */
 	      c = read_char(str);
 	      return (cons*)ctolc(c->c);
 	    }
@@ -217,7 +232,8 @@ cons *initread(stream *str, cons *env)
 	    c = read_char(str);
 	}
       else
-	{
+	{/* Otherwise, we are reading a symbol.
+	  */
 	  int i=0;
 	  char name[100];
 	  cons *foo=0;
@@ -226,30 +242,49 @@ cons *initread(stream *str, cons *env)
 		 (c->c != ')') &&
 		 (c->c != ' ') &&
 		 (c->c != 0))
-	    {
+	    {/* Until we encounter something to terminate the symbol, read characters
+	      * into a buffer. Programmer: No symbols of more than 99 characters if 
+	      * you're using this function, and are too lazy to modify it. 
+	      * (Safe to change, just an arbitrary number.)
+	      */
 	      if (i >= 100)
+		/* Even with the warning above, check to see if the programmer
+		 * ignored my warnings. Prevents buffer overruns.
+		 */
 		return 0;//error
+
+	      if ((c->c >= 'a') &&
+		  (c->c <='z'))
+		/* Convert the character to uppercase.
+		 */
+		c->c = c->c - 'A';
+
 	      name[i] = c->c;
 	      c = read_char(str);
 	      i++;
 	    }
 	  if (i >= 100)
-	    return 0;//error
+	    /* If we overrun the buffer, we are in error. return.
+	     */
+	    return 0;
 	  else
 	    name[i] = 0;
 	  
 	  if (c->c == 0)
+	    /* If the character is the null character, unread it, or else
+	     * successive reads won't know that the stream has ended.
+	     */
 	    unread_char(c, str);
 	  
-	  foo = (cons*)intern(strtolstr(name), p);
-	  return foo;
+	  return (cons*)intern(strtolstr(name), p);
 	}
     }
 }
 
 /*Initialization*/
 void init_keyword_pkg()
-{
+{/* Initialize keywords that we'll need to get things rolling.
+  */
   //Init keyword package
   array *keyword_name = strtolstr("KEYWORD");
   keyword_pkg = newpackage();
@@ -302,7 +337,8 @@ void init_keyword_pkg()
 }
 
 void init_cl_pkg()
-{
+{/* Initialize the Common Lisp package, and its contents.
+  */
   //Init cl package
   array *cl_name = strtolstr("COMMON-LISP");
   cl_pkg = newpackage();
@@ -336,7 +372,9 @@ void init_cl_pkg()
 }
 
 void init_readtable()
-{
+{/* Initialize the readtable.
+  * >Deprecated
+  */
   long i;
 
   //Init *readtable*
@@ -393,8 +431,8 @@ void init_readtable()
 }
 
 void init_lambda_control()
-{
-  //Init lambda list control symbols
+{/* Initialize the lambda control characters for evalambda().
+  */
   optional = initsym("&OPTIONAL", cl_pkg);
   rest = initsym("&REST", cl_pkg);
   keyword = initsym("&KEYWORD", cl_pkg);
@@ -414,14 +452,15 @@ void init_lambda_control()
 }
 
 void init_special_operators()
-{
+{/* Initialize the list of special operators.
+  */
   special_operators = initintsym("SPECIAL-OPERATORS", cl_pkg);
   special_operators->value = nil;
 }
 
 void init_list_funs()
-{
-  //symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
+{/* Initialize the list functions.
+  */
   cars = initcfun("CAR", 
 		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
 			nil),
@@ -437,10 +476,17 @@ void init_list_funs()
 			 nil),
 		   cl_pkg,
 		   &lquote);  
-}  
+  lists = initcfun("LIST",
+		   fcons((cons*)rest, 
+			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
+			       nil)),
+		   cl_pkg,
+		   &llist);  
+}
 
 void init_eq_funs()
-{
+{/* Initialize the equality functions.
+  */
   chareqs = initcfun("CHAR=",
 		     fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			   fcons((cons*)intern(strtolstr("B"), cl_pkg),
@@ -484,7 +530,8 @@ void init_eq_funs()
 }
 
 void init_read_funs()
-{
+{/* Initialize reader functions.
+  */
   stream *str = newstream();
   str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
   str->write_index = str->rv->length->num;
@@ -496,7 +543,8 @@ void init_read_funs()
 }  
 
 void init_set_funs()
-{
+{/* Initialize assignment functions.
+  */
   eqls = initcfun("DEFUN",
 		  fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
 			fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
@@ -507,8 +555,9 @@ void init_set_funs()
 }
 
 void init_types()
-{
-  array *tv;//Tpyes vector
+{/* Initialize the internal Lisp type list.
+  */
+  array *tv;//Types vector
   
   types = initintsym("TYPES", cl_pkg);
   types->value = (cons*)newsimple_vector(1024);

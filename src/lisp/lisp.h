@@ -1,6 +1,6 @@
 #define HASH_TABLE_SIZE 255
 
-//Types
+//Types. One day, these will be changed to pointers to symbols.
 #define T 1
 #define LIST 2
 #define FIXNUM 3
@@ -23,6 +23,19 @@
 
 #ifdef BITS32
 
+
+/* CONS cell.
+ *
+ * A basic linked list node: the fundamental quanta of Lisp lists.
+ * A CONS cell consists of two pointers: the CAR, and the CDR.
+ ***************************************************************
+ * Note: this is an artifact of the assembly instructions used *
+ * to implement CONS cells on the first machine to host Lisp.  *
+ ***************************************************************
+ * In a sigle CONS cell, these are pointers to any two objects.
+ * When part of a List, the CAR always points to some object,
+ * and the CDR to the next cell in the list.
+ */
 typedef struct cons
 {
   unsigned short type;
@@ -32,12 +45,29 @@ typedef struct cons
 
 //Numbers
 //Integers
+
+/* Fixnum integer
+ *
+ * An integer that can be stored and manipulated by the machine;
+ * Alternately put, an integer that can be dealt with in C, with no
+ * special infrastructure.
+ */
 typedef struct fixnum
 {
   unsigned short type;
   long num;
 } __attribute__((packed)) fixnum;
 
+/* Bignum integer
+ * 
+ * For number which are too large for the machine to handle without
+ * some software infrastructure. Here, implemented as a series of
+ * bignum object, each storing the same amount of data as a fixnum.
+ * For calculations, the series is compounded. 
+ * For reference, the first bignum is always the least significant 
+ * (smallest) and the last bignum is always the most significant
+ * (largest).
+ */
 typedef struct bignum
 {
   unsigned short type;
@@ -46,6 +76,15 @@ typedef struct bignum
 } __attribute__((packed)) bignum;
 
 //Ratios
+
+/* Ratio
+ *
+ * Same as the ratios you learned in school: a numerator, and a
+ * denominator. Both must be fixnums (integers).
+ * Lisp will try to keep ratios as ratios during
+ * mathematical operations. However, if a ratio interacts with
+ * a floating point number, the result will be floating-point.
+ */
 typedef struct ratio
 {
   unsigned short type;
@@ -53,7 +92,14 @@ typedef struct ratio
   struct fixnum *denominator;
 } __attribute__((packed)) ratio;
 
-//Floating point
+/* Floating-Point irrational number
+ *
+ * Floating point numbers, while finite, are treated as irrational
+ * numbers. To convert them to ratios, the Lisp interpreter must be
+ * explicitly told to make the conversion.
+ * Consists of a 1 bit sign, 15-bit base, fixnum exponent, and
+ * fixnum integer.
+ */
 typedef struct single
 {
   unsigned short type;
@@ -64,13 +110,31 @@ typedef struct single
 } __attribute__((packed)) single;
 
 //Characters
-//Standard character
+
+/* Base character
+ * This character has no bells and whistles, and is barely a Lisp object.
+ * It consists only of an 8-bit ASCII character.
+ */
 typedef struct base_char
 {
   unsigned short type;
   char c;
 }__attribute__((packed)) base_char;
 
+/* Array
+ * 
+ * An array consists of a property list, a rank (which
+ * is the number of dimensions), a length, and a C array 
+ * of pointers to Lisp objects. The 'next' field is a pointer
+ * to another array, which is treated as an extension to 
+ * the current array. This means that arrays can be resized
+ * with much less of a performance hiccup. Lookup times are
+ * decreased by several CPU instructions for extended arrays,
+ * meaning that there is virtually no practical problem.
+ *
+ * A vector is a one-dimensional array. Strings are vectors
+ * of characters.
+ */
 typedef struct array
 {
   unsigned short type;
@@ -82,6 +146,17 @@ typedef struct array
 }__attribute__((packed)) array;
 
 //Functions
+
+
+/* Compiled Function
+ *
+ * This is a function that has been compiled into machine
+ * code, either referenced from the C code, or compiled
+ * by the as-of-yet non-existent Lisp compiler.
+ * Consists of a property list, a lambda list (which holds
+ * argument variable names), the lexical environment in which
+ * the function was defined, and a pointer to the function proper.
+ */
 typedef struct compiled_function
 {
   unsigned short type;
@@ -91,6 +166,12 @@ typedef struct compiled_function
   struct cons *(*fun)(cons* env);
 }__attribute__((packed)) compiled_function;
 
+/* Function
+ *
+ * Instead of being compiled, these functions are Lisp expressions
+ * to be evaluated. Virtually identical to compiled functions,
+ * except the pointer is to a linked list.
+ */
 typedef struct function
 {
   unsigned short type;
@@ -100,6 +181,13 @@ typedef struct function
   struct cons *fun;
 }__attribute__((packed)) function;
 
+/* Symbol
+ * 
+ * Symbols are comprised of a name in the form of a string, a
+ * property list, the symbol's home-package, a value, and
+ * a function. There is only one symbol with a given name per
+ * package. 
+ */
 typedef struct symbol
 {
   unsigned short type;
@@ -110,13 +198,24 @@ typedef struct symbol
   struct function *fun;
 }__attribute__((packed)) symbol;
 
-typedef struct hash_table
-{
+/*
+  typedef struct hash_table
+  {
   unsigned short type;
   struct cons *plist;
-  struct cons **table;
-}__attribute__((packed)) hash_table;
+  struct array *a;
+  }__attribute__((packed)) hash_table;
+*/
 
+/* Package
+ *
+ * A package is a collection of symbols and values.
+ * They are used to prevent function and variable name
+ * collisions when using libraries, and external code.
+ * Each package consists of a property list, a name in
+ * the form of a string, and a dynamic environment which
+ * holds all symbols and their dynamic bindings.
+ */
 typedef struct package
 {
   unsigned short type;
@@ -125,18 +224,47 @@ typedef struct package
   struct array *global;//Change to hash table one day
 }__attribute__((packed)) package;
 
+
+/*Process Information
+ *
+ * These keep separate processes separate. The list of packages
+ * accessible by a process resides in these structures.
+ * The package list is currently a linked list, but may one
+ * day be changed to a hash table.
+ * "package_sym" is just a pointer to the *PACKAGE* symbol
+ * in the Common Lisp package. The only reson it is there
+ * is to remove the need to search through the Common Lisp
+ * package to find the value of the current package in use
+ * every evaluation cycle.
+ */
 typedef struct procinfo//Global stuff for each Lisp 'process'.
 {
   unsigned short type;
   struct symbol *package_sym;
-  //Just for speed. :)
-  //This is the *pakage* binding.
-  //The current package can now be swiftly looked-up, without having to look up the symbol in :cl.
   struct cons *packages;
-  //Packages that are defined for this process. A list unique to each process.
-  //common-lisp is always first package, cl-user second, keyword third, followed by the rest.
 }__attribute__((packed)) procinfo;
 
+
+/* Stream
+ *
+ * A stream is a source or sink of bytes or characters.
+ * Used for communication, or to move through a series of
+ * elements.
+ * Consists of a property list, a read index, a write index, 
+ * and pointers to up to two vectors.
+ *
+ * Reading will move through the read vector until it 
+ * a) catches up with write ((read_index == write_index) &&
+ * (rv == wv)), meaning that the stream has no new input, or 
+ * b) reaches the end of the vector. If it reaches the end,
+ * and it still hasn't caught up with write, it moves into 
+ * the vector extension pointed to by the vector's "next".
+ * (See array documentation.) If there is no "next", the
+ * stream has "dried up".
+ *
+ * Write will append an object to the stream. If it reaches 
+ * the end of the vector, it will extend it, via "next".
+ */
 typedef struct stream
 {
   unsigned short type;
@@ -147,11 +275,16 @@ typedef struct stream
   struct array *wv;//write vector
 }__attribute__((packed)) stream;
 
+/* Composite Stream
+ *
+ * A collection of streams, and a property list. These can 
+ * be used to implement two-way streams, and broadcasts.
+ */
 typedef struct composite_stream
 {
   unsigned short type;
   struct cons *plist;
-  struct cons *streams;
+  struct array *streams;
 }__attribute__((packed)) composite_stream;
 
 #endif
@@ -194,8 +327,7 @@ extern cons *lookup(char *name, cons *env);
 extern cons *mkpair(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
-extern cons *envbind(cons *key, cons *value, cons *env);
-//extern cons *evalopt(cons **lambda_list, cons **args, cons **newenv);
+extern cons *envbind(symbol *sym, cons *value, cons *env);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
 extern cons *assoc(cons *key, cons *plist);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
