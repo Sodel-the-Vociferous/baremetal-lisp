@@ -10,9 +10,6 @@
 //TODO add special operators
 
 
-
-
-
 cons t_phys;
 cons nil_phys;
 
@@ -131,6 +128,19 @@ function *newfunction()
   f->lambda_list = nil;
   f->env = 0;
   f->fun = 0;
+}
+
+stream *newstream()
+{
+  stream *str = malloc(sizeof(stream));
+  str->plist = nil;
+  str->read_index = 0;
+  //Manual setup of the new stream will be required.
+  str->rv = (array*)0;
+  str->wv = (array*)0;
+  str->write_index = 0;
+
+  return str;
 }
 
 //Helper functions to translate C stuff into Lisp objects
@@ -446,7 +456,7 @@ cons *eql (cons *a, cons *b)
     return nil;
 }
 
-//Lookup a symbol in the current environment; can't do foreign packages yet. Wait 'till read() gets done.
+//Lookup a symbol in the current environment; can't do foreign packages yet. 
 cons *lookup(char *namestr, cons *env)
 {
   array *name = strtolstr(namestr);
@@ -591,7 +601,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       args = args->cdr;
     }
 
-  if (lambda_list->car != (cons*)optional)
+  if (lambda_list->car == (cons*)optional)
     {
       lambda_list = lambda_list->cdr;
       while((null(lambda_list) == nil) && 
@@ -638,7 +648,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	    return 0;//TODO error
 	}
     }
-  if (lambda_list->car != (cons*)rest)
+  if (lambda_list->car == (cons*)rest)
     //    env = evalrest(lambda_list, args, env);
     {
       lambda_list = lambda_list->cdr;
@@ -731,10 +741,6 @@ cons *unread_char(base_char *c, stream *str)
   str->rv->a[0][str->read_index] = (cons*)c;
   return nil;
 }
-
-//Abandon all hope, ye who enter here.
-//Here be dragons...
-//The READER function!
 
 int main ()
 {

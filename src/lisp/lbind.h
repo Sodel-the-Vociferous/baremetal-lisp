@@ -23,4 +23,6 @@ extern cons *lquote(cons *env);
 extern cons *leval(cons *env);
 
 extern cons *ldefun(cons *env);
-extern cons* lsetq(cons *env);
+extern cons *lsetq(cons *env);
+
+extern cons *lread_char(cons *env);

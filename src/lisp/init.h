@@ -71,6 +71,7 @@ extern symbol *allow_other_keys;//&allow-other-keys
 //List function names
 extern symbol *cars;//CAR symbol
 extern symbol *cdrs;
+//Special aoperators
 extern symbol *quote;//QUOTE symbol
 //Equality function names
 extern symbol *chareqs;
@@ -79,7 +80,9 @@ extern symbol *stringeqs;
 extern symbol *stringequals;
 extern symbol *eqs;
 extern symbol *eqls;
-
+//Reader function names
+extern symbol *read_chars;
+extern symbol *reads;
 
 
 

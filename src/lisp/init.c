@@ -89,6 +89,9 @@ symbol *eqs;
 symbol *eqls;
 symbol *equals;
 symbol *equalps;
+//Reader function names
+symbol *read_chars;
+symbol *reads;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -107,7 +110,7 @@ void init_read_funs();
 void init_set_funs();
 void init_types();
 
-cons *initread(char *str, cons *env);
+cons *initread(stream *str, cons *env);
 
 
 /*Initialization helper functions*/
@@ -159,63 +162,87 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
   return funsym;
 }
 
-cons *initread(char *str, cons *env)
+cons *initread(stream *str, cons *env)
 {//Inflexible read. A big kludge. The only code it ever reads is hard-coded bootstrap. 
   package *p = (package*)((procinfo*)env->car)->package_sym->value;
-  
+  base_char *c = read_char(str);
+
   while (1)
     {
-      if ((*str >= 'a') 
-	  && (*str <='z'))
-	*str = *str - 'A';//convert to uppercase.
-      if (*str == 0)
-	//Seriously, man. If this even happens, it's _your_ fault. Watch your parens.
-	return 0;
-      else if (*str == ' ')
-	str++;
-      else if (*str == '(')
+      if ((c->c >= 'a') 
+	  && (c->c <='z'))
+	c->c = c->c - 'A';//convert to uppercase.
+      if (c->c == 0 || c->c == ')')
+	{
+	  if (c->c == 0)
+	    unread_char(c, str);
+	  return nil;
+	}
+      else if (c->c == ' ')
+	c = read_char(str);
+      else if (c->c == '(')
 	{//Read a list
 	  cons *foo = newcons();
+	  cons *bar;
+	  cons *to_ret = foo;
 
-	  while ((*str != ')') &&
-		 (*str != ' ') &&
-		 (*str != 0))
+	  bar = (cons*)initread(str, env);
+	  if (bar == nil)
+	    return nil;
+	  else
+	    foo->car = bar;
+	  
+	  while ((c->c != ')') &&
+		 (c->c != 0))
 	    {
-	      foo->car = (cons*)initread(str, env);
+	      bar = (cons*)initread(str, env);
+	      if (bar == nil)
+		return to_ret;
 	      foo->cdr = newcons();
 	      foo = foo->cdr;
+	      foo->car = bar;
 	    }
-	  return foo;
 	}
-      else if (*str >='0' && *str <='9')
+      else if (c->c >='0' && c->c <='9')
 	return 0;//TODO parse number.
-      else if (*str == '#')
+      else if (c->c == '#')
 	{//Read macro character.
-	  str++;
-	  if (*str == '\\')
+	  c = read_char(str);
+	  if (c->c == '\\')
 	    {//read character
-	      str++;
-	      return (cons*)ctolc(*str);
+	      c = read_char(str);
+	      return (cons*)ctolc(c->c);
 	    }
 	  else
-	    str++;
+	    c = read_char(str);
 	}
       else
 	{
-	  int i;
+	  int i=0;
 	  char name[100];
-	  while ((*str != '(') &&
-		 (*str != ')') &&
-		 (*str != ' ') &&
-		 (*str != 0))
+	  cons *foo=0;
+
+	  while ((c->c != '(') &&
+		 (c->c != ')') &&
+		 (c->c != ' ') &&
+		 (c->c != 0))
 	    {
 	      if (i >= 100)
-		return 0;
-	      name[i] = *str;
-	      str++;
+		return 0;//error
+	      name[i] = c->c;
+	      c = read_char(str);
 	      i++;
 	    }
-	  return (cons*)intern(strtolstr(name), p);
+	  if (i >= 100)
+	    return 0;//error
+	  else
+	    name[i] = 0;
+	  
+	  if (c->c == 0)
+	    unread_char(c, str);
+	  
+	  foo = (cons*)intern(strtolstr(name), p);
+	  return foo;
 	}
     }
 }
@@ -297,6 +324,7 @@ void init_cl_pkg()
 
   package_sym = initsym("*PACKAGE*", cl_pkg);
   package_sym->value = (cons*)cl_pkg;
+  proc->package_sym  = package_sym;
   init_readtable();
   init_lambda_control();
   init_special_operators();
@@ -457,6 +485,14 @@ void init_eq_funs()
 
 void init_read_funs()
 {
+  stream *str = newstream();
+  str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
+  str->write_index = str->rv->length->num;
+
+  read_chars = initcfun("READ-CHAR",
+			initread(str, basic_env),
+			cl_pkg,
+			&lread_char);
 }  
 
 void init_set_funs()
@@ -487,7 +523,16 @@ procinfo *init()
   long j;
 
   basic_env = extend_env(nil);
+
+  //init process info
   proc = malloc(sizeof(procinfo));
+  proc->type = PROCINFO;
+  proc->packages = newcons();
+  proc->packages->car = (cons*)cl_pkg;
+  proc->packages->cdr = newcons();
+  proc->packages->cdr->car = (cons*)cl_user_pkg;
+  proc->packages->cdr->cdr = newcons();
+  proc->packages->cdr->cdr->car = (cons*)keyword_pkg;  
   basic_env->car = (cons*)proc;
 
   init_keyword_pkg();
@@ -498,15 +543,6 @@ procinfo *init()
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
 
-  //init process info
-  proc->type = PROCINFO;
-  proc->package_sym  = package_sym;
-  proc->packages = newcons();
-  proc->packages->car = (cons*)cl_pkg;
-  proc->packages->cdr = newcons();
-  proc->packages->cdr->car = (cons*)cl_user_pkg;
-  proc->packages->cdr->cdr = newcons();
-  proc->packages->cdr->cdr->car = (cons*)keyword_pkg;  
 
   return proc;
 }

@@ -17,6 +17,7 @@
 #define HASH_TABLE 14
 #define PACKAGE 15
 #define PROCINFO 16
+#define STREAM 17
 
 #define BITS32
 
@@ -169,6 +170,8 @@ extern array *newarray(long rank, int length);
 extern array *newsimple_vector(int size);
 extern package *newpackage();
 extern compiled_function *newcompiled_function();
+extern function *newfunction();
+extern stream *newstream();
 extern base_char *ctolc(char c);
 extern array *strtolstr(char *str);
 extern cons *null (cons *a);
@@ -194,5 +197,9 @@ extern cons *extend_env(cons *env);
 extern cons *envbind(cons *key, cons *value, cons *env);
 //extern cons *evalopt(cons **lambda_list, cons **args, cons **newenv);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
-extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
 extern cons *assoc(cons *key, cons *plist);
+extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
+extern base_char *read_char(stream *str);
+extern base_char *peek_char(stream *str);
+extern cons *unread_char(base_char *c, stream *str);
+

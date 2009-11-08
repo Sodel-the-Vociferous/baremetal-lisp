@@ -169,7 +169,9 @@ cons *lquote(cons *env)
   return exp;
 }
 
-  
-
 //Reading
-
+cons *lread_char(cons *env)
+{
+  stream *str = (stream*)lookup("STREAM", env);
+  return (cons*)read_char(str);
+}
