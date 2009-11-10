@@ -1,7 +1,8 @@
 #include "defs.h"
 #include "main.h"
+#include "multiboot.h"
 
-int kmain(struct multiboot *mboot)
+int kmain(struct multiboot_header *mboot)
 {
   return 0xDEADBEEF;
 }
