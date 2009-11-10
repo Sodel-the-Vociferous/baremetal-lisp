@@ -1,5 +1,5 @@
+#include "defs.h"
 #include "main.h"
-extern void* end;
 
 int kmain(struct multiboot *mboot)
 {

@@ -6,5 +6,5 @@ struct mmap
   int oldest_free_index;
   int newest_free_index;
   int free[1024];
-}
+}__attribute__((packed));
 
