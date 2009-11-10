@@ -79,7 +79,7 @@ isr%1:
 	cli
 	push byte 0
 	push byte %1
-	jmp isr_common_stub
+	jmp isr_common
 	%endmacro
 
 	;; Define an ISR with an error code.
@@ -88,7 +88,7 @@ isr%1:
 isr%1:
 	cli
 	push byte %1
-	jmp isr_common_stub
+	jmp isr_common
 	%endmacro
 	
 ;ISRs
@@ -130,7 +130,7 @@ ISR_NOERRCODE 31
 ;;; Common ISR stub. Saves processor state, sets up the processor
 ;;; for kernel-mode segment, and calls the C fault handler.
 ;;; When the handler returns, restores the stack frame.
-isr_common_stub:
+isr_common:
    pusha                    	; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
 
    mov ax, ds               	; Lower 16-bits of eax = ds.
@@ -161,7 +161,7 @@ isr_common_stub:
     cli
     push byte 0
     push byte %2
-    jmp irq_common_stub
+    jmp irq_common
 %endmacro
    
 ;IRQs
@@ -187,7 +187,7 @@ IRQ 15, 47
 ;;; Common IRQ stub. Saves processor state, sets up the processor
 ;;; for kernel-mode segment, and calls the C fault handler.
 ;;; When the handler returns, restores the stack frame.
-irq_common_stub:
+irq_common:
    pusha                    	; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
 
    mov ax, ds               	; Lower 16-bits of eax = ds.

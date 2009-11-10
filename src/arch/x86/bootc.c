@@ -1,6 +1,7 @@
 #include "defs.h"
 #include "boot.h"
 #include "io.h"
+#include "interrupt.h"
 
 /* Access to assembly_defined functions.
  */
@@ -22,6 +23,7 @@ struct idt_pointer idt_ptr;
 static void init_dt()
 {
   init_gdt();
+  init_idt();
 }
 
 static void init_gdt()
@@ -119,6 +121,8 @@ static void init_idt()
     set_idt_gate(46, (unsigned)irq14, 0x08, 0x8E);
     set_idt_gate(47, (unsigned)irq15, 0x08, 0x8E);
     flush_idt((uint)&idt_ptr);
+
+    init_pit(50);
 }
 
 static void set_idt_gate(uchar num, uint base, ushort sel, uchar flags)

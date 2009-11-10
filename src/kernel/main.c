@@ -2,7 +2,7 @@
 #include "main.h"
 #include "multiboot.h"
 
-int kmain(struct multiboot_header *mboot)
+int kmain(multiboot_header_t *mboot)
 {
   return 0xDEADBEEF;
 }
