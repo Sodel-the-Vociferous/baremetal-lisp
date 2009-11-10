@@ -1,8 +1,16 @@
 ENTRY(start)
 SECTIONS
 {
-  .text 0x100000 :
+  . = 0x100000;
+  
+  .__mbheader :
   {
+	*(.__mbheader)
+  }
+ 
+  .text :
+  {
+   	*(.text)
 	code = .; _code = .; __code = .;
     	*(.text)
     	. = ALIGN(4096);

@@ -17,12 +17,12 @@
 	
 	MBOOT_PAGE_ALIGN	equ	1<<0 ;Load kernel and any modules on a page boundary.
 	MBOOT_MEM_INFO		equ	1<<1 ;Provide the kernel with memory information.
-	MBOOT_HEADER_MAGIC	equ	0xBADB002 ;Multiboot magic number.
+	MBOOT_HEADER_MAGIC	equ	0x1BADB002 ;Multiboot magic number.
 	MBOOT_HEADER_FLAGS	equ	MBOOT_PAGE_ALIGN | MBOOT_MEM_INFO
 	MBOOT_CHECKSUM		equ 	-(MBOOT_HEADER_MAGIC + MBOOT_HEADER_FLAGS)
 	STACKSIZE equ 0x4000   		;16Kib.
 
-section .text
+section .__mbheader
 	align 4
 	
 mboot:				;Embed multiboot headers in the code, for GRUB to find.
@@ -30,7 +30,9 @@ mboot:				;Embed multiboot headers in the code, for GRUB to find.
 	dd MBOOT_HEADER_FLAGS	;How GRUB should load the kernel
 	dd MBOOT_CHECKSUM	;Ensure the preceding aren't borked.
 
-	dd mboot		;Make public the mboot header's location
+section .text
+	align 4
+	dd mboot	      	;Make public the mboot header's location
 	dd code			;Make public the .text section
 	dd bss			;End of .text
 	dd end			;End of kernel
