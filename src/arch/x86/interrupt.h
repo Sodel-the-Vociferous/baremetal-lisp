@@ -29,3 +29,4 @@ typedef void (*isr)(struct registers);
 
 void register_interrupt_handler(uchar, isr);
 void init_pit(uint);
+void init_kbd();

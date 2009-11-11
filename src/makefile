@@ -1,6 +1,6 @@
 ARCH=x86
 
-SOURCES=./arch/$(ARCH)/boot.o ./arch/$(ARCH)/io.o ./arch/$(ARCH)/bootc.o ./arch/$(ARCH)/interrupt.o ./kernel/main.o
+SOURCES=arch/$(ARCH)/boot.o arch/$(ARCH)/io.o arch/$(ARCH)/bootc.o arch/$(ARCH)/interrupt.o arch/$(ARCH)/kbd.o io/keymap.o kernel/main.o 
 
 CFLAGS=-nostdlib -nostdinc -fno-builtin -I./arch -I./headers -I./kernel -I./lisp -m32
 LDFLAGS=-Tlink.ld -melf_i386

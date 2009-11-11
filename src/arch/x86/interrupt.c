@@ -13,12 +13,10 @@ void isr_handler(struct registers regs)
       isr handler = interrupt_handlers[regs.int_no];
       handler(regs);
     }
-/*     else */
-/*     { */
-/*        	puts("unhandled interrupt: "); */
-/*         putint(regs.int_no); */
-/*         putc('\n'); */
-/*     } */
+    else
+    {
+      return;//TODO debugger: unhandled interrupt
+    }
 }
 
 void irq_handler(struct registers regs)
