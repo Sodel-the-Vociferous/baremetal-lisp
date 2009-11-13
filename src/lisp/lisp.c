@@ -10,12 +10,30 @@
 //TODO add special operators
 //TODO convert all typechecks to Lisp typechecks
 
+/* Internal Function Declarations */
+inline symbol *typeof(cons *foo);
+
 
 cons t_phys;
 cons nil_phys;
 
 cons *t = &t_phys;
 cons *nil = &nil_phys;
+
+/* There are predefined typecodes that aren't legal address values 
+ * for basic predefined types. Anything that isn't one of those 
+ * predefined numbers is assumed to be a pointer to a type or
+ * class definition, which is a Lisp linked list.
+ */
+inline symbol *typeof(cons *foo)
+{
+  if (foo->type <= STREAM)
+    return basic_classes[foo->type];
+  else
+    return foo->type;
+}
+
+
 
 /* Object allocation routines */
 cons *newcons()
@@ -502,7 +520,7 @@ cons *eql (cons *a, cons *b)
 cons *lookup(char *namestr, cons *env)
 {
   array *name = strtolstr(namestr);
-  symbol *s = intern(name, (package*)((symbol*)((procinfo*)env->car)->package_sym)->value);
+  symbol *s = intern(name, (package*)((symbol*)((procinfo*)env->car)->package_s)->value);
   return eval((cons*)s, env);
 }
 
@@ -577,7 +595,7 @@ cons *eval(cons *exp, cons *env)
 	return 0;//TODO no value error
     }
  else if ((exp->type == LIST) && 
-	  (assoc(exp->car->car, (cons*)special_operators->value) == nil))
+	  (assoc(exp->car->car, (cons*)special_operators_s->value) == nil))
    {/* If the expression is a list, whose first object is a special 
      * operator, evaluate it as a special form.
      */
@@ -585,7 +603,7 @@ cons *eval(cons *exp, cons *env)
    }
   else if ((exp->type == LIST) && 
 	   (exp->car->type != LIST) &&
-	   (assoc(exp->car->car, special_operators->value) == nil))
+	   (assoc(exp->car->car, special_operators_s->value) == nil))
     {/* If the expression is a list, whose first object is not a list, 
       * evaluate it as a form.
       */
@@ -641,13 +659,14 @@ cons *eval(cons *exp, cons *env)
     return nil;//TODO should be error
 }
 
+/* Creates a new lexical environment level. New lexical bindings will 
+ * be pushed in before the previous one. When the evaluator, looking 
+ * for bindings, reaches a lexical binding whose cdr is nil, it will 
+ * know to descend to the next level. When both the car and cdr are nil, 
+ * there are no more lexical levels. 
+ */
 cons *extend_env(cons *env)
-{/* Creates a new lexical environment level. New lexical bindings will 
-  * be pushed in before the previous one. When the evaluator, looking 
-  * for bindings, reaches a lexical binding whose cdr is nil, it will 
-  * know to descend to the next level. When both the car and cdr are nil, 
-  * there are no more lexical levels. 
-   */
+{
   cons *oldenv = env;
   cons *newenv = newcons();
   newenv->car = oldenv->car;//procinfo
@@ -681,10 +700,10 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   
   while((null(lambda_list) == nil) && 
 	(null(args) == nil) &&
-	(lambda_list->car != (cons*)optional) &&//Break on 
-	(lambda_list->car != (cons*)rest) &&
-	(lambda_list->car != (cons*)keyword) &&
-	(lambda_list->car != (cons*)aux))
+	(lambda_list->car != (cons*)optional_s) &&//Break on 
+	(lambda_list->car != (cons*)rest_s) &&
+	(lambda_list->car != (cons*)keyword_s) &&
+	(lambda_list->car != (cons*)aux_s))
     {/* Bind compulsory parameters to the proper variable names.
       */
       varsym = (symbol*)lambda_list->car;
@@ -694,15 +713,15 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       args = args->cdr;
     }
 
-  if (lambda_list->car == (cons*)optional)
+  if (lambda_list->car == (cons*)optional_s)
     {/* Bind &optional parameters to proper variable names.
       */
       lambda_list = lambda_list->cdr;
       while((null(lambda_list) == nil) && 
 	    (null(args) == nil) &&
-	    (lambda_list->car != (cons*)rest) &&
-	    (lambda_list->car != (cons*)keyword) &&
-	    (lambda_list->car != (cons*)aux))
+	    (lambda_list->car != (cons*)rest_s) &&
+	    (lambda_list->car != (cons*)keyword_s) &&
+	    (lambda_list->car != (cons*)aux_s))
 	{/* If the parameter list hasn't run out, bind them to variable 
 	  * names, as per the lambda list.
 	  */
@@ -721,9 +740,9 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	}
       while((null(lambda_list) == nil) && 
 	    (null(args) == t) &&
-	    (lambda_list->car != (cons*)rest) &&
-	    (lambda_list->car != (cons*)keyword) &&
-	    (lambda_list->car != (cons*)aux))
+	    (lambda_list->car != (cons*)rest_s) &&
+	    (lambda_list->car != (cons*)keyword_s) &&
+	    (lambda_list->car != (cons*)aux_s))
 	{/* If the end of the parameter list has been reached, associate
 	  * the variable names with their default values, if any. If there
 	  * is no default value for a variable name, bind it to nil.
@@ -747,17 +766,17 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	    return 0;//TODO error
 	}
     }
-  if (lambda_list->car == (cons*)rest)
+  if (lambda_list->car == (cons*)rest_s)
     {/* Bind the remainder of the lambda list to the &rest argument, if any.
       */
       lambda_list = lambda_list->cdr;
   
       if((null(lambda_list) == nil) && 
 	 (null(args) == nil) &&
-	 (lambda_list->car != (cons*)optional) &&
-	 (lambda_list->car != (cons*)rest) &&
-	 (lambda_list->car != (cons*)keyword) &&
-	 (lambda_list->car != (cons*)aux))
+	 (lambda_list->car != (cons*)optional_s) &&
+	 (lambda_list->car != (cons*)rest_s) &&
+	 (lambda_list->car != (cons*)keyword_s) &&
+	 (lambda_list->car != (cons*)aux_s))
 	{
 	  if (lambda_list->car->type == SYMBOL)
 	    varsym = (symbol*)lambda_list->car;
@@ -872,18 +891,18 @@ int main ()
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
 
-  cons *exp = fcons((cons*)quote, fcons((cons*)quote, nil));
+  cons *exp = fcons((cons*)quote_s, fcons((cons*)quote_s, nil));
 
   cons *hope = eval(exp, env);
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->rv = strtolstr("(*READTABLE*) ");
+  str->rv = strtolstr("(:EXTERNAL) ");
   str->write_index = 20;
 
   //cons *xyzzy = (cons*)read(str, env);
   //cons *wow = eval(xyzzy, env);
-  cons *lesser = eval((cons*)readtable, env);
+  cons *lesser = eval((cons*)external, env);
 
   return 0;
 }

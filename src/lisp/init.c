@@ -3,6 +3,8 @@
 #include "init.h"
 #include "lbind.h"
 
+cons *basic_classes[15];
+
 /*For initializaton, these don't need to be flexible.*/
 procinfo *proc;
 cons *basic_env;
@@ -36,68 +38,77 @@ symbol *minus_sign;
 symbol *dot;
 symbol *decimal_point;
 symbol *ratio_marker;
-//Types
-symbol *numtype;
-symbol *realtype;
-symbol *rattype;//rational
-symbol *ttype;
-symbol *listtype;
-symbol *fixnumtype;
-symbol *bignumtype;
-symbol *ratiotype;
-symbol *singletype;
-symbol *base_chartype;
-symbol *vectortype;
-symbol *arraytype;
-symbol *compiled_functiontype;
-symbol *stringtype;
-symbol *symboltype;
-symbol *functiontype;
-symbol *hash_tabletype;
-symbol *packagetype;
-symbol *procinfotype;
 
 /*Common-Lisp symbols*/
 //Internal symbols, for me.
-symbol *special_operators;
+symbol *special_operators_s;
+//Types
+symbol *built_in_class_s;
+symbol *number_s;
+symbol *real_s;
+symbol *rational_s;//rational
+symbol *integer_s;
+symbol *fixnum_s;
+symbol *bignum_s;
+symbol *ratio_s;
+symbol *float_s;
+symbol *single_s;
+symbol *character_s;
+symbol *base_char_s;
+symbol *extended_character_s;
+symbol *sequence_s;
+symbol *cons_s;
+symbol *null_s;
+symbol *vector_s;
+symbol *array_s;
+symbol *compiled_function_s;
+symbol *string_s;
+symbol *symbol_s;
+symbol *function_s;
+symbol *hash_table_s;
+symbol *package_s;
+symbol *procinfo_s;
+symbol *class_s;
 //Defined symbols
-symbol *ts;//T symbol
-symbol *nils;//NIL symbol
-symbol *package_sym;//*package*
-symbol *readtable;//*readtable*
-symbol *types;//Internal  list of types.
-//Lambda list control symbols
-symbol *lambda_list_keywords;
-symbol *optional;//&optional
-symbol *rest;//&rest
-symbol *keyword;//&keyword
-symbol *aux;//&aux
-symbol *whole;//&whole
-symbol *body;//&body
-symbol *allow_other_keys;//&allow-other-keys
+symbol *t_s;//T symbol
+symbol *nil_s;//NIL symbol
+symbol *package_s;//*package*
+symbol *readtable_s;//*readtable*
+/* Lambda list control symbols */
+symbol *lambda_list_keywords_s;
+symbol *optional_s;//&optional
+symbol *rest_s;//&rest
+symbol *keyword_s;//&keyword
+symbol *aux_s;//&aux
+symbol *whole_s;//&whole
+symbol *body_s;//&body
+symbol *allow_other_keys_s;//&allow-other-keys
 //List function names
-symbol *cars;//CAR symbol
-symbol *cdrs;//CDR symbol
-symbol *lists;//LIST symbol
+symbol *car_s;//CAR symbol
+symbol *cdr_s;//CDR symbol
+symbol *list_s;//LIST symbol
 //Special operators
-symbol *quote;//QUOTE symbol
+symbol *quote_s;//QUOTE symbol
+/* Assignment Operator names */
+symbol *defun_s;
 //Equality function names
-symbol *chareqs;
-symbol *charequals;
-symbol *stringeqs;
-symbol *stringequals;
-symbol *eqs;
-symbol *eqls;
-symbol *equals;
-symbol *equalps;
+symbol *chareq_s;
+symbol *charequal_s;
+symbol *stringeq_s;
+symbol *stringequal_s;
+symbol *eq_s;
+symbol *eql_s;
+symbol *equal_s;
+symbol *equalp_s;
 //Reader function names
-symbol *read_chars;
-symbol *reads;
+symbol *read_char_s;
+symbol *read_s;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
 symbol *initintsym(char *name, package *p);
 symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
+cons *initdeftype(char *string);
 
 void init_keyword_pkg();
 
@@ -158,6 +169,13 @@ symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *
   return funsym;
 }
 
+cons *initdeftype(char *string)
+{
+  stream *str = newstream();
+  str->rv = strtolstr(string);
+  return initread(str, basic_env);
+}
+
 cons *initread(stream *str, cons *env)
 {/* An inflexible, incomplete implementation of read. Just what the programmer
   * needs to get the system off the ground, and not an iota more. To be
@@ -166,7 +184,7 @@ cons *initread(stream *str, cons *env)
   *
   * Stream support is rudimentary.
   */
-  package *p = (package*)((procinfo*)env->car)->package_sym->value;
+  package *p = (package*)((procinfo*)env->car)->package_s->value;
   base_char *c = read_char(str);
 
   while (1)
@@ -316,24 +334,6 @@ void init_keyword_pkg()
   alphabetic = initsym("ALPHABETIC", keyword_pkg);
   alphadigit = initsym("ALPHADIGIT", keyword_pkg);
   package_marker = initsym("PACKAGE-MARKER", keyword_pkg);
-
-  //Types
-  ttype = initsym("T", keyword_pkg);
-  listtype = initsym("LIST", keyword_pkg);
-  fixnumtype = initsym("FIXNUM", keyword_pkg);
-  bignumtype = initsym("BIGNUM", keyword_pkg);
-  ratiotype = initsym("RATIO", keyword_pkg);
-  singletype = initsym("SINGLE", keyword_pkg);
-  base_chartype = initsym("BASE-CHARACTER", keyword_pkg);
-  vectortype = initsym("ARRAY", keyword_pkg);
-  arraytype = initsym("ARRAY", keyword_pkg);
-  compiled_functiontype = initsym("COMPILED-FUNCTION", keyword_pkg);
-  stringtype = initsym("STRING", keyword_pkg);
-  symboltype = initsym("SYMBOL", keyword_pkg);
-  functiontype = initsym("FUNCTION", keyword_pkg);
-  hash_tabletype = initsym("HASH-TABLE", keyword_pkg);
-  packagetype = initsym("PACKAGE", keyword_pkg);
-  procinfotype = initsym("PROCESS-INFO-TABLE", keyword_pkg);
 }
 
 void init_cl_pkg()
@@ -346,138 +346,78 @@ void init_cl_pkg()
 
   //Init t
   t->type = T;
-  ts = initsym("T", cl_pkg);
-  ts->value = t;
+  t_s = initsym("T", cl_pkg);
+  t_s->value = t;
   
   //Init nil
   //array *nil_name = strtolstr("NIL");
   nil->type = LIST;
   nil->car = nil;
   nil->cdr = nil;
-  nils = initsym("NIL", cl_pkg);
+  nil_s = initsym("NIL", cl_pkg);
 
-  nils->value = nil;
+  nil_s->value = nil;
 
-  package_sym = initsym("*PACKAGE*", cl_pkg);
-  package_sym->value = (cons*)cl_pkg;
-  proc->package_sym  = package_sym;
-  init_readtable();
+  package_s = initsym("*PACKAGE*", cl_pkg);
+  package_s->value = (cons*)cl_pkg;
+  proc->package_s  = package_s;
+  init_types();
   init_lambda_control();
   init_special_operators();
   init_list_funs();
   init_eq_funs();
   init_read_funs();
   init_set_funs();
-  init_types();
-}
-
-void init_readtable()
-{/* Initialize the readtable.
-  * >Deprecated
-  */
-  long i;
-
-  //Init *readtable*
-  array *readtable_name = strtolstr("*READTABLE*");
-  readtable = intern(readtable_name, cl_pkg);
-  readtable->value = (cons*)newsimple_vector(255);
-  char alphabetic_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  char alphadigit_chars[] = "0123456789";
-  char whitespace_chars[] = " \t\n";
-  char terminating_macro_chars[] = "\"\'(),;`";
-  char non_terminating_macro_chars[] = "#";
-  char single_escape_chars[] = "\\";
-  char multiple_escape_chars[] = "|";
-  char constituents[] = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1234567890!$_-./:;?+<=>#%&*@[]{}^~";
-  long readtable_length = ((array*)readtable->value)->length->num;
-
-  char *c;
-  base_char *bc;
-
-  //Create the default readtable
-  //Use the numerical ASCII values of each number as the index of a readtable, a simple vector.
-  //Each entry has an associated property list, as per CLHS 2.1.4.
-
-  for (i=0;i<' ';i++)
-    ((array*)readtable->value)->a[0][i] = fcons(fcons((cons*)invalid, t), ((array*)readtable->value)->a[0][i]);
-
-  for (c=constituents;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)constituent, t), ((array*)readtable->value)->a[0][*c]);
-  //init constituents
-  ((array*)readtable->value)->a[0][':'] =  fcons(fcons((cons*)package_marker, t), ((array*)readtable->value)->a[0][':']);
-
-  for (c=alphabetic_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)alphabetic, t), ((array*)readtable->value)->a[0][*c]);	       
-
-  for (c=alphadigit_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)alphadigit, t), ((array*)readtable->value)->a[0][*c]);
-
-  for (c=terminating_macro_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)terminating_macro, nil), ((array*)readtable->value)->a[0][*c]);
-
-  for (c=whitespace_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] = fcons(fcons((cons*)whitespace, t), fcons((cons*)invalid, ((array*)readtable->value)->a[0][*c]));
-
-  for (c=single_escape_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)single_escape, t), ((array*)readtable->value)->a[0][*c]); 
-
-  for (c=multiple_escape_chars;*c!=0;c++)
-    ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)multiple_escape, t), ((array*)readtable->value)->a[0][*c]);
-
-  for(i=0;i<readtable_length;i++)
-    if (((array*)readtable->value)->a[0][i] == nil)
-      ((array*)readtable->value)->a[0][*c] =  fcons(fcons((cons*)invalid, t), ((array*)readtable->value)->a[0][*c]);
-  //Invalidate the rest, the wretched lot...  
 }
 
 void init_lambda_control()
 {/* Initialize the lambda control characters for evalambda().
   */
-  optional = initsym("&OPTIONAL", cl_pkg);
-  rest = initsym("&REST", cl_pkg);
-  keyword = initsym("&KEYWORD", cl_pkg);
-  aux = initsym("&AUX", cl_pkg);
-  whole = initsym("&WHOLE", cl_pkg);
-  body = initsym("&BODY", cl_pkg);
-  allow_other_keys = initsym("&ALLOW-OTHER-KEYS", cl_pkg);
+  optional_s = initsym("&OPTIONAL", cl_pkg);
+  rest_s = initsym("&REST", cl_pkg);
+  keyword_s = initsym("&KEYWORD", cl_pkg);
+  aux_s = initsym("&AUX", cl_pkg);
+  whole_s = initsym("&WHOLE", cl_pkg);
+  body_s = initsym("&BODY", cl_pkg);
+  allow_other_keys_s = initsym("&ALLOW-OTHER-KEYS", cl_pkg);
 
-  lambda_list_keywords = initsym("LAMBDA-LIST-KEYWORDS", cl_pkg);
-  lambda_list_keywords->value = fcons((cons*)optional,
-				      fcons((cons*)rest,
-					    fcons((cons*)keyword,
-						  fcons((cons*)aux,
-							fcons((cons*)whole,
-							      fcons((cons*)body,
-								    fcons((cons*)allow_other_keys, nil)))))));
+  lambda_list_keywords_s = initsym("LAMBDA-LIST-KEYWORDS", cl_pkg);
+  lambda_list_keywords_s->value = fcons((cons*)optional_s,
+				      fcons((cons*)rest_s,
+					    fcons((cons*)keyword_s,
+						  fcons((cons*)aux_s,
+							fcons((cons*)whole_s,
+							      fcons((cons*)body_s,
+								    fcons((cons*)allow_other_keys_s, nil)))))));
 }
 
 void init_special_operators()
 {/* Initialize the list of special operators.
   */
-  special_operators = initintsym("SPECIAL-OPERATORS", cl_pkg);
-  special_operators->value = nil;
+  special_operators_s = initintsym("SPECIAL-OPERATORS", cl_pkg);
+  special_operators_s->value = nil;
 }
 
 void init_list_funs()
 {/* Initialize the list functions.
   */
-  cars = initcfun("CAR", 
+  car_s = initcfun("CAR", 
 		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
 			nil),
 		  cl_pkg,
 		  &lcar);
-  cdrs = initcfun("CDR", 
+  cdr_s = initcfun("CDR", 
 		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
 			nil),
 		  cl_pkg,
 		  &lcar);
-  quote = initcfun("QUOTE", 
+  quote_s = initcfun("QUOTE", 
 		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),
 		   cl_pkg,
 		   &lquote);  
-  lists = initcfun("LIST",
-		   fcons((cons*)rest, 
+  list_s = initcfun("LIST",
+		   fcons((cons*)rest_s, 
 			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
 			       nil)),
 		   cl_pkg,
@@ -487,41 +427,41 @@ void init_list_funs()
 void init_eq_funs()
 {/* Initialize the equality functions.
   */
-  chareqs = initcfun("CHAR=",
+  chareq_s = initcfun("CHAR=",
 		     fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			   fcons((cons*)intern(strtolstr("B"), cl_pkg),
 				 nil)),
 		     cl_pkg,
 		     &lchareq);
-  charequals = initcfun("CHAR-EQUAL",
+  charequal_s = initcfun("CHAR-EQUAL",
 			fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			      fcons((cons*)intern(strtolstr("B"), cl_pkg),
 				    nil)),
 			cl_pkg,
 			&lcharequal);
 
-  stringeqs = initcfun("STRING=",
+  stringeq_s = initcfun("STRING=",
 		       fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			     fcons((cons*)intern(strtolstr("B"), cl_pkg),
 				   nil)),
 		       cl_pkg,
 		       &lstringeq);
   
-  stringequals = initcfun("STRING-EQUAL",
+  stringequal_s = initcfun("STRING-EQUAL",
 			  fcons((cons*)intern(strtolstr("A"), cl_pkg),
 				fcons((cons*)intern(strtolstr("B"), cl_pkg),
 				      nil)),
 			  cl_pkg,
 			  &lstringequal);
   
-  eqs = initcfun("EQ", 
+  eq_s = initcfun("EQ", 
 		 fcons((cons*)intern(strtolstr("A"), cl_pkg), 
 		       fcons((cons*)intern(strtolstr("B"), cl_pkg), 
 			     nil)), 
 		 cl_pkg, 
 		 &leq);
 
-  eqls = initcfun("EQL",
+  eql_s = initcfun("EQL",
 		  fcons((cons*)intern(strtolstr("A"), cl_pkg),
 			fcons((cons*)intern(strtolstr("B"), cl_pkg),
 			      nil)),
@@ -536,7 +476,7 @@ void init_read_funs()
   str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
   str->write_index = str->rv->length->num;
 
-  read_chars = initcfun("READ-CHAR",
+  read_char_s = initcfun("READ-CHAR",
 			initread(str, basic_env),
 			cl_pkg,
 			&lread_char);
@@ -545,7 +485,7 @@ void init_read_funs()
 void init_set_funs()
 {/* Initialize assignment functions.
   */
-  eqls = initcfun("DEFUN",
+  defun_s = initcfun("DEFUN",
 		  fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
 			fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
 			      fcons((cons*)intern(strtolstr("FORM"), cl_pkg),
@@ -555,15 +495,76 @@ void init_set_funs()
 }
 
 void init_types()
-{/* Initialize the internal Lisp type list.
+{/* Initialize startup types.
   */
-  array *tv;//Types vector
-  
-  types = initintsym("TYPES", cl_pkg);
-  types->value = (cons*)newsimple_vector(1024);
-  tv=(array*)types->value;
-  //Initialize type hierarchies
+  stream *str = newstream();
 
+  t_s->class = initdeftype("(T () ())");
+  class_s = initsym("CLASS", cl_pkg);
+  class_s->class = initdeftype("(CLASS (T) ())");
+  built_in_class_s = initsym("BUILT-IN-CLASS", cl_pkg);
+  built_in_class_s->class = initdeftype("(BUILT-IN-CLASS (CLASS) ())");
+
+  number_s = initsym("NUMBER", cl_pkg);
+  number_s->class = initdeftype("(NUMBER (BUILT-IN-CLASS) ())");
+  real_s = initsym("REAL", cl_pkg);
+  real_s->class = initdeftype("(REAL (NUMBER) ())");
+
+  rational_s = initsym("RATIONAL", cl_pkg);
+  rational_s->class = initdeftype("(RATIONAL (REAL) ())");
+  integer_s = initsym("INTEGER", cl_pkg);
+  integer_s->class = initdeftype("(INTEGER (RATIONAL) ())");
+  fixnum_s = initsym("FIXNUM", cl_pkg);
+  fixnum_s->class = initdeftype("(FIXNUM (INTEGER) ())");
+  bignum_s = initsym("BIGNUM", cl_pkg);
+  bignum_s->class = initdeftype("(BIGNUM (INTEGER) ())");
+  ratio_s = initsym("RATIO", cl_pkg);
+  ratio_s->class = initdeftype("(RATIO (RATIONAL) ())");
+  
+  float_s = initsym("FLOAT", cl_pkg);
+  float_s->class = initdeftype("(FLOAT (REAL) ())");
+  single_s = initsym("SINGLE-FLOAT", cl_pkg);
+  single_s->class = initdeftype("(SINGLE-FLOAT (FLOAT) ())");
+
+  //TODO complex
+  
+  sequence_s = initsym("SEQUENCE", cl_pkg);
+  sequence_s->class = initdeftype("(SEQUENCE (T) ())");
+  
+  list_s = initsym("LIST", cl_pkg);
+  list_s->class = initdeftype("(LIST (SEQUENCE) ())");
+  cons_s = initsym("CONS", cl_pkg);
+  cons_s->class = initdeftype("(CONS (LIST) ())");
+  null_s = initsym("NULL", cl_pkg);
+  null_s->class = initdeftype("(NULL (SYMBOL LIST) ())");
+
+  array_s = initsym("ARRAY", cl_pkg);
+  array_s->class = initdeftype("(ARRAY (T) ())");
+  vector_s = initsym("VECTOR", cl_pkg);
+  vector_s->class = initdeftype("(VECTOR (ARRAY SEQUENCE) ())");
+  string_s = initsym("STRING", cl_pkg);
+  string_s->class = initdeftype("(STRING (VECTOR) ())");
+
+  character_s = initsym("CHARACTER", cl_pkg);
+  character_s->class = initdeftype("(CHARACTER (T) ())");
+  base_char_s = initsym("BASE-CHARACTER", cl_pkg);
+  base_char_s->class = initdeftype("(BASE-CHARACTER (CHARACTER) ())");
+  extended_character_s = initsym("EXTENDED-CHARACTER", cl_pkg);
+  extended_character_s->class = initdeftype("(EXTENDED-CHARACTER (CHARACTER) ())");
+
+  function_s = initsym("FUNCTION", cl_pkg);
+  function_s->class = initdeftype("(FUNCTION (T) ())");
+  compiled_function_s = initsym("COMPILED-FUNCTION", cl_pkg);
+  compiled_function_s->class = initdeftype("(COMPILED-FUNCTION (FUNCTION) ())");
+
+  symbol_s = initsym("SYMBOL", cl_pkg);
+  symbol_s->class = initdeftype("(SYMBOL (T) ())");
+  
+  package_s = initsym("PACKAGE", cl_pkg);
+  package_s->class = initdeftype("(PACKAGE (T) ())");
+
+  procinfo_s = initintsym("PROCESS-INFO", cl_pkg);
+  procinfo_s->class = initdeftype("(PROCESS-INFO (T) ())");
 }
 
 procinfo *init()

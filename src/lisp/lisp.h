@@ -38,13 +38,10 @@
  */
 typedef struct cons
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *car;
   struct cons *cdr;
 } __attribute__((packed)) cons;
-
-//Numbers
-//Integers
 
 /* Fixnum integer
  *
@@ -54,7 +51,7 @@ typedef struct cons
  */
 typedef struct fixnum
 {
-  unsigned short type;
+  unsigned int type;;
   long num;
 } __attribute__((packed)) fixnum;
 
@@ -70,7 +67,7 @@ typedef struct fixnum
  */
 typedef struct bignum
 {
-  unsigned short type;
+  unsigned int type;;
   long num;
   struct bignum *next;
 } __attribute__((packed)) bignum;
@@ -87,7 +84,7 @@ typedef struct bignum
  */
 typedef struct ratio
 {
-  unsigned short type;
+  unsigned int type;;
   struct fixnum *numerator;
   struct fixnum *denominator;
 } __attribute__((packed)) ratio;
@@ -102,7 +99,7 @@ typedef struct ratio
  */
 typedef struct single
 {
-  unsigned short type;
+  unsigned int type;;
   unsigned short sign : 1;
   unsigned short base : 15;
   struct fixnum *exponent;
@@ -117,7 +114,7 @@ typedef struct single
  */
 typedef struct base_char
 {
-  unsigned short type;
+  unsigned int type;;
   char c;
 }__attribute__((packed)) base_char;
 
@@ -137,7 +134,7 @@ typedef struct base_char
  */
 typedef struct array
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   struct fixnum *rank;
   struct fixnum *length;
@@ -159,7 +156,7 @@ typedef struct array
  */
 typedef struct compiled_function
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
@@ -174,7 +171,7 @@ typedef struct compiled_function
  */
 typedef struct function
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
@@ -184,28 +181,20 @@ typedef struct function
 /* Symbol
  * 
  * Symbols are comprised of a name in the form of a string, a
- * property list, the symbol's home-package, a value, and
- * a function. There is only one symbol with a given name per
- * package. 
+ * property list, the symbol's home-package, a value, a function,
+ * and a class. There is only one symbol with a given name per
+ * package.
  */
 typedef struct symbol
 {
-  unsigned short type;
+  unsigned int type;;
   struct array *name;
   struct cons *plist;
   struct package *home_package;
   struct cons *value;
   struct function *fun;
+  struct cons *class;
 }__attribute__((packed)) symbol;
-
-/*
-  typedef struct hash_table
-  {
-  unsigned short type;
-  struct cons *plist;
-  struct array *a;
-  }__attribute__((packed)) hash_table;
-*/
 
 /* Package
  *
@@ -218,14 +207,14 @@ typedef struct symbol
  */
 typedef struct package
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   struct array *name;
   struct array *global;//Change to hash table one day
 }__attribute__((packed)) package;
 
 
-/*Process Information
+/* Process Information
  *
  * These keep separate processes separate. The list of packages
  * accessible by a process resides in these structures.
@@ -235,12 +224,13 @@ typedef struct package
  * in the Common Lisp package. The only reson it is there
  * is to remove the need to search through the Common Lisp
  * package to find the value of the current package in use
- * every evaluation cycle.
+ * every evaluation cycle. The first element of an environment
+ * list is a procinfo.
  */
 typedef struct procinfo//Global stuff for each Lisp 'process'.
 {
-  unsigned short type;
-  struct symbol *package_sym;
+  unsigned int type;;
+  struct symbol *package_s;
   struct cons *packages;
 }__attribute__((packed)) procinfo;
 
@@ -267,7 +257,7 @@ typedef struct procinfo//Global stuff for each Lisp 'process'.
  */
 typedef struct stream
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   int read_index;
   int write_index;
@@ -282,10 +272,11 @@ typedef struct stream
  */
 typedef struct composite_stream
 {
-  unsigned short type;
+  unsigned int type;;
   struct cons *plist;
   struct array *streams;
 }__attribute__((packed)) composite_stream;
+
 
 #endif
 

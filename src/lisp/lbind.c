@@ -75,7 +75,7 @@ cons *llist(cons *env)
 symbol *lintern(cons *env)
 {
   array *name = (array*)lookup("NAME", env);
-  package *p = (package*)((procinfo*)env->car)->package_sym->value;
+  package *p = (package*)((procinfo*)env->car)->package_s->value;
   return intern(name, p);
 }
   
