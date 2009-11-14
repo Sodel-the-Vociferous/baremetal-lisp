@@ -1,6 +1,13 @@
 #define HASH_TABLE_SIZE 255
 
-//Types. One day, these will be changed to pointers to symbols.
+/* These are predefined typecodes that aren't legal address values 
+ * for basic predefined types. Anything in an object's type field 
+ * that isn't one of these predefined numbers is assumed to be a 
+ * pointer to a type or class definition, which is a Lisp linked list.
+ * Type definitions follow this form:
+ * (class-symbol (superclasses) (slots) other)
+ * where there is usually nothing in "other".
+ */
 #define T 1
 #define LIST 2
 #define FIXNUM 3
@@ -18,6 +25,7 @@
 #define PACKAGE 15
 #define PROCINFO 16
 #define STREAM 17
+
 
 #define BITS32
 
@@ -38,7 +46,7 @@
  */
 typedef struct cons
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *car;
   struct cons *cdr;
 } __attribute__((packed)) cons;
@@ -51,7 +59,7 @@ typedef struct cons
  */
 typedef struct fixnum
 {
-  unsigned int type;;
+  struct cons *type;
   long num;
 } __attribute__((packed)) fixnum;
 
@@ -67,7 +75,7 @@ typedef struct fixnum
  */
 typedef struct bignum
 {
-  unsigned int type;;
+  struct cons *type;
   long num;
   struct bignum *next;
 } __attribute__((packed)) bignum;
@@ -84,7 +92,7 @@ typedef struct bignum
  */
 typedef struct ratio
 {
-  unsigned int type;;
+  struct cons *type;
   struct fixnum *numerator;
   struct fixnum *denominator;
 } __attribute__((packed)) ratio;
@@ -99,7 +107,7 @@ typedef struct ratio
  */
 typedef struct single
 {
-  unsigned int type;;
+  struct cons *type;
   unsigned short sign : 1;
   unsigned short base : 15;
   struct fixnum *exponent;
@@ -114,7 +122,7 @@ typedef struct single
  */
 typedef struct base_char
 {
-  unsigned int type;;
+  struct cons *type;
   char c;
 }__attribute__((packed)) base_char;
 
@@ -134,7 +142,7 @@ typedef struct base_char
  */
 typedef struct array
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   struct fixnum *rank;
   struct fixnum *length;
@@ -156,7 +164,7 @@ typedef struct array
  */
 typedef struct compiled_function
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
@@ -171,7 +179,7 @@ typedef struct compiled_function
  */
 typedef struct function
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   struct cons *lambda_list;
   struct cons *env;
@@ -187,7 +195,7 @@ typedef struct function
  */
 typedef struct symbol
 {
-  unsigned int type;;
+  struct cons *type;
   struct array *name;
   struct cons *plist;
   struct package *home_package;
@@ -207,7 +215,7 @@ typedef struct symbol
  */
 typedef struct package
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   struct array *name;
   struct array *global;//Change to hash table one day
@@ -229,7 +237,7 @@ typedef struct package
  */
 typedef struct procinfo//Global stuff for each Lisp 'process'.
 {
-  unsigned int type;;
+  struct cons *type;
   struct symbol *package_s;
   struct cons *packages;
 }__attribute__((packed)) procinfo;
@@ -257,7 +265,7 @@ typedef struct procinfo//Global stuff for each Lisp 'process'.
  */
 typedef struct stream
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   int read_index;
   int write_index;
@@ -272,7 +280,7 @@ typedef struct stream
  */
 typedef struct composite_stream
 {
-  unsigned int type;;
+  struct cons *type;
   struct cons *plist;
   struct array *streams;
 }__attribute__((packed)) composite_stream;
@@ -283,6 +291,9 @@ typedef struct composite_stream
 extern cons *nil;
 extern cons *t;
 
+
+extern cons *type_of(cons *foo);
+extern cons *typep(cons *object, symbol *type);
 extern procinfo *init();
 extern cons *newcons();
 extern fixnum *newfixnum(long i); 

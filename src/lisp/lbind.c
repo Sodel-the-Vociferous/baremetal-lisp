@@ -88,6 +88,13 @@ package *lfind_package(cons *env)
   
 /*Equality*/
 
+
+cons *lfind_class(cons *env)
+{
+  symbol *typename = (symbol*)lookup("TYPE-NAME", env);
+  return typename->class;
+}
+
 cons *lchareq(cons *env)
 {
   cons *a = lookup("A", env);
@@ -108,6 +115,7 @@ cons *lstringeq(cons *env)
   cons *b = lookup("B", env);
   return stringeq((array*)a, (array*)b);
 }
+
 cons *lstringequal(cons *env)
 {
   cons *a = lookup("A", env);
@@ -151,6 +159,12 @@ cons *leval(cons *env)
 {
   cons *exp = lookup("EXP", env);
   return eval(exp, env);
+}
+
+cons *ltype_of(cons *env)
+{
+  cons *object = lookup("OBJECT", env);
+  return type_of(object);
 }
 
 /*Assignment*/

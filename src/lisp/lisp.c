@@ -8,11 +8,9 @@
 //It will be garbage collected.
 
 //TODO add special operators
-//TODO convert all typechecks to Lisp typechecks
 
 /* Internal Function Declarations */
-inline symbol *typeof(cons *foo);
-
+cons *subtypep(cons *object, cons *objtype, symbol *type);
 
 cons t_phys;
 cons nil_phys;
@@ -20,26 +18,48 @@ cons nil_phys;
 cons *t = &t_phys;
 cons *nil = &nil_phys;
 
-/* There are predefined typecodes that aren't legal address values 
- * for basic predefined types. Anything that isn't one of those 
- * predefined numbers is assumed to be a pointer to a type or
- * class definition, which is a Lisp linked list.
- */
-inline symbol *typeof(cons *foo)
+
+cons *type_of(cons *foo)
 {
-  if (foo->type <= STREAM)
-    return basic_classes[foo->type];
+  if (foo->type <= (cons*)STREAM)
+    /* This line returns a warning. No way to suppress it, I'm afraid. :( It 
+     * doesn't matter if the two types happen to be of different sizes,
+     * because these are just our constant type specifiers, which are quite
+     * compact.
+     */
+    return basic_classes[(int)foo->type];
   else
     return foo->type;
 }
 
+cons *subtypep(cons *object, cons *objtype, symbol *type)
+{
+  cons *supertype_list = objtype->cdr->car;
+  symbol *supertype;
+  if (type->class == objtype)
+    return t;
+  for (supertype_list;supertype_list!=nil;supertype_list=supertype_list->cdr)
+    {
+      supertype = (symbol*)supertype_list->car;
+      if (subtypep(object, supertype->class, type) == t)
+	return t;
+      else
+	continue;
+    }
+  return nil;
+}
 
+cons *typep(cons *object, symbol *type)
+{
+  cons *objtype = type_of(object);
+  return subtypep(object, objtype, type);
+}
 
 /* Object allocation routines */
 cons *newcons()
 {
   cons *c = malloc(sizeof(cons));
-  c->type = LIST;
+  c->type = (cons*)LIST;
   c->car = nil;
   c->cdr = nil;
   return c;
@@ -48,7 +68,7 @@ cons *newcons()
 fixnum *newfixnum(long num)
 {
   fixnum *f = malloc(sizeof(fixnum));
-  f->type = FIXNUM;
+  f->type = (cons*)FIXNUM;
   f->num = num;
   return f;
 }
@@ -56,7 +76,7 @@ fixnum *newfixnum(long num)
 bignum *newbignum()
 {
   bignum *b = malloc(sizeof(bignum));
-  b->type = BIGNUM;
+  b->type = (cons*)BIGNUM;
   b->num = 0;
   b->next = (bignum*)nil;
   return b;
@@ -65,7 +85,7 @@ bignum *newbignum()
 ratio *newratio(fixnum *n, fixnum *d)
 {
   ratio *r = malloc(sizeof(ratio));
-  r->type = RATIO;
+  r->type = (cons*)RATIO;
   r->numerator = n;
   r->denominator = d;
   return r;
@@ -74,7 +94,7 @@ ratio *newratio(fixnum *n, fixnum *d)
 single *newsingle()
 {
   single *s = malloc(sizeof(single));
-  s->type = SINGLE;
+  s->type = (cons*)SINGLE;
   s->sign = 0;
   s->base = 0;
   s->exponent = 0;
@@ -85,7 +105,7 @@ single *newsingle()
 base_char *newbase_char()
 {
   base_char *c = malloc(sizeof(base_char));
-  c->type = BASE_CHAR;
+  c->type = (cons*)BASE_CHAR;
   c->c = 0;
   return c;
 }
@@ -94,7 +114,7 @@ array *newarray(long rank, int length)
 {
   long i;
   array *a = malloc(sizeof(array));
-  a->type = ARRAY;
+  a->type = (cons*)ARRAY;
   a->plist = nil;
   a->rank = newfixnum(rank);
   a->length = newfixnum(length);
@@ -113,14 +133,14 @@ array *newarray(long rank, int length)
 array *newsimple_vector(int length)
 {
   array *v = newarray(1, length);
-  v->type = SIMPLE_VECTOR;
+  v->type = (cons*)SIMPLE_VECTOR;
   return v;
 }
 
 package *newpackage()
 {
   package *p = malloc(sizeof(package));
-  p->type = PACKAGE;
+  p->type = (cons*)PACKAGE;
   p->plist = nil;
   p->name = (array*)nil;
   p->global = newsimple_vector(HASH_TABLE_SIZE);
@@ -130,7 +150,7 @@ package *newpackage()
 compiled_function *newcompiled_function()
 {
   compiled_function *f = malloc(sizeof(compiled_function));
-  f->type = COMPILED_FUNCTION;
+  f->type = (cons*)COMPILED_FUNCTION;
   f->plist = nil;
   f->lambda_list = nil;
   f->env = 0;
@@ -140,7 +160,7 @@ compiled_function *newcompiled_function()
 function *newfunction()
 {
   function *f = malloc(sizeof(function));
-  f->type = FUNCTION;
+  f->type = (cons*)FUNCTION;
   f->plist = nil;
   f->lambda_list = nil;
   f->env = 0;
@@ -150,6 +170,7 @@ function *newfunction()
 stream *newstream()
 {
   stream *str = malloc(sizeof(stream));
+  str->type = (cons*)STREAM;
   str->plist = nil;
   str->read_index = 0;
   //Manual setup of the new stream will be required.
@@ -185,7 +206,7 @@ array *strtolstr(char *str)
   //Find the string length.
   to_ret = newsimple_vector(string_len);
 
-  to_ret->type = STRING;
+  to_ret->type = (cons*)STRING;
  
   for(i=0;*str!=0;i++)
     {//Add the base_chars to the string.
@@ -208,9 +229,9 @@ array *strtolstr(char *str)
 cons *null (cons *a)
 {//Is object nil?
   if (a == nil ||
-      (a->type = LIST &&
-       a->car == nil &&
-       a->cdr == nil))
+      ((typep(a, list_s) == t) &&
+       (a->car == nil) &&
+       (a->cdr == nil)))
     return t;
   else
     return nil;
@@ -220,16 +241,7 @@ cons *null (cons *a)
  */
 cons *numberp(cons *a)
 {//Is object a number?
-  switch (a->type)
-    {
-    case (FIXNUM):
-    case (BIGNUM):
-    case (RATIO):
-    case (SINGLE):
-      return t;
-    default:
-      return nil;
-    }
+  return typep(a, number_s);
 }
 
 /* CONS two objects together. Prepended with 'f' to prevent name
@@ -238,7 +250,7 @@ cons *numberp(cons *a)
 cons *fcons(cons *a, cons *b)
 {//f added to prevent collision
   cons *to_ret = malloc(sizeof(cons));
-  to_ret->type = LIST;  
+  to_ret->type = (cons*)LIST;  
   to_ret->car = a;
   to_ret->cdr = b;
   return to_ret;
@@ -248,46 +260,48 @@ cons *fcons(cons *a, cons *b)
  */
 cons *car(cons *a)
 {
-  if (a->type == LIST)
+  if (typep(a, list_s) == t)
     return a->car;
   else
-    return nil;//TODO error
+    return 0;//TODO error
 }
 
 /* Replace the CAR of a CONS cell.
  */
 cons *rplaca(cons *a, cons *new)
 {
-  if (a->type == LIST && a != nil)
+  if ((typep(a, list_s) == t) && 
+      (a != nil))
     {
       a->car = new;
       return a;
     }
   else
-    return nil;//TODO error
+    return 0;//TODO error
 }
 
 /* Return the CDR of a CONS cell.
  */
 cons *cdr(cons *a)
 {
-  if (a->type == LIST)
+  if (typep(a, list_s) == t)
     return a->cdr;
   else
-    return nil;//TODO error
+    return 0;//TODO error
 }
 
 /* Replace the CDR of a CONS cell.
  */
 cons *rplacd(cons *a, cons *new)
 {
-  if (a->type == LIST && a != nil)
+  if ((typep(a, list_s) == t) && 
+      (a != nil))
     {
       a->cdr = new;
       return a;
     }
   else
-    return nil;//TODO error
+    return 0;//TODO error
 }
 
 /*This is all infrastructure for the intern function. */
@@ -343,7 +357,7 @@ symbol *intern(array *name, package *p)
     }
   s = (symbol*)entry->car;
   s->plist = nil;
-  s->type = SYMBOL;
+  s->type = (cons*)SYMBOL;
   s->name = name;
   s->home_package = p;
   s->value = 0;
@@ -358,9 +372,10 @@ cons *chareq(base_char *a, base_char *b)
   if (a==b)
     return t;
   else if (a->type != b->type)
-    return nil;//TODO error?
-  else if (a->type != BASE_CHAR)
-    return nil;//TODO error!
+    return 0;//TODO error?
+  else if ((!(a->type <= (cons*)STREAM) &&
+	    !(a->type == (cons*)BASE_CHAR)))
+    return 0;//TODO error!
   else if (a->c == b->c)
     return t;
   else
@@ -376,9 +391,10 @@ cons *charequal(base_char *a, base_char *b)
   if (a==b)
     return t;
   else if (a->type != b->type)
-    return nil;//TODO error?
-  else if (a->type != BASE_CHAR)
-    return nil;//TODO error!
+    return 0;//TODO error?
+  else if ((!(a->type <= (cons*)STREAM) &&
+	    !(a->type == (cons*)BASE_CHAR)))
+    return 0;//TODO error!
 
   ac = a->c;
   if (ac<='z' && ac>='a')
@@ -403,8 +419,10 @@ cons *stringeq(array *a, array *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  // else if (a->type != STRING)
-  //  return nil;
+  else if (((a->type <= (cons*)STREAM) &&
+	    (a->type == (cons*)STRING)))
+    return 0;//TODO error
+  
   while(1)
     {
       if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
@@ -425,17 +443,21 @@ cons *stringequal(array *a, array *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  //else if (a->type != STRING)
-  //  return nil;
-  while(1)
+  else if (((a->type <= (cons*)STREAM) &&
+	    (a->type == (cons*)STRING)))
     {
-      if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
-	return nil;
-      else if (a->a[0][i] == 0) 
-	return t;
-      else
-	i++;
+      while(1)
+	{
+	  if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
+	    return nil;
+	  else if (a->a[0][i] == 0) 
+	    return t;
+	  else
+	    i++;
+	}
     }
+  else
+    return 0;//TODO error
 }
 
 /* Find a package by name, from a process' procinfo.
@@ -471,48 +493,52 @@ cons *eql (cons *a, cons *b)
     return t;
   else if (a->type == b->type)
     {
-      switch (a->type)
+      symbol *typename = (symbol*)type_of(a)->car;
+
+
+      if (typep(a, number_s) == t)
 	{
-	  //numbers
-	case (FIXNUM):
-	  if (((fixnum*)a)->num == ((fixnum*)b)->num)
-	    return t;
-	case (BIGNUM):
-	  while (((bignum*)a)->num == ((bignum*)b)->num)
-	    {
-	      if (((cons*)((bignum*)a)->next == nil) && 
-		  ((cons*)((bignum*)b)->next == nil))
+	  if (typename == fixnum_s)
+	    {  
+	      if (((fixnum*)a)->num == ((fixnum*)b)->num)
 		return t;
-	      a = (cons*)((bignum*)a)->next;
-	      b = (cons*)((bignum*)b)->next;
 	    }
-	  return nil;
-	case (RATIO):
-	  if ((((ratio*)a)->numerator == ((ratio*)b)->numerator) &&
-	      (((ratio*)a)->denominator == ((ratio*)b)->denominator))
-	    return t;
-	  else
-	    return nil;
-	case (SINGLE):
-	  if ((((single*)a)->sign == ((single*)b)->sign) &&
-	      (((single*)a)->base == ((single*)b)->base) &&
-	      (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
-	      (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
-	    return t;
-	  else
-	    return nil;
-	  //characters
-	case (BASE_CHAR):
-	  if (((base_char*)a)->c == ((base_char*)b)->c)
-	    return t;
-	  else
-	    return nil;
-	default:
-	  return nil;
+	  else if (typename == bignum_s)
+	    {
+	      while (((bignum*)a)->num == ((bignum*)b)->num)
+		{
+		  if (((cons*)((bignum*)a)->next == nil) && 
+		      ((cons*)((bignum*)b)->next == nil))
+		    return t;
+		  a = (cons*)((bignum*)a)->next;
+		  b = (cons*)((bignum*)b)->next;	
+		}
+	      return nil;
+	    }
+	  else if (typename == ratio_s)
+	    {
+	      if ((((ratio*)a)->numerator == ((ratio*)b)->numerator) &&
+		  (((ratio*)a)->denominator == ((ratio*)b)->denominator))
+		return t;
+	      else
+		return nil;
+	    }
+	  else if (typename == single_s)
+	    {
+	      if ((((single*)a)->sign == ((single*)b)->sign) &&
+		  (((single*)a)->base == ((single*)b)->base) &&
+		  (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
+		  (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
+		return t;
+	      else
+		return nil;
+	    }
 	}
+      else if (typep(a, character_s) == t)
+	return chareq((base_char*)a, (base_char*)b);
+      else
+	return nil;
     }
-  else
-    return nil;
 }
 
 /* Lookup a symbol in the current environment; can't do foreign packages yet. 
@@ -544,7 +570,7 @@ cons *eval(cons *exp, cons *env)
     return nil;
   else if (exp == t)
     return t;
-  else if (exp->type == SYMBOL)
+  else if (typep(exp, symbol_s) == t)
     {/* If the expression is just a symbol, evaluate it, and
       * return its current value.
       * Note: if the variable is "special", no lexical bindings 
@@ -594,22 +620,22 @@ cons *eval(cons *exp, cons *env)
       else
 	return 0;//TODO no value error
     }
- else if ((exp->type == LIST) && 
-	  (assoc(exp->car->car, (cons*)special_operators_s->value) == nil))
-   {/* If the expression is a list, whose first object is a special 
-     * operator, evaluate it as a special form.
-     */
-     return 0; //TODO!
-   }
-  else if ((exp->type == LIST) && 
-	   (exp->car->type != LIST) &&
+  else if ((typep(exp, list_s) == t) && 
+	   (assoc(exp->car->car, (cons*)special_operators_s->value) == nil))
+    {/* If the expression is a list, whose first object is a special 
+      * operator, evaluate it as a special form.
+      */
+      return 0; //TODO error!
+    }
+  else if ((typep(exp, list_s) == t) && 
+	   (typep(exp->car, list_s) == nil) &&
 	   (assoc(exp->car->car, special_operators_s->value) == nil))
     {/* If the expression is a list, whose first object is not a list, 
       * evaluate it as a form.
       */
       symbol *s = (symbol*)exp->car;
       function *f;
-      if (exp->car->type == SYMBOL)
+      if (typep(exp->car, symbol_s) == t)
 	{/* If the first object is a symbol, treat is as a function or 
 	  * macro name.
 	  */
@@ -619,14 +645,14 @@ cons *eval(cons *exp, cons *env)
 	     */
 	    return 0;
 	}
-      else if ((exp->car->type == FUNCTION) ||
-	       (exp->car->type == COMPILED_FUNCTION))
+      else if ((typep(exp->car, function_s) == t) ||
+	       (typep(exp->car, compiled_function_s) == t))
 	/* If the first object IS a function, treat it as such!
 	 * Used primarily for lambda.
 	 */
 	f = (function*)exp->car;
       
-      if (f->type == FUNCTION)
+      if (typep((cons*)f, function_s) == t)
 	{/* If the function isn't compiled, bind the arguments to the 
 	  * function's variable names, and evaluate the function's
 	  * form.
@@ -635,7 +661,7 @@ cons *eval(cons *exp, cons *env)
 	  newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
 	}
-      else if (f->type == COMPILED_FUNCTION)
+      else if (typep((cons*)f, compiled_function_s) == t)
 	{/* If the function is compiled, do exactly the same. Except, 
 	  * call the function pointer, with the expanded environment
 	  * as the paramater.
@@ -656,7 +682,7 @@ cons *eval(cons *exp, cons *env)
      * anticipated must be wrong. Throw an error, because it's
      * not a valid expression.
      */
-    return nil;//TODO should be error
+    return 0;//TODO should be error
 }
 
 /* Creates a new lexical environment level. New lexical bindings will 
@@ -725,10 +751,10 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	{/* If the parameter list hasn't run out, bind them to variable 
 	  * names, as per the lambda list.
 	  */
-	  if (lambda_list->car->type == SYMBOL)
+	  if (typep(lambda_list->car, symbol_s) == t)
 	    varsym = (symbol*)lambda_list->car;
-	  else if ((lambda_list->car->type == LIST) &&
-		   (lambda_list->car->car->type == SYMBOL))
+	  else if ((typep(lambda_list->car, list_s) == t) &&
+		   (typep(lambda_list->car->car, symbol_s) == t))
 	    varsym = (symbol*)lambda_list->car->car;
 	  else
 	    return 0;//TODO error
@@ -747,15 +773,15 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	  * the variable names with their default values, if any. If there
 	  * is no default value for a variable name, bind it to nil.
 	  */
-	  if (lambda_list->car->type == SYMBOL)
+	  if (typep(lambda_list->car, symbol_s) == t)
 	    {
 	      varsym = (symbol*)lambda_list->car;
 	      envbind(varsym, nil, env);
 	      lambda_list = lambda_list->cdr;
 	      args = args->cdr;
 	    }
-	  else if ((lambda_list->car->type == LIST) &&
-		   (lambda_list->car->car->type == SYMBOL))
+	  else if ((typep(lambda_list->car, list_s) == t) &&
+		   (typep(lambda_list->car->car, symbol_s) == t))
 	    {
 	      varsym = (symbol*)lambda_list->car->car;
 	      envbind(varsym, eval(lambda_list->car->cdr, env), env);
@@ -778,7 +804,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	 (lambda_list->car != (cons*)keyword_s) &&
 	 (lambda_list->car != (cons*)aux_s))
 	{
-	  if (lambda_list->car->type == SYMBOL)
+	  if (typep(lambda_list->car, symbol_s) == t)
 	    varsym = (symbol*)lambda_list->car;
 	  else
 	    return 0;//TODO error

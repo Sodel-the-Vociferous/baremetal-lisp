@@ -3,7 +3,7 @@
 #include "init.h"
 #include "lbind.h"
 
-cons *basic_classes[15];
+cons *basic_classes[18];
 
 /*For initializaton, these don't need to be flexible.*/
 procinfo *proc;
@@ -293,6 +293,9 @@ cons *initread(stream *str, cons *env)
 	     * successive reads won't know that the stream has ended.
 	     */
 	    unread_char(c, str);
+
+	  if (name[0] == ':')
+	    p = keyword_pkg;
 	  
 	  return (cons*)intern(strtolstr(name), p);
 	}
@@ -345,13 +348,13 @@ void init_cl_pkg()
   cl_pkg->name = cl_name;
 
   //Init t
-  t->type = T;
+  t->type = (cons*)T;
   t_s = initsym("T", cl_pkg);
   t_s->value = t;
   
   //Init nil
   //array *nil_name = strtolstr("NIL");
-  nil->type = LIST;
+  nil->type = (cons*)LIST;
   nil->car = nil;
   nil->cdr = nil;
   nil_s = initsym("NIL", cl_pkg);
@@ -497,9 +500,9 @@ void init_set_funs()
 void init_types()
 {/* Initialize startup types.
   */
-  stream *str = newstream();
 
   t_s->class = initdeftype("(T () ())");
+  basic_classes[T] = t_s->class;
   class_s = initsym("CLASS", cl_pkg);
   class_s->class = initdeftype("(CLASS (T) ())");
   built_in_class_s = initsym("BUILT-IN-CLASS", cl_pkg);
@@ -516,15 +519,19 @@ void init_types()
   integer_s->class = initdeftype("(INTEGER (RATIONAL) ())");
   fixnum_s = initsym("FIXNUM", cl_pkg);
   fixnum_s->class = initdeftype("(FIXNUM (INTEGER) ())");
+  basic_classes[FIXNUM] = fixnum_s->class;
   bignum_s = initsym("BIGNUM", cl_pkg);
   bignum_s->class = initdeftype("(BIGNUM (INTEGER) ())");
+  basic_classes[BIGNUM] = bignum_s->class;
   ratio_s = initsym("RATIO", cl_pkg);
   ratio_s->class = initdeftype("(RATIO (RATIONAL) ())");
-  
+  basic_classes[RATIO] = ratio_s->class;
+
   float_s = initsym("FLOAT", cl_pkg);
   float_s->class = initdeftype("(FLOAT (REAL) ())");
   single_s = initsym("SINGLE-FLOAT", cl_pkg);
   single_s->class = initdeftype("(SINGLE-FLOAT (FLOAT) ())");
+  basic_classes[SINGLE] = single_s->class;
 
   //TODO complex
   
@@ -533,6 +540,7 @@ void init_types()
   
   list_s = initsym("LIST", cl_pkg);
   list_s->class = initdeftype("(LIST (SEQUENCE) ())");
+  basic_classes[LIST] = list_s->class;
   cons_s = initsym("CONS", cl_pkg);
   cons_s->class = initdeftype("(CONS (LIST) ())");
   null_s = initsym("NULL", cl_pkg);
@@ -540,31 +548,41 @@ void init_types()
 
   array_s = initsym("ARRAY", cl_pkg);
   array_s->class = initdeftype("(ARRAY (T) ())");
+  basic_classes[ARRAY] = array_s->class;
   vector_s = initsym("VECTOR", cl_pkg);
   vector_s->class = initdeftype("(VECTOR (ARRAY SEQUENCE) ())");
   string_s = initsym("STRING", cl_pkg);
   string_s->class = initdeftype("(STRING (VECTOR) ())");
+  basic_classes[STRING] = string_s->class;
 
   character_s = initsym("CHARACTER", cl_pkg);
   character_s->class = initdeftype("(CHARACTER (T) ())");
   base_char_s = initsym("BASE-CHARACTER", cl_pkg);
   base_char_s->class = initdeftype("(BASE-CHARACTER (CHARACTER) ())");
+  basic_classes[BASE_CHAR] = base_char_s->class;
   extended_character_s = initsym("EXTENDED-CHARACTER", cl_pkg);
   extended_character_s->class = initdeftype("(EXTENDED-CHARACTER (CHARACTER) ())");
 
   function_s = initsym("FUNCTION", cl_pkg);
   function_s->class = initdeftype("(FUNCTION (T) ())");
+  basic_classes[FUNCTION] = function_s->class;
   compiled_function_s = initsym("COMPILED-FUNCTION", cl_pkg);
   compiled_function_s->class = initdeftype("(COMPILED-FUNCTION (FUNCTION) ())");
+  basic_classes[COMPILED_FUNCTION] = compiled_function_s->class;
 
   symbol_s = initsym("SYMBOL", cl_pkg);
   symbol_s->class = initdeftype("(SYMBOL (T) ())");
+  basic_classes[SYMBOL] = symbol_s->class;
   
   package_s = initsym("PACKAGE", cl_pkg);
   package_s->class = initdeftype("(PACKAGE (T) ())");
+  basic_classes[PACKAGE] = package_s->class;
 
   procinfo_s = initintsym("PROCESS-INFO", cl_pkg);
   procinfo_s->class = initdeftype("(PROCESS-INFO (T) ())");
+  basic_classes[PROCINFO] = procinfo_s->class;
+
+  //nil->type = null_s->class;
 }
 
 procinfo *init()
@@ -576,7 +594,7 @@ procinfo *init()
 
   //init process info
   proc = malloc(sizeof(procinfo));
-  proc->type = PROCINFO;
+  proc->type = (cons*)PROCINFO;
   proc->packages = newcons();
   proc->packages->car = (cons*)cl_pkg;
   proc->packages->cdr = newcons();

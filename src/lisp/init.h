@@ -1,5 +1,5 @@
 #define CASE_DIFFERENCE = 32
-extern cons *basic_classes[15];
+extern cons *basic_classes[];
 
 /*Packages*/
 extern package *keyword_pkg;
