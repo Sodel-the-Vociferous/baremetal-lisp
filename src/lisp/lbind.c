@@ -1,3 +1,12 @@
+/* lbind.c
+ *
+ * Definitions for Lisp interfaces to C functions. The C functions defined in 
+ * lisp.c use C calling convention. These interfaces make use of the Lisp 
+ * environment to find their parameters.
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 #include "lisp.h"
 #include "lbind.h"
 

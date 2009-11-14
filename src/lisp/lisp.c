@@ -1,13 +1,19 @@
-#include <stdlib.h>
-#include "lisp.h"
-#include "init.h"
-
-//I KNOW there are memory leaks EVERYWHERE.
-//In fact there isn't a single de-allocation in this code.
-//Fret not.
-//It will be garbage collected.
+/* lisp.c
+ *
+ * The actual code which makes Lisp tick. Functions here are targeted for use
+ * by the C code. To be used in a Lisp environment, add a short interface 
+ * function in lbind.c. You will notice a complete lack of de-allocation in
+ * this code. If this concerns you, what's the metter with you? This is Lisp!
+ * It's garbage collected!
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
 
 //TODO add special operators
+
+#include "lisp.h"
+#include <stdlib.h>
+#include "init.h"
 
 /* Internal Function Declarations */
 cons *subtypep(cons *object, cons *objtype, symbol *type);

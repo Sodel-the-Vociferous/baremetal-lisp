@@ -1,12 +1,20 @@
+/* lisp.h
+ *
+ * Here go all the definitions for all Lisp structs, and function prototypes.
+ * As well, the predeefined integer typecodes are defined here.
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 #define HASH_TABLE_SIZE 255
 
-/* These are predefined typecodes that aren't legal address values 
- * for basic predefined types. Anything in an object's type field 
- * that isn't one of these predefined numbers is assumed to be a 
- * pointer to a type or class definition, which is a Lisp linked list.
- * Type definitions follow this form:
+/* These are predefined typecodes that aren't legal address values for basic 
+ * predefined types. Anything in an object's type field that isn't one of these 
+ * predefined numbers is assumed to be a pointer to a type or class definition,
+ * which is a Lisp linked list. Type definitions follow this form:
  * (class-symbol (superclasses) (slots) other)
- * where there is usually nothing in "other".
+ * where there is usually nothing in "other". This will probably be expanded
+ * or replaced as the program matures.
  */
 #define T 1
 #define LIST 2
@@ -30,7 +38,6 @@
 #define BITS32
 
 #ifdef BITS32
-
 
 /* CONS cell.
  *
@@ -285,12 +292,10 @@ typedef struct composite_stream
   struct array *streams;
 }__attribute__((packed)) composite_stream;
 
-
 #endif
 
 extern cons *nil;
 extern cons *t;
-
 
 extern cons *type_of(cons *foo);
 extern cons *typep(cons *object, symbol *type);

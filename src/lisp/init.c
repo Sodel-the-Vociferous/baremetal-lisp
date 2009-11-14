@@ -1,3 +1,10 @@
+/* init.c
+ *
+ * This file contains all code to set up a working Lisp environment.
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 #include <stdlib.h>
 #include "lisp.h"
 #include "init.h"

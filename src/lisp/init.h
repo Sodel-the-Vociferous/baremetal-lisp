@@ -1,3 +1,8 @@
+/* init.h
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 #define CASE_DIFFERENCE = 32
 extern cons *basic_classes[];
 

@@ -1,3 +1,10 @@
+/* lbind.h
+ *
+ * Function prototypes for Lisp interfaces to C functions.
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 extern cons *lnull(cons *env);
 extern cons *lnumberp(cons *env);
 extern cons *lcons(cons *env);
