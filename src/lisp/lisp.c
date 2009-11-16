@@ -3,7 +3,7 @@
  * The actual code which makes Lisp tick. Functions here are targeted for use
  * by the C code. To be used in a Lisp environment, add a short interface 
  * function in lbind.c. You will notice a complete lack of de-allocation in
- * this code. If this concerns you, what's the metter with you? This is Lisp!
+ * this code. If this is a concern, what's the metter with you? This is Lisp!
  * It's garbage collected!
  *
  * This code is released under the GNU GPL General Public License.
@@ -14,6 +14,9 @@
 #include "lisp.h"
 #include <stdlib.h>
 #include "init.h"
+
+#include <stdio.h>
+
 
 /* Internal Function Declarations */
 cons *subtypep(cons *object, cons *objtype, symbol *type);
@@ -27,7 +30,7 @@ cons *nil = &nil_phys;
 
 cons *type_of(cons *foo)
 {
-  if (foo->type <= (cons*)STREAM)
+  if (foo->type <= (cons*)BUILT_IN_CLASS)
     /* This line returns a warning. No way to suppress it, I'm afraid. :( It 
      * doesn't matter if the two types happen to be of different sizes,
      * because these are just our constant type specifiers, which are quite
@@ -229,11 +232,11 @@ array *strtolstr(char *str)
 
 //Primitives
 
-/* Decide whether or not an object is nil.
- * An object is nil if it is the nil object, or an empty list.
+/* Decide whether or not an object is nil. An object is nil if it is the nil
+ * object, or an empty list.
  */
 cons *null (cons *a)
-{//Is object nil?
+{
   if (a == nil ||
       ((typep(a, list_s) == t) &&
        (a->car == nil) &&
@@ -246,15 +249,15 @@ cons *null (cons *a)
 /* Decide whether or not an object is a number.
  */
 cons *numberp(cons *a)
-{//Is object a number?
+{
   return typep(a, number_s);
 }
 
-/* CONS two objects together. Prepended with 'f' to prevent name
- * collision with the structure.
+/* CONS two objects together. Prefixed with 'f' to prevent name collision with 
+ * the structure.
  */
 cons *fcons(cons *a, cons *b)
-{//f added to prevent collision
+{
   cons *to_ret = malloc(sizeof(cons));
   to_ret->type = (cons*)LIST;  
   to_ret->car = a;
@@ -310,11 +313,8 @@ cons *rplacd(cons *a, cons *new)
     return 0;//TODO error
 }
 
-/*This is all infrastructure for the intern function. */
-
-/* Intern a symbol into a package, as per CLHS: "INTERN".
- * Return the symbol of name in package p. If it does not exist,
- * create it.
+/* Intern a symbol into a package, as per CLHS: "INTERN". Return the symbol of 
+ * name in package p. If it does not exist, create it.
  */
 symbol *intern(array *name, package *p)
 {//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax yet. Change this later. :]
@@ -325,14 +325,14 @@ symbol *intern(array *name, package *p)
   symbol *s;
 
   for (i=0;i<3;i++)
-    {
+    {/* Hash the first four characters of the name.
+      */
       if (i >= name->length->num)
 	hashed_name[i] = 0;
       else
 	hashed_name[i] = ((base_char*)name->a[0][i])->c;
     }
   index = *(unsigned int*)&hashed_name[0] % HASH_TABLE_SIZE;
-  //Hash the first four characters of the name.
   entry = p->global->a[0][index];
 
   if (entry != nil)
@@ -340,11 +340,13 @@ symbol *intern(array *name, package *p)
       s = (symbol*)entry->car;
 
       while(entry != nil)
-	{//Try to find a a symbol of the same name already interned into p
+	{/* Try to find a a symbol of the same name already interned into p.
+	  */
 	  if (stringequal(name, s->name) == t)
 	    return s;
 	  else if (entry->cdr == nil)
-	    {//If we've run out of entries, add a new one
+	    {/* If we've run out of entries, add a new one
+	      */
 	      entry->cdr = newcons();
 	      entry = entry->cdr;
 	      entry->car = (cons*)malloc(sizeof(symbol));
@@ -352,11 +354,11 @@ symbol *intern(array *name, package *p)
 	    }
 	  else
 	    entry = entry->cdr;
-	  //next entry
 	}
     }
   else if (entry == nil)
-    {//Create a new entry for the hash value in the table
+    {/* Create a new entry for the hash value in the table
+      */
       p->global->a[0][index] = newcons();
       p->global->a[0][index]->car = (cons*)malloc(sizeof(symbol));
       entry = p->global->a[0][index];
@@ -379,7 +381,7 @@ cons *chareq(base_char *a, base_char *b)
     return t;
   else if (a->type != b->type)
     return 0;//TODO error?
-  else if ((!(a->type <= (cons*)STREAM) &&
+  else if ((!(a->type <= (cons*)BUILT_IN_CLASS) &&
 	    !(a->type == (cons*)BASE_CHAR)))
     return 0;//TODO error!
   else if (a->c == b->c)
@@ -398,7 +400,7 @@ cons *charequal(base_char *a, base_char *b)
     return t;
   else if (a->type != b->type)
     return 0;//TODO error?
-  else if ((!(a->type <= (cons*)STREAM) &&
+  else if ((!(a->type <= (cons*)BUILT_IN_CLASS) &&
 	    !(a->type == (cons*)BASE_CHAR)))
     return 0;//TODO error!
 
@@ -425,7 +427,7 @@ cons *stringeq(array *a, array *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  else if (((a->type <= (cons*)STREAM) &&
+  else if (((a->type <= (cons*)BUILT_IN_CLASS) &&
 	    (a->type == (cons*)STRING)))
     return 0;//TODO error
   
@@ -449,7 +451,7 @@ cons *stringequal(array *a, array *b)
     return t;
   else if (a->type != b->type)
     return nil;
-  else if (((a->type <= (cons*)STREAM) &&
+  else if (((a->type <= (cons*)BUILT_IN_CLASS) &&
 	    (a->type == (cons*)STRING)))
     {
       while(1)
@@ -479,7 +481,6 @@ package *find_package(array *name, procinfo *pinfo)
   return (package*)nil;
 }
 
-//Equality checkers
 /* Determine if two objects are equal, as per CLHS: "EQ"
  */
 cons *eq (cons *a, cons *b)
@@ -491,7 +492,7 @@ cons *eq (cons *a, cons *b)
 }
 
 /* Determine if two objects are equal, as per CLHS: "EQL"
- * >Incomplete
+ * ->Incomplete
  */
 cons *eql (cons *a, cons *b)
 {
@@ -533,8 +534,10 @@ cons *eql (cons *a, cons *b)
 	    {
 	      if ((((single*)a)->sign == ((single*)b)->sign) &&
 		  (((single*)a)->base == ((single*)b)->base) &&
-		  (eql((cons*)((single*)a)->exponent, (cons*)((single*)b)->exponent) == t) &&
-		  (eql((cons*)((single*)a)->integer, (cons*)((single*)b)->integer)))
+		  (eql((cons*)((single*)a)->exponent, 
+		       (cons*)((single*)b)->exponent) == t) &&
+		  (eql((cons*)((single*)a)->integer, 
+		       (cons*)((single*)b)->integer)))
 		return t;
 	      else
 		return nil;
@@ -552,7 +555,9 @@ cons *eql (cons *a, cons *b)
 cons *lookup(char *namestr, cons *env)
 {
   array *name = strtolstr(namestr);
-  symbol *s = intern(name, (package*)((symbol*)((procinfo*)env->car)->package_s)->value);
+  symbol *s = intern(name, 
+		     (package*)
+		     ((symbol*)((procinfo*)env->car)->package_s)->value);
   return eval((cons*)s, env);
 }
 
@@ -569,6 +574,11 @@ cons *mkpair(cons *key, cons *value)
 }
 
 /* Evaluate a Lisp expression.
+ * Note that it does not by nature return a dynamic binding if a variable is
+ * declared special. The binding forms (let, let*, etc) will create dynamic 
+ * bindings instead of lexical ones. Function calls will still make lexical
+ * parameter bindings. This way, eval can check lexical bindings, and have
+ * lexical and dynamic variables peacefully coexist properly.
  */
 cons *eval(cons *exp, cons *env)
 {
@@ -577,49 +587,35 @@ cons *eval(cons *exp, cons *env)
   else if (exp == t)
     return t;
   else if (typep(exp, symbol_s) == t)
-    {/* If the expression is just a symbol, evaluate it, and
-      * return its current value.
-      * Note: if the variable is "special", no lexical bindings 
-      * are made, unless they are parameters.
+    {/* If the expression is just a symbol, evaluate it, and return its current
+      * value.
       */
 
       symbol *s = (symbol*)exp;
       cons *binding = env->cdr; /* current environment node */
-
-      /* if (assoc((cons*)dynamic, s->plist) != nil) */
-      /* 	{/\* Return the symbol's dynamic binding, if the symbol has */
-      /* 	  * been declared as dynamic. */
-      /* 	  *\/ */
-      /* 	  if (s->value != 0) */
-      /* 	    return s->value; */
-      /* 	  else */
-      /* 	    return 0;//TODO no value error */
-      /* 	} */
       
       while (binding!=nil)
-	{/* Loop through the lexical environment, searching for a
-	  * binding for symbol. 
+	{/* Loop through the lexical environment, searching for a binding for 
+	  * symbol. 
 	  */
 	  if ((symbol*)binding->car->car == s)
-	    /* If the current binding's symbol is the one we're 
-	     * looking for, return the value of the binding.
+	    /* If the current binding's symbol is the one we're looking for, 
+	     * return the value of the binding.
 	     */
 	    return binding->car->cdr->car;
 	  else if (binding->cdr == nil)
-	    /* If we've run out of bindings at this "level" of the
-	     * environment, move to the next one.
+	    /* If we've run out of bindings at this "level" of the environment, 
+	     * move to the next one.
 	     */
 	    binding = binding->car->cdr;
 	  else
-	    /* If there are still bindings to search, go to the
-	     * next one.
+	    /* If there are still bindings to search, go to the next one.
 	     */
 	    binding = binding->cdr;
 	}
       if (s->value != 0)
-	/* If execution reaches this spot, the lexical search has 
-	 * been unfruitful.
-	 * Return the dynamic binding, unless there is none, in
+	/* If execution reaches this spot, the lexical search has been 
+	 * unfruitful. Return the dynamic binding, unless there is none, in
 	 * which case, raise an error. TBD via CLHS
 	 */
 	return s->value;
@@ -628,22 +624,22 @@ cons *eval(cons *exp, cons *env)
     }
   else if ((typep(exp, list_s) == t) && 
 	   (assoc(exp->car->car, (cons*)special_operators_s->value) == nil))
-    {/* If the expression is a list, whose first object is a special 
-      * operator, evaluate it as a special form.
+    {/* If the expression is a list, whose first object is a special operator,
+      * evaluate it as a special form.
       */
       return 0; //TODO error!
     }
   else if ((typep(exp, list_s) == t) && 
 	   (typep(exp->car, list_s) == nil) &&
 	   (assoc(exp->car->car, special_operators_s->value) == nil))
-    {/* If the expression is a list, whose first object is not a list, 
-      * evaluate it as a form.
+    {/* If the expression is a list, whose first object is not a list, evaluate 
+      * it as a form.
       */
       symbol *s = (symbol*)exp->car;
       function *f;
       if (typep(exp->car, symbol_s) == t)
-	{/* If the first object is a symbol, treat is as a function or 
-	  * macro name.
+	{/* If the first object is a symbol, treat is as a function or macro 
+	  * name.
 	  */
 	  f = (function*)s->fun;
 	  if (f == (function*)0)
@@ -653,24 +649,22 @@ cons *eval(cons *exp, cons *env)
 	}
       else if ((typep(exp->car, function_s) == t) ||
 	       (typep(exp->car, compiled_function_s) == t))
-	/* If the first object IS a function, treat it as such!
-	 * Used primarily for lambda.
+	/* If the first object IS a function, treat it as such! Used primarily
+	 * for lambda.
 	 */
 	f = (function*)exp->car;
       
       if (typep((cons*)f, function_s) == t)
-	{/* If the function isn't compiled, bind the arguments to the 
-	  * function's variable names, and evaluate the function's
-	  * form.
+	{/* If the function isn't compiled, bind the arguments to the function's
+	  * variable names, and evaluate the function's form.
 	  */
 	  cons *newenv = extend_env(f->env);
 	  newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
 	}
       else if (typep((cons*)f, compiled_function_s) == t)
-	{/* If the function is compiled, do exactly the same. Except, 
-	  * call the function pointer, with the expanded environment
-	  * as the paramater.
+	{/* If the function is compiled, do exactly the same. Except, call the 
+	  * function pointer, with the expanded environment as the paramater.
 	  */
 	  compiled_function *cf = (compiled_function*)f;
 	  cons *newenv = extend_env(cf->env);
@@ -678,24 +672,23 @@ cons *eval(cons *exp, cons *env)
 	  return cf->fun(newenv);
 	}
       else
-	/* If the first object of the list is anything else, throw
-	 * an error, for it is invalid, and cannot be executed.
+	/* If the first object of the list is anything else, throw an error, for
+	 * it is invalid, and cannot be executed.
 	 */
 	return 0;//TODO error, not a function
     }
   else
-    /* Because I am the mighty programmer, anything I have not
-     * anticipated must be wrong. Throw an error, because it's
-     * not a valid expression.
+    /* Because I am the mighty programmer, anything I have not anticipated must 
+     * be wrong. Throw an error, because it's not a valid expression.
      */
     return 0;//TODO should be error
 }
 
-/* Creates a new lexical environment level. New lexical bindings will 
- * be pushed in before the previous one. When the evaluator, looking 
- * for bindings, reaches a lexical binding whose cdr is nil, it will 
- * know to descend to the next level. When both the car and cdr are nil, 
- * there are no more lexical levels. 
+/* Creates a new lexical environment level. New lexical bindings will be pushed 
+ * in before the previous one. When the evaluator, looking for bindings, reaches
+ * a lexical binding whose cdr is nil, it will know to descend to the next 
+ * level. When both the car and cdr of the last CONS cell are nil, there are no 
+ * more lexical levels. 
  */
 cons *extend_env(cons *env)
 {
@@ -720,8 +713,8 @@ cons *envbind(symbol *sym, cons *value, cons *env)
 }
 
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
-{/* Lexically bind a set of arguments to variable names defined in
-  * a lambda list.
+{/* Lexically bind a set of arguments to variable names defined in a lambda 
+  * list.
   */
   //NOTE: "Someone, please tidy me." :'( "I'm so messy!"
   cons *oldenv = env;
@@ -754,8 +747,8 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	    (lambda_list->car != (cons*)rest_s) &&
 	    (lambda_list->car != (cons*)keyword_s) &&
 	    (lambda_list->car != (cons*)aux_s))
-	{/* If the parameter list hasn't run out, bind them to variable 
-	  * names, as per the lambda list.
+	{/* If the parameter list hasn't run out, bind them to variable names, 
+	  * as per the lambda list.
 	  */
 	  if (typep(lambda_list->car, symbol_s) == t)
 	    varsym = (symbol*)lambda_list->car;
@@ -775,9 +768,9 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	    (lambda_list->car != (cons*)rest_s) &&
 	    (lambda_list->car != (cons*)keyword_s) &&
 	    (lambda_list->car != (cons*)aux_s))
-	{/* If the end of the parameter list has been reached, associate
-	  * the variable names with their default values, if any. If there
-	  * is no default value for a variable name, bind it to nil.
+	{/* If the end of the parameter list has been reached, associate the 
+	  * variable names with their default values, if any. If there is no 
+	  * default value for a variable name, bind it to nil.
 	  */
 	  if (typep(lambda_list->car, symbol_s) == t)
 	    {
@@ -857,16 +850,15 @@ symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env)
 
 //Stream functions
 base_char *read_char(stream *str)
-{/* Read a character from a stream. (See stream implementation documentation
-  * in lisp.h for a better understanding.)
+{/* Read a character from a stream. (See stream implementation documentation in 
+  * lisp.h for a better understanding.)
   */
   base_char *to_ret = (base_char*)str->rv->a[0][str->read_index];
 
   if ((str->read_index == str->write_index) &&
       (str->rv == str->wv))
-    /* If the stream has 'dried up', return nil.
-     * This is not CLHS okey-doeky, but a Lisp wrapper function will take
-     * care of the extra fidgeting.
+    /* If the stream has 'dried up', return nil. This is not CLHS okey-dokey, 
+     * but a Lisp wrapper function will take care of the extra fidgeting.
      */
     return (base_char*)nil;
   else if (str->read_index < str->rv->length->num)
@@ -896,10 +888,10 @@ base_char *peek_char(stream *str)
 }
 
 cons *unread_char(base_char *c, stream *str)
-{/* Place a character at the beginning of a stream, and set the read index to match,
-  * making the character the next character to be read. If the current vector is
-  * at the beginning, make a new, very small, vector, and assign the old vector to
-  * the new one's "next".
+{/* Place a character at the beginning of a stream, and set the read index to 
+  * match, making the character the next character to be read. If the current 
+  * vector is at the beginning, make a new, very small, vector, and assign the 
+  * old vector to the new one's "next".
   */
   if (str->read_index>1)
     str->read_index--;

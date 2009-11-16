@@ -10,25 +10,25 @@
 #include "init.h"
 #include "lbind.h"
 
-cons *basic_classes[18];
+cons *basic_classes[20];
 
-/*For initializaton, these don't need to be flexible.*/
+/* For initializaton, these don't need to be flexible. */
 procinfo *proc;
 cons *basic_env;
 
-/*Packages*/
+/* Packages */
 package *keyword_pkg;
 package *cl_pkg;
 package *cl_user_pkg;
 
-/*Keywords*/
-//Symbol attributes
+/* Keywords */
+/* Symbol attributes */
 symbol *internal;
 symbol *external;
 symbol *inherited;
-symbol *dynamic;
+symbol *special;
 symbol *constant;
-//Syntax Types
+/* Syntax Types */ 
 symbol *constituent;
 symbol *whitespace;
 symbol *terminating_macro;
@@ -37,7 +37,7 @@ symbol *single_escape;
 symbol *multiple_escape;
 symbol *alphabetic;
 symbol *alphadigit;
-//Constituent traits
+/* Constituent traits */
 symbol *invalid;
 symbol *package_marker;
 symbol *plus_sign;
@@ -46,23 +46,24 @@ symbol *dot;
 symbol *decimal_point;
 symbol *ratio_marker;
 
-/*Common-Lisp symbols*/
-//Internal symbols, for me.
+/* Common-Lisp symbols */
+/* Internal symbols, for me. */
 symbol *special_operators_s;
-//Types
+/* Types */
 symbol *built_in_class_s;
 symbol *number_s;
 symbol *real_s;
-symbol *rational_s;//rational
+symbol *rational_s;
 symbol *integer_s;
 symbol *fixnum_s;
 symbol *bignum_s;
 symbol *ratio_s;
+symbol *complex_s;
 symbol *float_s;
 symbol *single_s;
 symbol *character_s;
 symbol *base_char_s;
-symbol *extended_character_s;
+symbol *extended_char_s;
 symbol *sequence_s;
 symbol *cons_s;
 symbol *null_s;
@@ -76,29 +77,29 @@ symbol *hash_table_s;
 symbol *package_s;
 symbol *procinfo_s;
 symbol *class_s;
-//Defined symbols
-symbol *t_s;//T symbol
-symbol *nil_s;//NIL symbol
-symbol *package_s;//*package*
-symbol *readtable_s;//*readtable*
+/* Defined symbols */
+symbol *t_s;/* T symbol */
+symbol *nil_s;/* NIL symbol */
+symbol *package_s;/*  *package*  */
+symbol *readtable_s;/*  *readtable*  */
 /* Lambda list control symbols */
 symbol *lambda_list_keywords_s;
-symbol *optional_s;//&optional
-symbol *rest_s;//&rest
-symbol *keyword_s;//&keyword
-symbol *aux_s;//&aux
-symbol *whole_s;//&whole
-symbol *body_s;//&body
-symbol *allow_other_keys_s;//&allow-other-keys
-//List function names
-symbol *car_s;//CAR symbol
-symbol *cdr_s;//CDR symbol
-symbol *list_s;//LIST symbol
-//Special operators
-symbol *quote_s;//QUOTE symbol
+symbol *optional_s;/* &optional */
+symbol *rest_s;/* &rest */
+symbol *keyword_s;/* &keyword */
+symbol *aux_s;/* &aux */
+symbol *whole_s;/* &whole */
+symbol *body_s;/* &body */
+symbol *allow_other_keys_s;/* &allow-other-keys */
+/* List function names */
+symbol *car_s;/* CAR symbol */
+symbol *cdr_s;/* CDR symbol */
+symbol *list_s;/* LIST symbol */
+/* Special operators */
+symbol *quote_s;/* QUOTE symbol */
 /* Assignment Operator names */
 symbol *defun_s;
-//Equality function names
+/* Equality function names */
 symbol *chareq_s;
 symbol *charequal_s;
 symbol *stringeq_s;
@@ -107,14 +108,17 @@ symbol *eq_s;
 symbol *eql_s;
 symbol *equal_s;
 symbol *equalp_s;
-//Reader function names
+/* Reader function names */
 symbol *read_char_s;
 symbol *read_s;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
 symbol *initintsym(char *name, package *p);
-symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env));
+symbol *initcfun (char *name, 
+		  cons *lambda_list, 
+		  package *p, 
+		  cons *(*fun)(cons *env));
 cons *initdeftype(char *string);
 
 void init_keyword_pkg();
@@ -141,7 +145,8 @@ symbol *initsym(char *name, package *p)
   if (p == keyword_pkg)
     {/* Keywords suffer from apartheid, as per CLHS: 
       */
-      a->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+      a->plist = fcons(fcons((cons*)external, t), 
+		       fcons(fcons((cons*)constant, t), nil));
       a->value = (cons*)a;
     }
   else
@@ -159,17 +164,22 @@ symbol *initintsym(char *name, package *p)
   return a;
 }
 
-symbol *initcfun (char *name, cons *lambda_list, package *p, cons *(*fun)(cons *env))
+symbol *initcfun (char *name, 
+		  cons *lambda_list, 
+		  package *p, 
+		  cons *(*fun)(cons *env))
 {/* Initialize a compiled C function in package p. 
   */
   symbol *funsym;
   compiled_function *f;
 
   funsym = intern(strtolstr(name), p);
-  funsym->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+  funsym->plist = fcons(fcons((cons*)external, t), 
+			fcons(fcons((cons*)constant, t), nil));
   funsym->fun = (function*)newcompiled_function();
   f = (compiled_function*)funsym->fun;
-  f->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+  f->plist = fcons(fcons((cons*)external, t), 
+		   fcons(fcons((cons*)constant, t), nil));
   f->env = basic_env;
   f->lambda_list = lambda_list;
   f->fun = fun;
@@ -180,14 +190,16 @@ cons *initdeftype(char *string)
 {
   stream *str = newstream();
   str->rv = strtolstr(string);
-  return initread(str, basic_env);
+  cons *foo = initread(str, basic_env);
+  foo->type = (cons*)BUILT_IN_CLASS;
+  return foo;
 }
 
 cons *initread(stream *str, cons *env)
 {/* An inflexible, incomplete implementation of read. Just what the programmer
-  * needs to get the system off the ground, and not an iota more. To be
-  * extended at the programmer's whim for convenience.
-  * Currently recognizes: lists, characters, symbols
+  * needs to get the system off the ground, and not an iota more. To be extended
+  * at the programmer's whim for convenience. Currently recognizes: lists, 
+  * characters, symbols
   *
   * Stream support is rudimentary.
   */
@@ -267,10 +279,10 @@ cons *initread(stream *str, cons *env)
 		 (c->c != ')') &&
 		 (c->c != ' ') &&
 		 (c->c != 0))
-	    {/* Until we encounter something to terminate the symbol, read characters
-	      * into a buffer. Programmer: No symbols of more than 99 characters if 
-	      * you're using this function, and are too lazy to modify it. 
-	      * (Safe to change, just an arbitrary number.)
+	    {/* Until we encounter something to terminate the symbol, read 
+	      * characters into a buffer. Programmer: No symbols of more than 99
+	      * characters if  you're using this function, and are too lazy to 
+	      * modify it. (Safe to change, just an arbitrary buffer size.)
 	      */
 	      if (i >= 100)
 		/* Even with the warning above, check to see if the programmer
@@ -313,33 +325,37 @@ cons *initread(stream *str, cons *env)
 void init_keyword_pkg()
 {/* Initialize keywords that we'll need to get things rolling.
   */
-  //Init keyword package
   array *keyword_name = strtolstr("KEYWORD");
   keyword_pkg = newpackage();
   keyword_pkg->name = keyword_name;
 
-  //External and constant must be initialized manually, because they depend on themselves.
+  /* External and constant must be initialized manually, because they depend on
+   * themselves.
+   */
   external = intern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
   constant = intern(strtolstr("CONSTANT"), keyword_pkg);
   constant->value = (cons*)constant;
-  external->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
-  constant->plist = fcons(fcons((cons*)external, t), fcons(fcons((cons*)constant, t), nil));
+  external->plist = fcons(fcons((cons*)external, t), 
+			  fcons(fcons((cons*)constant, t), nil));
+  constant->plist = fcons(fcons((cons*)external, t), 
+			  fcons(fcons((cons*)constant, t), nil));
 
-  //Other symbol attributes
+  /* Other symbol attributes*/
   internal = initsym("INTERNAL", keyword_pkg);
   inherited = initsym("INHERITED", keyword_pkg);
-  dynamic = initsym("DYNAMIC", keyword_pkg);
+  special = initsym("SPECIAL", keyword_pkg);
 
-  //Readtable character attributes
+  /* Readtable character attributes */
   constituent = initsym("CONSTITUENT", keyword_pkg);
   whitespace = initsym("WHITESPACE", keyword_pkg);
   terminating_macro = initsym("TERMINATING-MACRO-CHARACTER", keyword_pkg);
-  non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", keyword_pkg);
+  non_terminating_macro = initsym("NON-TERMINATING-MACRO-CHARACTER", 
+				  keyword_pkg);
   single_escape = initsym("SINGLE-ESCAPE", keyword_pkg);
   multiple_escape = initsym("MULTIPLE-ESCAPE", keyword_pkg);
 
-  //Consituent traits
+  /* Consituent traits */
   invalid = initsym("INVALID", keyword_pkg);
   alphabetic = initsym("ALPHABETIC", keyword_pkg);
   alphadigit = initsym("ALPHADIGIT", keyword_pkg);
@@ -349,18 +365,16 @@ void init_keyword_pkg()
 void init_cl_pkg()
 {/* Initialize the Common Lisp package, and its contents.
   */
-  //Init cl package
   array *cl_name = strtolstr("COMMON-LISP");
   cl_pkg = newpackage();
   cl_pkg->name = cl_name;
 
-  //Init t
+  /* Init T */
   t->type = (cons*)T;
   t_s = initsym("T", cl_pkg);
   t_s->value = t;
   
-  //Init nil
-  //array *nil_name = strtolstr("NIL");
+  /* Init NIL */
   nil->type = (cons*)LIST;
   nil->car = nil;
   nil->cdr = nil;
@@ -540,7 +554,8 @@ void init_types()
   single_s->class = initdeftype("(SINGLE-FLOAT (FLOAT) ())");
   basic_classes[SINGLE] = single_s->class;
 
-  //TODO complex
+  complex_s = initsym("COMPLEX", cl_pkg);
+  complex_s->class = initdeftype("(COMPLEX (NUMBER) ())");
   
   sequence_s = initsym("SEQUENCE", cl_pkg);
   sequence_s->class = initdeftype("(SEQUENCE (T) ())");
@@ -567,8 +582,8 @@ void init_types()
   base_char_s = initsym("BASE-CHARACTER", cl_pkg);
   base_char_s->class = initdeftype("(BASE-CHARACTER (CHARACTER) ())");
   basic_classes[BASE_CHAR] = base_char_s->class;
-  extended_character_s = initsym("EXTENDED-CHARACTER", cl_pkg);
-  extended_character_s->class = initdeftype("(EXTENDED-CHARACTER (CHARACTER) ())");
+  extended_char_s = initsym("EXTENDED-CHARACTER", cl_pkg);
+  extended_char_s->class = initdeftype("(EXTENDED-CHARACTER (CHARACTER) ())");
 
   function_s = initsym("FUNCTION", cl_pkg);
   function_s->class = initdeftype("(FUNCTION (T) ())");
@@ -589,7 +604,7 @@ void init_types()
   procinfo_s->class = initdeftype("(PROCESS-INFO (T) ())");
   basic_classes[PROCINFO] = procinfo_s->class;
 
-  //nil->type = null_s->class;
+  nil->type = null_s->class;
 }
 
 procinfo *init()
@@ -599,7 +614,7 @@ procinfo *init()
 
   basic_env = extend_env(nil);
 
-  //init process info
+  /* Init process info */
   proc = malloc(sizeof(procinfo));
   proc->type = (cons*)PROCINFO;
   proc->packages = newcons();
@@ -613,7 +628,7 @@ procinfo *init()
   init_keyword_pkg();
   init_cl_pkg();
   
-  //Init cl-user package
+  /* Init cl-user package */
   array *cl_user_name = strtolstr("COMMON_LISP_USER");
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
