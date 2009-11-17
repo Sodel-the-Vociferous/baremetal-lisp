@@ -8,6 +8,7 @@
  */
 
 #include "lisp.h"
+#include "init.h"
 #include "lbind.h"
 
 //Major TODO typechecking
@@ -80,7 +81,9 @@ cons *llist(cons *env)
 //TODO does not yet support bignums.
 //TODO add math functions.
 
-//Environment operators
+
+
+/* Environment operators */
 symbol *lintern(cons *env)
 {
   array *name = (array*)lookup("NAME", env);
@@ -170,6 +173,22 @@ cons *leval(cons *env)
   return eval(exp, env);
 }
 
+cons *lprogn(cons *env)
+{
+  cons *body = lookup("body", env);
+  cons *to_ret;
+  for(body;body!=nil;body=body->cdr)
+    to_ret = eval(body->car, env);
+  return to_ret;
+}
+
+cons *lfunction(cons *env)
+{
+  function *f = (function*)lookup("NAME", env);
+  if(typep((cons*)f, function_s) == t)
+    return f->fun;
+}
+
 cons *ltype_of(cons *env)
 {
   cons *object = lookup("OBJECT", env);
@@ -192,7 +211,7 @@ cons *lquote(cons *env)
   return exp;
 }
 
-//Reading
+/* Reading */
 cons *lread_char(cons *env)
 {
   stream *str = (stream*)lookup("STREAM", env);

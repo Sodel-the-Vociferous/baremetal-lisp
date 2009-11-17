@@ -30,6 +30,8 @@ extern cons *lequal (cons *env);
 extern cons *lcond (cons *env);
 extern cons *lquote(cons *env);
 extern cons *leval(cons *env);
+extern cons *lprogn(cons *env);
+extern cons *lfunction(cons *env);
 extern cons *ltype_of(cons *env);
 
 extern cons *ldefun(cons *env);

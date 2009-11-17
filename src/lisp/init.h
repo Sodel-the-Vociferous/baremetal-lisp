@@ -27,6 +27,9 @@ extern symbol *single_escape;
 extern symbol *multiple_escape;
 extern symbol *alphabetic;
 extern symbol *alphadigit;
+
+extern symbol *special_operator;
+
 //Constituent traits
 extern symbol *invalid;
 extern symbol *package_marker;

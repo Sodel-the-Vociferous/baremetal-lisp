@@ -28,6 +28,8 @@ symbol *external;
 symbol *inherited;
 symbol *special;
 symbol *constant;
+/* Function Attributes */
+symbol *special_operator;
 /* Syntax Types */ 
 symbol *constituent;
 symbol *whitespace;
@@ -47,8 +49,6 @@ symbol *decimal_point;
 symbol *ratio_marker;
 
 /* Common-Lisp symbols */
-/* Internal symbols, for me. */
-symbol *special_operators_s;
 /* Types */
 symbol *built_in_class_s;
 symbol *number_s;
@@ -346,6 +346,8 @@ void init_keyword_pkg()
   inherited = initsym("INHERITED", keyword_pkg);
   special = initsym("SPECIAL", keyword_pkg);
 
+  special_operator = initsym("SPECIAL-OPERATOR", keyword_pkg);
+
   /* Readtable character attributes */
   constituent = initsym("CONSTITUENT", keyword_pkg);
   whitespace = initsym("WHITESPACE", keyword_pkg);
@@ -387,7 +389,6 @@ void init_cl_pkg()
   proc->package_s  = package_s;
   init_types();
   init_lambda_control();
-  init_special_operators();
   init_list_funs();
   init_eq_funs();
   init_read_funs();
@@ -413,13 +414,6 @@ void init_lambda_control()
 							fcons((cons*)whole_s,
 							      fcons((cons*)body_s,
 								    fcons((cons*)allow_other_keys_s, nil)))))));
-}
-
-void init_special_operators()
-{/* Initialize the list of special operators.
-  */
-  special_operators_s = initintsym("SPECIAL-OPERATORS", cl_pkg);
-  special_operators_s->value = nil;
 }
 
 void init_list_funs()

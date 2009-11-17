@@ -3,13 +3,13 @@
  * The actual code which makes Lisp tick. Functions here are targeted for use
  * by the C code. To be used in a Lisp environment, add a short interface 
  * function in lbind.c. You will notice a complete lack of de-allocation in
- * this code. If this is a concern, what's the metter with you? This is Lisp!
+ * this code. If this is a concern, what's the matter with you? This is Lisp!
  * It's garbage collected!
  *
  * This code is released under the GNU GPL General Public License.
  */
 
-//TODO add special operators
+//<TODO add special operators>
 
 #include "lisp.h"
 #include <stdlib.h>
@@ -623,15 +623,7 @@ cons *eval(cons *exp, cons *env)
 	return 0;//TODO no value error
     }
   else if ((typep(exp, list_s) == t) && 
-	   (assoc(exp->car->car, (cons*)special_operators_s->value) == nil))
-    {/* If the expression is a list, whose first object is a special operator,
-      * evaluate it as a special form.
-      */
-      return 0; //TODO error!
-    }
-  else if ((typep(exp, list_s) == t) && 
-	   (typep(exp->car, list_s) == nil) &&
-	   (assoc(exp->car->car, special_operators_s->value) == nil))
+	   (typep(exp->car, list_s) == nil))
     {/* If the expression is a list, whose first object is not a list, evaluate 
       * it as a form.
       */
@@ -653,6 +645,11 @@ cons *eval(cons *exp, cons *env)
 	 * for lambda.
 	 */
 	f = (function*)exp->car;
+
+      if (assoc((cons*)special_operator, f->plist) == t)
+	/* If the expression is a special form, evaluate it as a special form.
+	 */
+	return 0;//evalspec(exp, env);
       
       if (typep((cons*)f, function_s) == t)
 	{/* If the function isn't compiled, bind the arguments to the function's
@@ -907,6 +904,9 @@ cons *unread_char(base_char *c, stream *str)
   return nil;
 }
 
+
+extern cons *initread(stream *str, cons *env);
+
 int main ()
 {
   procinfo *proc = init();
@@ -921,12 +921,12 @@ int main ()
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->rv = strtolstr("(:EXTERNAL) ");
+  str->rv = strtolstr("(LIST (QUOTE A) (QUOTE B) (QUOTE C))");
   str->write_index = 20;
 
-  //cons *xyzzy = (cons*)read(str, env);
+  cons *xyzzy = (cons*)initread(str, env);
   //cons *wow = eval(xyzzy, env);
-  cons *lesser = eval((cons*)external, env);
+  cons *lesser = eval((cons*)xyzzy, env);
 
   return 0;
 }
