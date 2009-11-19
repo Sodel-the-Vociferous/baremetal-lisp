@@ -154,8 +154,13 @@ typedef struct array
   struct array *next;//Just in case we want to expand it.
 }__attribute__((packed)) array;
 
-//Functions
-
+typedef struct hash_table
+{
+  struct cons *type;
+  struct cons *plist;
+  struct array *a;
+  struct function *eq_fun;
+}__attribute__((packed)) hash_table;
 
 /* Compiled Function
  *
@@ -295,6 +300,7 @@ extern single *newsingle();
 extern base_char *newbase_char();
 extern array *newarray(long rank, int length);
 extern array *newsimple_vector(int size);
+extern hash_table *newhash_table(int length, function *eq_fun);
 extern package *newpackage();
 extern compiled_function *newcompiled_function();
 extern function *newfunction();
@@ -317,6 +323,7 @@ extern package *find_package(array *name, procinfo *pinfo);
 extern cons *eq (cons *a, cons *b);
 extern cons *eql (cons *a, cons *b);
 extern cons *equal (cons *a, cons *b);
+extern int hash(cons *object, hash_table *ht);
 extern cons *lookup(char *name, cons *env);
 extern cons *mkpair(cons *key, cons *value);
 extern cons *eval(cons *exp, cons *env);

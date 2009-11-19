@@ -27,6 +27,8 @@ extern cons *leq (cons *env);
 extern cons *leql (cons *env);
 extern cons *lequal (cons *env);
 
+extern cons *lhash (cons *env);
+
 extern cons *lcond (cons *env);
 extern cons *lquote(cons *env);
 extern cons *leval(cons *env);

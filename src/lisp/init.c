@@ -92,6 +92,8 @@ symbol *aux_s;/* &aux */
 symbol *whole_s;/* &whole */
 symbol *body_s;/* &body */
 symbol *allow_other_keys_s;/* &allow-other-keys */
+/* Mathematic Function Names */
+symbol *numberp_s;
 /* List function names */
 symbol *car_s;/* CAR symbol */
 symbol *cdr_s;/* CDR symbol */
@@ -113,6 +115,12 @@ symbol *equalp_s;
 symbol *read_char_s;
 symbol *read_s;
 
+/* Local variables */
+symbol *args_s;
+symbol *object_s;
+symbol *a_s;
+symbol *b_s;
+
 /*Local functions*/
 symbol *initsym(char *name, package *p);
 symbol *initintsym(char *name, package *p);
@@ -128,6 +136,7 @@ void init_cl_pkg();
 void init_readtable();
 void init_lambda_control();
 void init_special_operators();
+void init_number_funs();
 void init_list_funs();
 void init_eq_funs();
 void init_read_funs();
@@ -392,7 +401,14 @@ void init_cl_pkg()
   package_s->value = (cons*)cl_pkg;
   proc->package_s  = package_s;
   init_types();
+
+  a_s = initintsym("A", cl_pkg);
+  b_s = initintsym("B", cl_pkg);
+  object_s = initintsym("OBJECT", cl_pkg);
+  args_s = initintsym("ARGS", cl_pkg);
+
   init_lambda_control();
+  init_number_funs();
   init_list_funs();
   init_eq_funs();
   init_read_funs();
@@ -423,69 +439,85 @@ void init_lambda_control()
 void init_list_funs()
 {/* Initialize the list functions.
   */
+
+  null_s = initcfun("NULL",
+		    fcons((cons*)object_s,
+			  nil),
+		    cl_pkg,
+		    &lnull);
+
   car_s = initcfun("CAR", 
-		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
+		  fcons((cons*)list_s,
 			nil),
 		  cl_pkg,
 		  &lcar);
   cdr_s = initcfun("CDR", 
-		  fcons((cons*)intern(strtolstr("LIST"), cl_pkg),
+		  fcons((cons*)list_s,
 			nil),
 		  cl_pkg,
 		  &lcar);
   quote_s = initcfun("QUOTE", 
-		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
+		   fcons((cons*)list_s,
 			 nil),
 		   cl_pkg,
 		   &lquote);
   list_s = initcfun("LIST",
 		   fcons((cons*)rest_s, 
-			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
+			 fcons((cons*)args_s,
 			       nil)),
 		   cl_pkg,
 		   &llist);  
+}
+
+void init_number_funs()
+{
+  numberp_s = initcfun("NUMBERP",
+		       fcons((cons*)object_s,
+			     nil),
+		       cl_pkg,
+		       &lnumberp);
 }
 
 void init_eq_funs()
 {/* Initialize the equality functions.
   */
   chareq_s = initcfun("CHAR=",
-		     fcons((cons*)intern(strtolstr("A"), cl_pkg),
-			   fcons((cons*)intern(strtolstr("B"), cl_pkg),
+		     fcons((cons*)a_s, 
+			   fcons((cons*)b_s,
 				 nil)),
 		     cl_pkg,
 		     &lchareq);
   charequal_s = initcfun("CHAR-EQUAL",
-			fcons((cons*)intern(strtolstr("A"), cl_pkg),
-			      fcons((cons*)intern(strtolstr("B"), cl_pkg),
-				    nil)),
+			 fcons((cons*)a_s,
+			       fcons((cons*)b_s,
+				     nil)),
 			cl_pkg,
 			&lcharequal);
 
   stringeq_s = initcfun("STRING=",
-		       fcons((cons*)intern(strtolstr("A"), cl_pkg),
-			     fcons((cons*)intern(strtolstr("B"), cl_pkg),
+		       fcons((cons*)a_s,
+			     fcons((cons*)b_s,
 				   nil)),
 		       cl_pkg,
 		       &lstringeq);
   
   stringequal_s = initcfun("STRING-EQUAL",
-			  fcons((cons*)intern(strtolstr("A"), cl_pkg),
-				fcons((cons*)intern(strtolstr("B"), cl_pkg),
+			  fcons((cons*)a_s,
+				fcons((cons*)b_s, 
 				      nil)),
 			  cl_pkg,
 			  &lstringequal);
   
   eq_s = initcfun("EQ", 
-		 fcons((cons*)intern(strtolstr("A"), cl_pkg), 
-		       fcons((cons*)intern(strtolstr("B"), cl_pkg), 
+		 fcons((cons*)a_s, 
+		       fcons((cons*)b_s,
 			     nil)), 
 		 cl_pkg, 
 		 &leq);
 
   eql_s = initcfun("EQL",
-		  fcons((cons*)intern(strtolstr("A"), cl_pkg),
-			fcons((cons*)intern(strtolstr("B"), cl_pkg),
+		  fcons((cons*)a_s,
+			fcons((cons*)b_s,
 			      nil)),
 		  cl_pkg,
 		  &leql);
@@ -567,6 +599,7 @@ void init_types()
   cons_s->class = initdeftype("(CONS (LIST) ())");
   null_s = initsym("NULL", cl_pkg);
   null_s->class = initdeftype("(NULL (SYMBOL LIST) ())");
+  nil->type = null_s->class;
 
   array_s = initsym("ARRAY", cl_pkg);
   array_s->class = initdeftype("(ARRAY (T) ())");
@@ -605,11 +638,13 @@ void init_types()
   procinfo_s->class = initdeftype("(PROCESS-INFO (T) ())");
   basic_classes[PROCINFO] = procinfo_s->class;
 
-  nil->type = null_s->class;
-
   stream_s = initsym("STREAM", cl_pkg);
   stream_s->class = initdeftype("(STREAM (T) ())");
   basic_classes[STREAM] = stream_s->class;
+
+  hash_table_s = initsym("HASH-TABLE", cl_pkg);
+  hash_table_s->class = initdeftype("(HASH-TABLE (T) ())");
+  basic_classes[HASH_TABLE] = hash_table_s->class;
 }
 
 procinfo *init()

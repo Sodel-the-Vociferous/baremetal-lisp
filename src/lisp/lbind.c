@@ -152,6 +152,14 @@ cons *leql (cons *env)
 
 cons *lequal (cons *env);
 
+cons *lhash (cons *env)
+{
+  cons *object = lookup("OBJECT", env);
+  hash_table *ht = (hash_table*)lookup("HASH-TABLE", env);
+  
+  return (cons*)newfixnum(hash(object, ht));
+}
+
 /*Flow control*/
 cons *lcond(cons *env)
 {

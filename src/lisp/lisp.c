@@ -146,6 +146,16 @@ array *newsimple_vector(int length)
   return v;
 }
 
+hash_table *newhash_table(int length, function *eq_fun)
+{
+  hash_table *ht = malloc(sizeof(hash_table));
+  ht->type = (cons*)HASH_TABLE;
+  ht->plist = nil;
+  ht->a = newsimple_vector(length);
+  ht->eq_fun = eq_fun;
+  return ht;
+}
+
 package *newpackage()
 {
   package *p = malloc(sizeof(package));
@@ -551,6 +561,22 @@ cons *eql (cons *a, cons *b)
 	return nil;
     }
 }
+
+int hash(cons *object, hash_table *ht)
+{
+  int objsize;
+  int index = 0;
+  int ht_length = ht->a->length->num;
+  char *i = (char*)object;
+  
+  for (objsize;objsize>0;i--)
+    //TODO optimize for different types.
+    index += *i;
+  index = index % ht_length;
+
+  return index;
+}
+
 
 /* Lookup a symbol in the current environment; can't do foreign packages yet. 
  */
