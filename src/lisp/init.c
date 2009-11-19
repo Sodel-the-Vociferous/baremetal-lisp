@@ -437,8 +437,9 @@ void init_list_funs()
 		   &lquote);
   list_s = initcfun("LIST",
 		   fcons((cons*)rest_s, 
-			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
-			       nil)),
+			 fcons((cons*)intern(strtolstr("&REST"), cl_pkg),
+			       fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
+				     nil))),
 		   cl_pkg,
 		   &llist);  
 }

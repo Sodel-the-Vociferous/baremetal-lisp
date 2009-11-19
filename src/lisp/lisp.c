@@ -920,7 +920,7 @@ int main ()
 
   stream *str = malloc(sizeof(stream));
   str->read_index = 0;
-  str->rv = strtolstr("(LIST (QUOTE A) (QUOTE B) (QUOTE C))");
+  str->rv = strtolstr("(LIST :KEY :WORDS)");
   str->write_index = 20;
 
   cons *xyzzy = (cons*)initread(str, env);
