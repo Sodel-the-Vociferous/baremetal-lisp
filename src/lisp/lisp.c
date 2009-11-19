@@ -142,7 +142,7 @@ array *newarray(long rank, int length)
 array *newsimple_vector(int length)
 {
   array *v = newarray(1, length);
-  v->type = (cons*)SIMPLE_VECTOR;
+  v->type = (cons*)VECTOR;
   return v;
 }
 
@@ -337,11 +337,10 @@ symbol *intern(array *name, package *p)
 
   if (entry != nil)
     {
-      s = (symbol*)entry->car;
-
       while(entry != nil)
 	{/* Try to find a a symbol of the same name already interned into p.
 	  */
+	  s = (symbol*)entry->car;
 	  if (stringequal(name, s->name) == t)
 	    return s;
 	  else if (entry->cdr == nil)
@@ -409,7 +408,7 @@ cons *charequal(base_char *a, base_char *b)
     ac = ac-'a';
 
   bc = b->c;
-  if (bc<='z' && bc>='z')
+  if (bc<='z' && bc>='a')
     bc = bc-'a';
 
   else if (ac == bc)
@@ -435,7 +434,7 @@ cons *stringeq(array *a, array *b)
     {
       if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
 	return nil;
-      else if (a->a[0][i] == 0) 
+      else if (((base_char*)a->a[0][i])->c == 0) 
 	return t;
       else
 	i++;
@@ -458,7 +457,7 @@ cons *stringequal(array *a, array *b)
 	{
 	  if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
 	    return nil;
-	  else if (a->a[0][i] == 0) 
+	  else if (((base_char*)a->a[0][i])->c == 0) 
 	    return t;
 	  else
 	    i++;
@@ -602,7 +601,7 @@ cons *eval(cons *exp, cons *env)
 	    /* If the current binding's symbol is the one we're looking for, 
 	     * return the value of the binding.
 	     */
-	    return binding->car->cdr->car;
+	    return binding->car->cdr;
 	  else if (binding->cdr == nil)
 	    /* If we've run out of bindings at this "level" of the environment, 
 	     * move to the next one.
@@ -651,7 +650,7 @@ cons *eval(cons *exp, cons *env)
 	 */
 	return 0;//evalspec(exp, env);
       
-      if (typep((cons*)f, function_s) == t)
+      else if (type_of((cons*)f) == function_s->class)
 	{/* If the function isn't compiled, bind the arguments to the function's
 	  * variable names, and evaluate the function's form.
 	  */
@@ -659,7 +658,7 @@ cons *eval(cons *exp, cons *env)
 	  newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
 	}
-      else if (typep((cons*)f, compiled_function_s) == t)
+      if (type_of((cons*)f) == compiled_function_s->class)
 	{/* If the function is compiled, do exactly the same. Except, call the 
 	  * function pointer, with the expanded environment as the paramater.
 	  */
@@ -729,7 +728,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
     {/* Bind compulsory parameters to the proper variable names.
       */
       varsym = (symbol*)lambda_list->car;
-      envbind(varsym, eval(args->car, env), env);
+      envbind(varsym, args->car, env);
       
       lambda_list = lambda_list->cdr;
       args = args->cdr;
@@ -755,7 +754,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	  else
 	    return 0;//TODO error
 
-	  envbind(varsym, eval(args->car, env), env);
+	  envbind(varsym, args->car, env);
 
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
@@ -780,7 +779,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 		   (typep(lambda_list->car->car, symbol_s) == t))
 	    {
 	      varsym = (symbol*)lambda_list->car->car;
-	      envbind(varsym, eval(lambda_list->car->cdr, env), env);
+	      envbind(varsym, lambda_list->car->cdr, env);
 	      lambda_list = lambda_list->cdr;
 	      args = args->cdr;
 	    }
@@ -915,7 +914,7 @@ int main ()
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
 
-  cons *exp = fcons((cons*)quote_s, fcons((cons*)quote_s, nil));
+  cons *exp = fcons((cons*)cdr_s, fcons((cons*)quote_s, nil));
 
   cons *hope = eval(exp, env);
 

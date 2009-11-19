@@ -23,7 +23,7 @@
 #define RATIO 5
 #define SINGLE 6
 #define BASE_CHAR 7
-#define SIMPLE_VECTOR 8
+#define VECTOR 8
 #define ARRAY 9
 #define COMPILED_FUNCTION 10
 #define STRING 11

@@ -77,6 +77,7 @@ symbol *hash_table_s;
 symbol *package_s;
 symbol *procinfo_s;
 symbol *class_s;
+symbol *stream_s;
 /* Defined symbols */
 symbol *t_s;/* T symbol */
 symbol *nil_s;/* NIL symbol */
@@ -433,7 +434,7 @@ void init_list_funs()
 		   fcons((cons*)intern(strtolstr("EXP"), cl_pkg),
 			 nil),
 		   cl_pkg,
-		   &lquote);  
+		   &lquote);
   list_s = initcfun("LIST",
 		   fcons((cons*)rest_s, 
 			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
@@ -520,8 +521,10 @@ void init_types()
   basic_classes[T] = t_s->class;
   class_s = initsym("CLASS", cl_pkg);
   class_s->class = initdeftype("(CLASS (T) ())");
+  basic_classes[CLASS] = class_s->class;
   built_in_class_s = initsym("BUILT-IN-CLASS", cl_pkg);
   built_in_class_s->class = initdeftype("(BUILT-IN-CLASS (CLASS) ())");
+  basic_classes[BUILT_IN_CLASS] = built_in_class_s->class;
 
   number_s = initsym("NUMBER", cl_pkg);
   number_s->class = initdeftype("(NUMBER (BUILT-IN-CLASS) ())");
@@ -567,6 +570,7 @@ void init_types()
   basic_classes[ARRAY] = array_s->class;
   vector_s = initsym("VECTOR", cl_pkg);
   vector_s->class = initdeftype("(VECTOR (ARRAY SEQUENCE) ())");
+  basic_classes[VECTOR] = vector_s->class;
   string_s = initsym("STRING", cl_pkg);
   string_s->class = initdeftype("(STRING (VECTOR) ())");
   basic_classes[STRING] = string_s->class;
@@ -599,6 +603,10 @@ void init_types()
   basic_classes[PROCINFO] = procinfo_s->class;
 
   nil->type = null_s->class;
+
+  stream_s = initsym("STREAM", cl_pkg);
+  stream_s->class = initdeftype("(STREAM (T) ())");
+  basic_classes[STREAM] = stream_s->class;
 }
 
 procinfo *init()

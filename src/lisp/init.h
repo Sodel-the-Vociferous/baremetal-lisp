@@ -70,6 +70,7 @@ extern symbol *hash_table_s;
 extern symbol *package_s;
 extern symbol *procinfo_s;
 extern symbol *class_s;
+extern symbol *stream_s;
 //Defined symbols
 extern symbol *t_s;//T symbol
 extern symbol *nil_s;//NIL symbol
