@@ -315,7 +315,10 @@ cons *initread(stream *str, cons *env)
 	    unread_char(c, str);
 
 	  if (name[0] == ':')
-	    p = keyword_pkg;
+	    {
+	      p = keyword_pkg;
+	       return (cons*)intern(strtolstr(&name[1]), p);
+	    }
 	  
 	  return (cons*)intern(strtolstr(name), p);
 	}
@@ -437,9 +440,8 @@ void init_list_funs()
 		   &lquote);
   list_s = initcfun("LIST",
 		   fcons((cons*)rest_s, 
-			 fcons((cons*)intern(strtolstr("&REST"), cl_pkg),
-			       fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
-				     nil))),
+			 fcons((cons*)intern(strtolstr("ARGS"), cl_pkg),
+			       nil)),
 		   cl_pkg,
 		   &llist);  
 }

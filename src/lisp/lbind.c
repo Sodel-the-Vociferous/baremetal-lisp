@@ -62,17 +62,18 @@ cons *lrplacd(cons *env)
 cons *llist(cons *env)
 {
   cons *args = lookup("ARGS", env);
+  cons *arg = args->car;
   cons *to_ret = newcons();
   cons *foo = to_ret;
 
-  foo->car = args;
-  args = args->cdr;
+  foo->car = arg->car;
+  arg = arg->cdr;
 
   for (args;args!=nil;args=args->cdr)
     {
       foo->cdr = newcons();
       foo = foo->cdr;
-      foo->car = args;
+      foo->car = arg->car;
     }
   return to_ret;  
 }  

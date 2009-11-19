@@ -367,7 +367,10 @@ symbol *intern(array *name, package *p)
   s->type = (cons*)SYMBOL;
   s->name = name;
   s->home_package = p;
-  s->value = 0;
+  if (p == keyword_pkg)
+    s->value = (cons*)s;
+  else
+    s->value = 0;
   s->fun = (function*)0;
   return s;
 }
@@ -795,7 +798,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
       if((null(lambda_list) == nil) && 
 	 (null(args) == nil) &&
 	 (lambda_list->car != (cons*)optional_s) &&
-	 (lambda_list->car != (cons*)rest_s) &&
+	 (lambda_list->car != (cons*)rest_s) && 
 	 (lambda_list->car != (cons*)keyword_s) &&
 	 (lambda_list->car != (cons*)aux_s))
 	{
@@ -813,8 +816,7 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
   /*   env = evalkeyword(lambda_list, args, env); */
   /* if (lambda_list->car != (cons*)aux) */
   /*   env = env; */
-
-  return env;
+    return env;
 }
 
 cons *assoc(cons *key, cons *plist)
