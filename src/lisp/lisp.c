@@ -20,6 +20,7 @@
 
 /* Internal Function Declarations */
 cons *subtypep(cons *object, cons *objtype, symbol *type);
+cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate);
 
 cons t_phys;
 cons nil_phys;
@@ -578,7 +579,7 @@ int hash(cons *object, hash_table *ht)
 }
 
 
-/* Lookup a symbol in the current environment; can't do foreign packages yet. 
+/* Lookup a symbol in the current environment; can't do foreign packages. 
  */
 cons *lookup(char *namestr, cons *env)
 {
@@ -673,18 +674,19 @@ cons *eval(cons *exp, cons *env)
 	 * for lambda.
 	 */
 	f = (function*)exp->car;
-
-      if (assoc((cons*)special_operator, f->plist) == t)
-	/* If the expression is a special form, evaluate it as a special form.
-	 */
-	return 0;//evalspec(exp, env);
-      
+            
       else if (type_of((cons*)f) == function_s->class)
 	{/* If the function isn't compiled, bind the arguments to the function's
 	  * variable names, and evaluate the function's form.
 	  */
 	  cons *newenv = extend_env(f->env);
-	  newenv = evalambda(f->lambda_list, exp->cdr, newenv);
+	  if (assoc((cons*)special_operator, f->plist) == t)
+	    /* If the expression is a special form, evaluate it as a special 
+	     * form, and treat its paramteres accordingly.
+	     */
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, newenv);
+	  else
+	    newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
 	}
       if (type_of((cons*)f) == compiled_function_s->class)
@@ -693,7 +695,13 @@ cons *eval(cons *exp, cons *env)
 	  */
 	  compiled_function *cf = (compiled_function*)f;
 	  cons *newenv = extend_env(cf->env);
-	  newenv = evalambda(cf->lambda_list, exp->cdr, newenv);
+	  if (assoc((cons*)special_operator, f->plist) == t)
+	    /* If the expression is a special form, evaluate it as a special 
+	     * form, and treat its paramteres accordingly.
+	     */
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, newenv);
+	  else
+	    newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return cf->fun(newenv);
 	}
       else
@@ -702,6 +710,11 @@ cons *eval(cons *exp, cons *env)
 	 */
 	return 0;//TODO error, not a function
     }
+  else if (typep(exp, list_s) == nil)
+    /* An other valid input must be self-evaluating.
+     */
+    return exp;
+
   else
     /* Because I am the mighty programmer, anything I have not anticipated must 
      * be wrong. Throw an error, because it's not a valid expression.
@@ -738,6 +751,16 @@ cons *envbind(symbol *sym, cons *value, cons *env)
 }
 
 cons *evalambda(cons *lambda_list, cons *args, cons *env)
+{
+  return evalambda_base(lambda_list, args, env, t);
+}
+
+cons *evalambda_special(cons *lambda_list, cons *args, cons *env)
+{
+  return evalambda_base(lambda_list, args, env, nil);
+}
+
+cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
 {/* Lexically bind a set of arguments to variable names defined in a lambda 
   * list.
   */
@@ -757,7 +780,10 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
     {/* Bind compulsory parameters to the proper variable names.
       */
       varsym = (symbol*)lambda_list->car;
-      envbind(varsym, args->car, env);
+      if (evaluate == t)
+	envbind(varsym, eval(args->car, env), env);
+      else
+	envbind(varsym, args->car, env);
       
       lambda_list = lambda_list->cdr;
       args = args->cdr;
@@ -783,7 +809,10 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 	  else
 	    return 0;//TODO error
 
-	  envbind(varsym, args->car, env);
+	  if (evaluate == t)
+	    envbind(varsym, eval(args->car, env), env);
+	  else
+	    envbind(varsym, args->car, env);
 
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
@@ -808,7 +837,10 @@ cons *evalambda(cons *lambda_list, cons *args, cons *env)
 		   (typep(lambda_list->car->car, symbol_s) == t))
 	    {
 	      varsym = (symbol*)lambda_list->car->car;
-	      envbind(varsym, lambda_list->car->cdr, env);
+	      if (evaluate == t)
+		envbind(varsym, eval(lambda_list->car->cdr, env), env);
+	      else
+		envbind(varsym, lambda_list->car->cdr, env);
 	      lambda_list = lambda_list->cdr;
 	      args = args->cdr;
 	    }
@@ -942,7 +974,7 @@ int main ()
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
 
-  cons *exp = fcons((cons*)cdr_s, fcons((cons*)quote_s, nil));
+  cons *exp = fcons((cons*)cdr_s, fcons((cons*)external, nil));
 
   cons *hope = eval(exp, env);
 
@@ -951,9 +983,10 @@ int main ()
   str->rv = strtolstr("(LIST :KEY :WORDS)");
   str->write_index = 20;
 
-  cons *xyzzy = (cons*)initread(str, env);
-  //cons *wow = eval(xyzzy, env);
-  cons *lesser = eval((cons*)xyzzy, env);
+  cons *exp2 = (cons*)initread(str, env);
+  cons *lesser = eval((cons*)exp2, env);
+
+  cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   return 0;
 }

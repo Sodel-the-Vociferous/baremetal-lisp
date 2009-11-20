@@ -471,7 +471,7 @@ void init_list_funs()
 		  cl_pkg,
 		  &lcar);
   quote_s = initcfun("QUOTE", 
-		   fcons((cons*)list_s,
+		   fcons((cons*)exp_s,
 			 nil),
 		   cl_pkg,
 		   &lquote);

@@ -16,6 +16,7 @@
  * where there is usually nothing in "other". This will probably be expanded
  * or replaced as the program matures.
  */
+
 #define T 1
 #define LIST 2
 #define FIXNUM 3
@@ -330,6 +331,7 @@ extern cons *eval(cons *exp, cons *env);
 extern cons *extend_env(cons *env);
 extern cons *envbind(symbol *sym, cons *value, cons *env);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
+extern cons *evalambda_special(cons *lambda_list, cons *args, cons *env);
 extern cons *assoc(cons *key, cons *plist);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
 extern base_char *read_char(stream *str);
