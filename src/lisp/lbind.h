@@ -14,10 +14,10 @@ extern cons *lcdr(cons *env);
 extern cons *lrplacd(cons *env);
 extern cons *llist(cons *env);
 
-extern symbol *lintern(cons *env);
-extern package *lfind_package(cons *env);
-
+extern cons *lintern(cons *env);
+extern cons *lfind_package(cons *env);
 extern cons *lfind_class(cons *env);
+
 extern cons *lchareq(cons *env);
 extern cons *lcharequal(cons *env);
 extern cons *lstringeq(cons *env);

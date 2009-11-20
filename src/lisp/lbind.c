@@ -85,18 +85,18 @@ cons *llist(cons *env)
 
 
 /* Environment operators */
-symbol *lintern(cons *env)
+cons *lintern(cons *env)
 {
   array *name = (array*)lookup("NAME", env);
   package *p = (package*)((procinfo*)env->car)->package_s->value;
-  return intern(name, p);
+  return (cons*)intern(name, p);
 }
   
-package *lfind_package(cons *env)
+cons *lfind_package(cons *env)
 {
   array *name = (array*)lookup("NAME", env);
   procinfo *p = (procinfo*)env->car;
-  return find_package(name, p);
+  return (cons*)find_package(name, p);
 }
   
 /*Equality*/

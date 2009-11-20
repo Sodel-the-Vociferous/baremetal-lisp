@@ -97,12 +97,15 @@ symbol *numberp_s;
 /* List function names */
 symbol *car_s;/* CAR symbol */
 symbol *cdr_s;/* CDR symbol */
+symbol *rplaca_s;
+symbol *rplacd_s;
 symbol *list_s;/* LIST symbol */
 /* Special operators */
 symbol *quote_s;/* QUOTE symbol */
 /* Assignment Operator names */
+symbol *intern_s;
 symbol *defun_s;
-/* Equality function names */
+/* Equality Function Names */
 symbol *chareq_s;
 symbol *charequal_s;
 symbol *stringeq_s;
@@ -111,6 +114,12 @@ symbol *eq_s;
 symbol *eql_s;
 symbol *equal_s;
 symbol *equalp_s;
+/* Evaluation Function Names */
+symbol *eval_s;
+symbol *cond_s;
+/* Environment Function Names */
+symbol *find_package_s;
+symbol *find_class_s;
 /* Reader function names */
 symbol *read_char_s;
 symbol *read_s;
@@ -120,6 +129,7 @@ symbol *args_s;
 symbol *object_s;
 symbol *a_s;
 symbol *b_s;
+symbol *exp_s;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -139,6 +149,8 @@ void init_special_operators();
 void init_number_funs();
 void init_list_funs();
 void init_eq_funs();
+void init_eval_funs();
+void init_env_funs();
 void init_read_funs();
 void init_set_funs();
 void init_types();
@@ -402,10 +414,12 @@ void init_cl_pkg()
   proc->package_s  = package_s;
   init_types();
 
+  /* Generic paramter names */
   a_s = initintsym("A", cl_pkg);
   b_s = initintsym("B", cl_pkg);
   object_s = initintsym("OBJECT", cl_pkg);
   args_s = initintsym("ARGS", cl_pkg);
+  exp_s = initintsym("EXP", cl_pkg);
 
   init_lambda_control();
   init_number_funs();
@@ -461,6 +475,18 @@ void init_list_funs()
 			 nil),
 		   cl_pkg,
 		   &lquote);
+  rplaca_s = initcfun("RPLACA",
+		      fcons((cons*)cons_s,
+			    fcons((cons*)a_s, 
+				  nil)),
+		      cl_pkg,
+		      &lrplaca);
+  rplacd_s = initcfun("RPLACD",
+		      fcons((cons*)cons_s,
+			    fcons((cons*)a_s,
+				  nil)),
+		      cl_pkg,
+		      &lrplacd);
   list_s = initcfun("LIST",
 		   fcons((cons*)rest_s, 
 			 fcons((cons*)args_s,
@@ -523,6 +549,36 @@ void init_eq_funs()
 		  &leql);
 }
 
+void init_eval_funs()
+{
+  eval_s = initcfun("EVAL",
+		    fcons((cons*)exp_s,
+			  nil),
+		    cl_pkg,
+		    &leval);
+
+  cond_s = initcfun("COND",
+		    fcons((cons*)intern(strtolstr("CLAUSES"), cl_pkg),
+			  nil),
+		    cl_pkg,
+		    &lcond);
+}
+
+void init_env_funs()
+{
+  find_package_s = initcfun("FIND-PACKAGE",
+			    fcons((cons*)string_s,
+				  nil),
+			    cl_pkg,
+			    &lfind_package);
+
+  find_class_s = initcfun("FIND-CLASS",
+			  fcons((cons*)string_s,
+				nil),
+			  cl_pkg,
+			  &lfind_class);
+}
+
 void init_read_funs()
 {/* Initialize reader functions.
   */
@@ -539,6 +595,15 @@ void init_read_funs()
 void init_set_funs()
 {/* Initialize assignment functions.
   */
+
+  intern_s = initcfun("INTERN",
+		      fcons((cons*)string_s,
+			    fcons((cons*)optional_s,
+				  fcons((cons*)package_s,
+					nil))),
+		      cl_pkg,
+		      &lintern);
+
   defun_s = initcfun("DEFUN",
 		  fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
 			fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
@@ -673,7 +738,5 @@ procinfo *init()
   cl_user_pkg = newpackage();
   cl_user_pkg->name = cl_user_name;
 
-
   return proc;
 }
-
