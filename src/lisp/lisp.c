@@ -4,7 +4,7 @@
  * by the C code. To be used in a Lisp environment, add a short interface 
  * function in lbind.c. You will notice a complete lack of de-allocation in
  * this code. If this is a concern, what's the matter with you? This is Lisp!
- * It's garbage collected!
+ * It's garbage collected! At least, it will be.
  *
  * This code is released under the GNU GPL General Public License.
  */
@@ -882,7 +882,7 @@ cons *assoc(cons *key, cons *plist)
   */
   while(plist != nil)
     {
-      if (key == plist->car->car)
+      if (eql(key, plist->car->car) == t)
 	return plist->car;
       else
 	plist  = plist->cdr;
@@ -963,6 +963,26 @@ cons *unread_char(base_char *c, stream *str)
   return nil;
 }
 
+cons *write_char(base_char *c, stream *str)
+{/* Append a character to a stream.
+  */
+  if (str->write_index < str->wv->length->num)
+    {/* If the stream's write-vector hasn't been exhausted, append the
+      * character, and increment the write index.
+      */
+      str->wv->a[0][str->write_index] = c;
+      str->write_index++;
+    }
+  else if (str->wv->next == 0)
+    {/* If the stream's write-vector has been exhausted, append a new
+      * vector, and add the character.
+      */
+      str->wv->next = newsimple_vector(128);
+      str->wv->a[0][0] = c;
+      str->write_index = 1;
+    }
+  return (cons*)c;
+}
 
 extern cons *initread(stream *str, cons *env);
 

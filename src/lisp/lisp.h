@@ -337,4 +337,5 @@ extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
 extern base_char *read_char(stream *str);
 extern base_char *peek_char(stream *str);
 extern cons *unread_char(base_char *c, stream *str);
+extern cons *write_char(base_char *c, stream *str);
 

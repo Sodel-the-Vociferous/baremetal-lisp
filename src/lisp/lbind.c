@@ -154,8 +154,8 @@ cons *lequal (cons *env);
 
 cons *lhash (cons *env)
 {
-  cons *object = lookup("OBJECT", env);
-  hash_table *ht = (hash_table*)lookup("HASH-TABLE", env);
+  cons *object = eval((cons*)object_s,env);
+  hash_table *ht = (hash_table*)eval((cons*)hash_table_s, env);
   
   return (cons*)newfixnum(hash(object, ht));
 }
