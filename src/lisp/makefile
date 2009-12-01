@@ -1,4 +1,4 @@
-SOURCES= init.c lisp.c lbind.c
+SOURCES= init.c lisp.c read.c lbind.c
 CFLAGS=
 
 all:

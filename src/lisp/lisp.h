@@ -339,3 +339,4 @@ extern base_char *peek_char(stream *str);
 extern cons *unread_char(base_char *c, stream *str);
 extern cons *write_char(base_char *c, stream *str);
 
+extern cons *read(stream *str, cons *env);

@@ -103,3 +103,6 @@ extern symbol *equalp_s;
 //Reader function names
 extern symbol *read_char_s;
 extern symbol *read_s;
+
+extern symbol *object_s;
+extern symbol *read_base_s;

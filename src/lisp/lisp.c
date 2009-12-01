@@ -328,7 +328,7 @@ cons *rplacd(cons *a, cons *new)
  * name in package p. If it does not exist, create it.
  */
 symbol *intern(array *name, package *p)
-{//HARK. This function doesn't do symbol lookups in other packages with the : and :: syntax yet. Change this later. :]
+{
   long i;
   unsigned long index ;
   char hashed_name[4];
@@ -970,7 +970,7 @@ cons *write_char(base_char *c, stream *str)
     {/* If the stream's write-vector hasn't been exhausted, append the
       * character, and increment the write index.
       */
-      str->wv->a[0][str->write_index] = c;
+      str->wv->a[0][str->write_index] = (cons*)c;
       str->write_index++;
     }
   else if (str->wv->next == 0)
@@ -978,7 +978,7 @@ cons *write_char(base_char *c, stream *str)
       * vector, and add the character.
       */
       str->wv->next = newsimple_vector(128);
-      str->wv->a[0][0] = c;
+      str->wv->a[0][0] = (cons*)c;
       str->write_index = 1;
     }
   return (cons*)c;

@@ -83,6 +83,7 @@ symbol *t_s;/* T symbol */
 symbol *nil_s;/* NIL symbol */
 symbol *package_s;/*  *package*  */
 symbol *readtable_s;/*  *readtable*  */
+symbol *read_base_s;/*  *read-base*  */
 /* Lambda list control symbols */
 symbol *lambda_list_keywords_s;
 symbol *optional_s;/* &optional */
@@ -420,6 +421,10 @@ void init_cl_pkg()
   object_s = initintsym("OBJECT", cl_pkg);
   args_s = initintsym("ARGS", cl_pkg);
   exp_s = initintsym("EXP", cl_pkg);
+
+  /* Read-control variables */
+  read_base_s = initsym("*READ-BASE*", cl_pkg);
+  read_base_s->value = (cons*)newfixnum(10);
 
   init_lambda_control();
   init_number_funs();
