@@ -226,3 +226,10 @@ cons *lread_char(cons *env)
   stream *str = (stream*)lookup("STREAM", env);
   return (cons*)read_char(str);
 }
+
+cons *lread_list(cons *env)
+{
+  stream *str = (stream*)eval((cons*)list_s, env);
+  base_char *c = (base_char*)eval((cons*)character_s, env);
+  return read_list(str, c, env);
+}

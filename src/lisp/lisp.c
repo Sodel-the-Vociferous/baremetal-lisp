@@ -12,6 +12,8 @@
 //>TODO add special operators
 //>TODO add read function
 //TODO make sure nil can't get clobbered
+//TODO cut out automatic export of symbols in init.c, and make symbol export
+//    a separate function.
 
 #include "lisp.h"
 #include <stdlib.h>
@@ -1009,7 +1011,7 @@ int main ()
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr("CONS");
+  str->rv = strtolstr("(CONS 1 2)");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

@@ -340,3 +340,4 @@ extern cons *unread_char(base_char *c, stream *str);
 extern cons *write_char(base_char *c, stream *str);
 
 extern cons *read(stream *str, cons *env);
+extern cons *read_list(stream *str,  base_char *c, cons *env);

@@ -28,7 +28,7 @@ cons *read_token(stream *str, cons *env)
       c = read_char(str);
       plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
-      if (c == nil)
+      if (c == (base_char*)nil)
 	continue;
       else if (null(assoc((cons*)package_marker, plist)->cdr) == nil) 
 	{
@@ -48,7 +48,7 @@ cons *read_token(stream *str, cons *env)
 	       (c->c == '\0'))
 	{
 	  if (symbol_idx > 255)
-	    return 0xbad1;//TODO error. Must make robust!
+	    return (cons*)0xbad1;//TODO error. Must make robust!
 	  symbol_name[symbol_idx] = c->c;
 	  symbol_idx++;
 	  if (c->c == '\0')
@@ -58,7 +58,7 @@ cons *read_token(stream *str, cons *env)
 	{
 	  c = read_char(str);
 	  if (symbol_idx > max_idx)
-	    return 0xbad2;//TODO error. Must make robust!
+	    return (cons*)0xbad2;//TODO error. Must make robust!
 	  symbol_name[symbol_idx] = c->c;
 	  symbol_idx++;
 	  f.type = (cons*)0;
@@ -78,7 +78,7 @@ cons *read_token(stream *str, cons *env)
 		  (null(assoc((cons*)whitespace, plist)->cdr) == nil))
 		{//TODO expand as per CLHS 2.2 step 9
 		  if (symbol_idx > max_idx)
-		    return 0xbad3;//TODO error. Must make robust!
+		    return (cons*)0xbad3;//TODO error. Must make robust!
 		  symbol_name[symbol_idx] = c->c;
 		  symbol_idx++;
 		}
@@ -86,25 +86,25 @@ cons *read_token(stream *str, cons *env)
 		{
 		  c = read_char(str);
 		  if (c == (base_char*)nil)
-		    return 0xbad4;//TODO eof-error
+		    return (cons*)0xbad4;//TODO eof-error
 		  if (symbol_idx > max_idx)
-		    return 0xbad5;//TODO error. Must make robust!
+		    return (cons*)0xbad5;//TODO error. Must make robust!
 		  symbol_name[symbol_idx] = c->c;
 		  symbol_idx++;
 		}
 	      else if (null(assoc((cons*)multiple_escape, plist)->cdr) == nil)
 		break;
 	      else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
-		return 0xbad6;//TODO reader error
+		return (cons*)0xbad6;//TODO reader error
 	      else 
 		/* This should never happen, and signals a problem with the
 		 * interpreter's code.
 		 */
-		return 0xbad7;//TODO error
+		return (cons*)0xbad7;//TODO error
 	    }
 	}
       else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
-	return 0xbad8;//TODO reader error
+	return (cons*)0xbad8;//TODO reader error
       else if (null(assoc((cons*)terminating_macro, plist)->cdr) == nil)
 	{
 	  //TODO if (read_preserving_whitespace_s->value != nil) yadda yadda....
@@ -115,7 +115,7 @@ cons *read_token(stream *str, cons *env)
 	/* This should never happen, and signals a problem with the
 	 * interpreter's code.
 	 */
-	return 0xbad9;//TODO error
+	return (cons*)0xbad9;//TODO error
 
       if (f.type != (cons*)0)
 	{
@@ -151,7 +151,7 @@ cons *read_token(stream *str, cons *env)
       foo = (cons*)intern(strtolstr(symbol_name), p);
       if ((external_required = 1) &&
 	  (null(assoc((cons*)external, ((symbol*)foo)->plist)->cdr) == t))
-	return 0xbad10;//TODO non-external error
+	return (cons*)0xbad10;//TODO non-external error
     }
   return foo;
 }
@@ -166,11 +166,22 @@ cons *read(stream *str, cons *env)
   plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
   if (c == (base_char*)nil)
-    return 0xbad11;//TODO EOF processing
+    return (cons*)0xbad11;//TODO EOF processing
   else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
-    return 0xbad12;//TODO reader error
+    return (cons*)0xbad12;//TODO reader error
+  else if (null(assoc((cons*)constituent, plist)->cdr) == nil)
+    {
+      unread_char(c, str);
+      return read_token(str, env);
+    }
   else if (null(assoc((cons*)whitespace, plist)->cdr) == nil)
     c = read_char(str);
+  else if ((null(assoc((cons*)single_escape, plist)->cdr) == nil) ||
+	   (null(assoc((cons*)multiple_escape, plist)->cdr) == nil))
+    {
+      unread_char(c, str);
+      return read_token(str, env);
+    }
   else if (null((cons*)(fun = (function*)assoc((cons*)terminating_macro, plist)->cdr)) == nil)
     {
       cons *exp = fcons((cons*)fun, 
@@ -187,18 +198,7 @@ cons *read(stream *str, cons *env)
 				    nil)));
       return eval(exp, env);
     }
-  else if ((null(assoc((cons*)single_escape, plist)->cdr) == nil) ||
-	   (null(assoc((cons*)multiple_escape, plist)->cdr) == nil))
-    {
-      unread_char(c, str);
-      return read_token(str, env);
-    }
   else if (null(assoc((cons*)multiple_escape, plist)->cdr) == nil)
-    {
-      unread_char(c, str);
-      return read_token(str, env);
-    }
-  else if (null(assoc((cons*)constituent, plist)->cdr) == nil)
     {
       unread_char(c, str);
       return read_token(str, env);
@@ -208,4 +208,45 @@ cons *read(stream *str, cons *env)
      * interpreter's code.
      */
     return (cons*)0xBADD09;//TODO error
+}
+
+cons *read_list(stream *str,  base_char *c, cons *env)
+{
+  cons *plist;
+  cons *to_ret = nil;
+  cons *current;
+  cons *foo;
+  cons *readtable = readtable_s->value;
+
+  while (1)
+    {	      
+      if (c->c == ')')
+	break;
+      
+      foo = read(str, env);
+
+      if (to_ret == nil)
+	{
+	  to_ret = newcons();
+	  to_ret->car = foo;
+	  current = to_ret;
+	}
+      else
+	{
+	  current->cdr = newcons();
+	  current = current->cdr;
+	  current->car = foo;
+	}
+
+      while (1)
+	{
+	  c = peek_char(str);
+	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
+	  if (null(assoc((cons*)whitespace, plist)->cdr) == nil)
+	    read_char(str);
+	  else
+	    break;
+	}
+    }
+  return to_ret;
 }

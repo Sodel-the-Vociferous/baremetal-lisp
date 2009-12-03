@@ -124,6 +124,7 @@ symbol *find_class_s;
 /* Reader function names */
 symbol *read_char_s;
 symbol *read_s;
+symbol *read_list_s;
 
 /* Local variables */
 symbol *args_s;
@@ -668,6 +669,10 @@ void init_read_funs()
 			initread(str, basic_env),
 			cl_pkg,
 			&lread_char);
+  read_list_s = initcfun("READ-LIST",
+			 fcons((cons*)stream_s, nil),
+			 cl_pkg,
+			 &lread_list);
 }  
 
 void init_set_funs()

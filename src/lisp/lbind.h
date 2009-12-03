@@ -40,3 +40,4 @@ extern cons *ldefun(cons *env);
 extern cons *lsetq(cons *env);
 
 extern cons *lread_char(cons *env);
+extern cons *lread_list(cons *env);
