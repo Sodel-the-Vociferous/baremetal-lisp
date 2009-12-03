@@ -9,7 +9,9 @@
  * This code is released under the GNU GPL General Public License.
  */
 
-//<TODO add special operators>
+//>TODO add special operators
+//>TODO add read function
+//TODO make sure nil can't get clobbered
 
 #include "lisp.h"
 #include <stdlib.h>
@@ -514,8 +516,6 @@ cons *eql (cons *a, cons *b)
   else if (a->type == b->type)
     {
       symbol *typename = (symbol*)type_of(a)->car;
-
-
       if (typep(a, number_s) == t)
 	{
 	  if (typename == fixnum_s)
@@ -680,7 +680,7 @@ cons *eval(cons *exp, cons *env)
 	  * variable names, and evaluate the function's form.
 	  */
 	  cons *newenv = extend_env(f->env);
-	  if (assoc((cons*)special_operator, f->plist) == t)
+	  if (assoc((cons*)special_operator, f->plist)->cdr != nil)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
@@ -695,7 +695,7 @@ cons *eval(cons *exp, cons *env)
 	  */
 	  compiled_function *cf = (compiled_function*)f;
 	  cons *newenv = extend_env(cf->env);
-	  if (assoc((cons*)special_operator, f->plist) == t)
+	  if (assoc((cons*)special_operator, f->plist)->cdr != nil)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
@@ -885,7 +885,7 @@ cons *assoc(cons *key, cons *plist)
       if (eql(key, plist->car->car) == t)
 	return plist->car;
       else
-	plist  = plist->cdr;
+	plist = plist->cdr;
     }
   return nil;
 }
@@ -949,7 +949,7 @@ cons *unread_char(base_char *c, stream *str)
   * vector is at the beginning, make a new, very small, vector, and assign the 
   * old vector to the new one's "next".
   */
-  if (str->read_index>1)
+  if (str->read_index>0)
     str->read_index--;
   else
     {
@@ -998,15 +998,21 @@ int main ()
 
   cons *hope = eval(exp, env);
 
-  stream *str = malloc(sizeof(stream));
-  str->read_index = 0;
+  stream *str = newstream();
+  
   str->rv = strtolstr("(LIST :KEY :WORDS)");
-  str->write_index = 20;
+  str->write_index = 19;
 
   cons *exp2 = (cons*)initread(str, env);
   cons *lesser = eval((cons*)exp2, env);
 
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
+
+  str->read_index = 0;
+  str->rv = strtolstr("CONS");
+  str->write_index = 4;
+
+  cons *snazzy = read(str, env);
 
   return 0;
 }

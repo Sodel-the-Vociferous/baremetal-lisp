@@ -74,7 +74,7 @@ symbol *string_s;
 symbol *symbol_s;
 symbol *function_s;
 symbol *hash_table_s;
-symbol *package_s;
+symbol *package_t_s;/* Symbol for the package type: not *PACKAGE*, but PACKAGE */
 symbol *procinfo_s;
 symbol *class_s;
 symbol *stream_s;
@@ -140,6 +140,8 @@ symbol *initcfun (char *name,
 		  package *p, 
 		  cons *(*fun)(cons *env));
 cons *initdeftype(char *string);
+cons *setassoc(cons *key, cons *value, cons *plist);
+cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable);
 
 void init_keyword_pkg();
 
@@ -347,6 +349,42 @@ cons *initread(stream *str, cons *env)
     }
 }
 
+cons *setassoc(cons *key, cons *value, cons *plist)
+{
+  cons *entry = assoc(key, plist);
+  if (entry == nil)
+    {
+      entry = fcons(key, value);
+      plist = fcons(entry, plist);
+    }
+  else
+    entry->cdr = value;
+  
+  return plist;
+}
+
+cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable)
+{
+  int i;
+
+  base_char *c;
+  cons *readtable_entry;
+  cons *c_ppair;/* Character Property-Pair */
+  cons *c_plist;/* Character Property-List */
+  
+  for (i=0; string[i]!='\0'; i++)
+    {
+      c = ctolc(string[i]);
+      readtable_entry = assoc((cons*)c, readtable);
+      c_plist = readtable_entry->cdr;
+
+      readtable = setassoc((cons*)c, 
+			   setassoc((cons*)traitname, traitval, c_plist),
+			   readtable);
+    }
+  return readtable;
+}
+
 /*Initialization*/
 void init_keyword_pkg()
 {/* Initialize keywords that we'll need to get things rolling.
@@ -412,7 +450,7 @@ void init_cl_pkg()
 
   package_s = initsym("*PACKAGE*", cl_pkg);
   package_s->value = (cons*)cl_pkg;
-  proc->package_s  = package_s;
+  proc->package_s = package_s;
   init_types();
 
   /* Generic paramter names */
@@ -587,9 +625,44 @@ void init_env_funs()
 void init_read_funs()
 {/* Initialize reader functions.
   */
+  base_char *c;
+  cons *readtable_entry;
+  cons *c_ppair;/* Character Property-Pair */
+  cons *c_plist;/* Character Property-List */
+  cons *readtable = nil;
+  int i;
+  int j;
+
+  readtable_s = initsym("READTABLE", cl_pkg);
+
+  /* Syntax Types - CLHS 2.1.4 Fig. 2-7 */
+  char whitespaces[] = "\t\n\r ";//Incomplete. What is a rubout? :S
+  char constituents[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\b!$%&*+-./:<=>?@[]^_{}~";
+  char t_macro_chars[] = "\"'(),;`";
+  char n_t_macro_chars[] = "#";
+  char s_escape_chars[] = "\\";
+  char m_escape_chars[] = "|";
+  
+  readtable = init_char_traits(whitespaces, (cons*)whitespace, t, readtable);
+  readtable = init_char_traits(constituents, (cons*)constituent, t, readtable);
+  //readtable = init_char_traits(t_macro_chars, (cons*)terminating_macro, (cons*)0, readtable);
+  //readtable = init_char_traits(n_t_macro_chars, (cons*)non_terminating_macro, (cons*)0, readtable);
+  readtable = init_char_traits(s_escape_chars, (cons*)single_escape, t, readtable);
+  readtable = init_char_traits(m_escape_chars, (cons*)multiple_escape, t, readtable);
+
+  char invalids[] = "\b\t\n ";
+  char alphabetics[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  char alphadigits[] = "0123456789";
+
+  readtable = init_char_traits(invalids, (cons*)invalid, t, readtable);
+  readtable = init_char_traits(alphabetics, (cons*)alphabetic, t, readtable);
+  readtable = init_char_traits(alphadigits, (cons*)alphadigit, t, readtable);
+
   stream *str = newstream();
   str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
   str->write_index = str->rv->length->num;
+
+  readtable_s->value = readtable;
 
   read_char_s = initcfun("READ-CHAR",
 			initread(str, basic_env),
@@ -700,9 +773,9 @@ void init_types()
   symbol_s->class = initdeftype("(SYMBOL (T) ())");
   basic_classes[SYMBOL] = symbol_s->class;
   
-  package_s = initsym("PACKAGE", cl_pkg);
-  package_s->class = initdeftype("(PACKAGE (T) ())");
-  basic_classes[PACKAGE] = package_s->class;
+  package_t_s = initsym("PACKAGE", cl_pkg);
+  package_t_s->class = initdeftype("(PACKAGE (T) ())");
+  basic_classes[PACKAGE] = package_t_s->class;
 
   procinfo_s = initintsym("PROCESS-INFO", cl_pkg);
   procinfo_s->class = initdeftype("(PROCESS-INFO (T) ())");
