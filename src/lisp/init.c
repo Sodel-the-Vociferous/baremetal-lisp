@@ -141,7 +141,6 @@ symbol *initcfun (char *name,
 		  package *p, 
 		  cons *(*fun)(cons *env));
 cons *initdeftype(char *string);
-cons *setassoc(cons *key, cons *value, cons *plist);
 cons *init_char_trait(char cc, cons *traitname, cons *traitval, cons *readtable);
 cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable);
 
@@ -349,20 +348,6 @@ cons *initread(stream *str, cons *env)
 	  return (cons*)intern(strtolstr(name), p);
 	}
     }
-}
-
-cons *setassoc(cons *key, cons *value, cons *plist)
-{
-  cons *entry = assoc(key, plist);
-  if (entry == nil)
-    {
-      entry = fcons(key, value);
-      plist = fcons(entry, plist);
-    }
-  else
-    entry->cdr = value;
-  
-  return plist;
 }
 
 cons *init_char_trait(char cc, cons *traitname, cons *traitval, cons *readtable)
@@ -696,6 +681,7 @@ void init_read_funs()
   readtable = init_char_traits(invalids, (cons*)invalid, t, readtable);
   readtable = init_char_traits(alphabetics, (cons*)alphabetic, t, readtable);
   readtable = init_char_traits(alphadigits, (cons*)alphadigit, t, readtable);
+  readtable = init_char_trait(':', (cons*)package_marker, t, readtable);
 
   readtable_s->value = readtable;
 }

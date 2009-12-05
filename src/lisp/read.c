@@ -35,23 +35,28 @@ cons *read_token(stream *str, cons *env)
 	  f.type = (cons*)0;
 	  b.type = (cons*)0;
 	  s.type = (cons*)0;
-	  c = peek_char(str);
-	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 	  
 	  if (symbol_idx == 0)
-	    p = keyword_pkg;
+	    {
+	      p = keyword_pkg;
+	      external_required = 0;
+	    }
 	  else
-	    p = find_package(strtolstr(symbol_name), (procinfo*)env->car);
+	    {
+	      symbol_idx = 0;
+	      p = find_package(strtolstr(symbol_name), (procinfo*)env->car);
+	    }
 	  
-	  if (null(assoc((cons*)package_marker, plist)->cdr) != nil) 
+	  c = read_char(str);
+	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
+
+	  if (null(assoc((cons*)package_marker, plist)->cdr) == nil) 
 	    {
 	      read_char(str);
 	      external_required = 0;
 	    }
-	  
-	  symbol_idx = 0;
 	}
-      else if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
+      if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
 	       (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil)||
 	       (c->c == '\0'))
 	{

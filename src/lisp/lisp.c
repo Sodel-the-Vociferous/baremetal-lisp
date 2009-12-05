@@ -383,7 +383,10 @@ symbol *intern(array *name, package *p)
   s->name = name;
   s->home_package = p;
   if (p == keyword_pkg)
-    s->value = (cons*)s;
+    {
+      s->value = (cons*)s;
+      s->plist = setassoc((cons*)external, t, s->plist);
+    }
   else
     s->value = 0;
   s->fun = (function*)0;
@@ -892,6 +895,20 @@ cons *assoc(cons *key, cons *plist)
   return nil;
 }
 
+cons *setassoc(cons *key, cons *value, cons *plist)
+{
+  cons *entry = assoc(key, plist);
+  if (entry == nil)
+    {
+      entry = fcons(key, value);
+      plist = fcons(entry, plist);
+    }
+  else
+    entry->cdr = value;
+  
+  return plist;
+}
+
 symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env)
 {/* Define a function in a package.
   */
@@ -1011,7 +1028,7 @@ int main ()
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr("(CONS 1 2");
+  str->rv = strtolstr(":EXTERNAL");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

@@ -333,6 +333,7 @@ extern cons *envbind(symbol *sym, cons *value, cons *env);
 extern cons *evalambda(cons *lambda_list, cons *args, cons *env);
 extern cons *evalambda_special(cons *lambda_list, cons *args, cons *env);
 extern cons *assoc(cons *key, cons *plist);
+extern cons *setassoc(cons *key, cons *value, cons *plist);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
 extern base_char *read_char(stream *str);
 extern base_char *peek_char(stream *str);
