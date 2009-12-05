@@ -633,7 +633,7 @@ cons *eval(cons *exp, cons *env)
 	    /* If the current binding's symbol is the one we're looking for, 
 	     * return the value of the binding.
 	     */
-	    return binding->car->cdr;
+	    return binding->car->cdr->car;
 	  else if (binding->cdr == nil)
 	    /* If we've run out of bindings at this "level" of the environment, 
 	     * move to the next one.
@@ -728,7 +728,7 @@ cons *eval(cons *exp, cons *env)
  * in before the previous one. When the evaluator, looking for bindings, reaches
  * a lexical binding whose cdr is nil, it will know to descend to the next 
  * level. When both the car and cdr of the last CONS cell are nil, there are no 
- * more lexical levels. 
+ * more lexical levels. The car of any environment will be the  procinfo.
  */
 cons *extend_env(cons *env)
 {
@@ -737,7 +737,7 @@ cons *extend_env(cons *env)
   newenv->car = oldenv->car;//procinfo
   newenv->cdr = newcons();
   newenv->cdr->car = oldenv;
-
+  //return fcons(env->car, fcons(env->cdr, nil);
   return newenv;
 }
 
@@ -996,13 +996,13 @@ int main ()
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
 
-  cons *exp = fcons((cons*)cdr_s, fcons((cons*)external, nil));
-
+  cons *exp = fcons((cons*)cons_s, fcons((cons*)external, fcons((cons*)internal, nil)));			  
+  
   cons *hope = eval(exp, env);
 
   stream *str = newstream();
   
-  str->rv = strtolstr("(LIST :KEY :WORDS)");
+  str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
   str->write_index = 19;
 
   cons *exp2 = (cons*)initread(str, env);
@@ -1011,7 +1011,7 @@ int main ()
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr("(CONS 1 2)");
+  str->rv = strtolstr("CONS");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

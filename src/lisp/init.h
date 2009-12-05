@@ -106,3 +106,6 @@ extern symbol *read_s;
 
 extern symbol *object_s;
 extern symbol *read_base_s;
+extern symbol *args_s;
+extern symbol *a_s;
+extern symbol *b_s;

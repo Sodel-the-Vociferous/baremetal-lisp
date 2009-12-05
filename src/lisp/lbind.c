@@ -29,8 +29,8 @@ cons *lnumberp(cons *env)
 /*List operators*/
 cons *lcons(cons *env)
 {
-  cons *a = lookup("OB1", env);
-  cons *b = lookup("OB2", env);
+  cons *a = eval((cons*)a_s, env);
+  cons *b = eval((cons*)b_s, env);
   return fcons(a, b);
 }
 cons *lcar(cons *env)
@@ -61,15 +61,17 @@ cons *lrplacd(cons *env)
 
 cons *llist(cons *env)
 {
-  cons *args = lookup("ARGS", env);
-  cons *arg = args->car;
+  cons *args = eval((cons*)args_s, env);
+  cons *arg = args;
   cons *to_ret = newcons();
   cons *foo = to_ret;
 
+  if (args == nil)
+    return nil;
   foo->car = arg->car;
   arg = arg->cdr;
 
-  for (args;args!=nil;args=args->cdr)
+  for (arg;arg!=nil;arg=arg->cdr)
     {
       foo->cdr = newcons();
       foo = foo->cdr;

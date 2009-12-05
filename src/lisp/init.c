@@ -505,20 +505,20 @@ void init_list_funs()
 		    &lnull);
 
   car_s = initcfun("CAR", 
-		  fcons((cons*)list_s,
-			nil),
-		  cl_pkg,
-		  &lcar);
-  cdr_s = initcfun("CDR", 
-		  fcons((cons*)list_s,
-			nil),
-		  cl_pkg,
-		  &lcar);
-  quote_s = initcfun("QUOTE", 
-		   fcons((cons*)exp_s,
+		   fcons((cons*)list_s,
 			 nil),
 		   cl_pkg,
-		   &lquote);
+		   &lcar);
+  cdr_s = initcfun("CDR", 
+		   fcons((cons*)list_s,
+			 nil),
+		   cl_pkg,
+		   &lcar);
+  quote_s = initcfun("QUOTE", 
+		     fcons((cons*)exp_s,
+			   nil),
+		     cl_pkg,
+		     &lquote);
   rplaca_s = initcfun("RPLACA",
 		      fcons((cons*)cons_s,
 			    fcons((cons*)a_s, 
@@ -532,11 +532,17 @@ void init_list_funs()
 		      cl_pkg,
 		      &lrplacd);
   list_s = initcfun("LIST",
-		   fcons((cons*)rest_s, 
-			 fcons((cons*)args_s,
-			       nil)),
-		   cl_pkg,
-		   &llist);  
+		    fcons((cons*)rest_s, 
+			  fcons((cons*)args_s,
+				nil)),
+		    cl_pkg,
+		    &llist);
+  cons_s = initcfun("CONS",
+		    fcons((cons*)a_s,
+			  fcons((cons*)b_s,
+				nil)),
+		    cl_pkg,
+		    &lcons);
 }
 
 void init_number_funs()
