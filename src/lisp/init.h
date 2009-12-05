@@ -1,5 +1,7 @@
 /* init.h
  *
+ * Danie Ralston, 2009
+ *
  * This code is released under the GNU GPL General Public License.
  */
 

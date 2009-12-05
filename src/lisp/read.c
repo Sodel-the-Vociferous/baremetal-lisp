@@ -1,3 +1,10 @@
+/* read.c
+ *
+ * Daniel Ralston, 2009
+ *
+ * This code is released under the GNU GPL General Public License.
+ */
+
 #include "lisp.h"
 #include "init.h"
 
@@ -57,8 +64,8 @@ cons *read_token(stream *str, cons *env)
 	    }
 	}
       if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
-	       (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil)||
-	       (c->c == '\0'))
+	  (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil) ||
+	  (c->c == '\0'))
 	{
 	  if (symbol_idx > 255)
 	    return (cons*)0xbad1;//TODO error. Must make robust!
@@ -116,14 +123,27 @@ cons *read_token(stream *str, cons *env)
 		return (cons*)0xbad7;//TODO error
 	    }
 	}
-      else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
-	return (cons*)0xbad8;//TODO reader error
       else if (null(assoc((cons*)terminating_macro, plist)->cdr) == nil)
 	{
 	  //TODO if (read_preserving_whitespace_s->value != nil) yadda yadda....
 	  unread_char(c, str);
+
+	  if (symbol_idx > 255)
+	    return (cons*)0xbad14;//TODO error. Must make robust!
+	  symbol_name[symbol_idx] = '\0';
+	  symbol_idx++;
 	  break;
 	}
+      else if (null(assoc((cons*)whitespace, plist)->cdr) == nil)
+	{//TODO expand as per CLHS.
+	  if (symbol_idx > 255)
+	    return (cons*)0xbad14;//TODO error. Must make robust!
+	  symbol_name[symbol_idx] = '\0';
+	  symbol_idx++;
+	  break;
+	}
+     else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
+	return (cons*)0xbad8;//TODO reader error
       else
 	/* This should never happen, and signals a problem with the
 	 * interpreter's code.
@@ -180,8 +200,6 @@ cons *read(stream *str, cons *env)
 
   if (c == (base_char*)nil)
     return (cons*)0xbad11;//TODO EOF processing
-  else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
-    return (cons*)0xbad12;//TODO reader error
   else if (null(assoc((cons*)constituent, plist)->cdr) == nil)
     {
       unread_char(c, str);
@@ -197,6 +215,12 @@ cons *read(stream *str, cons *env)
     }
   else if (null((cons*)(fun = (function*)assoc((cons*)terminating_macro, plist)->cdr)) == nil)
     {
+      if (c->c == ')')
+	/* This is brittle. It's just a magic number to tell read_list() that 
+	 * the list is over.This WILL be replaced when condition handling is 
+	 * introduced. 
+	 */
+	return (cons*)0xBADB0B;
       cons *exp = fcons((cons*)fun, 
 			fcons((cons*)str, 
 			      fcons((cons*)c, 
@@ -216,6 +240,8 @@ cons *read(stream *str, cons *env)
       unread_char(c, str);
       return read_token(str, env);
     }
+  else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
+    return (cons*)0xbad12;//TODO reader error
   else
     /* This should never happen, and signals a problem with the 
      * interpreter's code.
@@ -233,10 +259,12 @@ cons *read_list(stream *str,  base_char *c, cons *env)
 
   while (1)
     {	      
-      if (c->c == ')')
-	break;
-      
       foo = read(str, env);
+      if (foo == (cons*)0xBADB0B)
+	/* Signals we have run into a right-paren. To be replaced. See code for
+	 * terminating macro characters.
+	 */
+	break;
 
       if (to_ret == nil)
 	{

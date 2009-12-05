@@ -1,5 +1,7 @@
 /* lbind.h
  *
+ * Daniel Ralston, 2009
+ *
  * Function prototypes for Lisp interfaces to C functions.
  *
  * This code is released under the GNU GPL General Public License.

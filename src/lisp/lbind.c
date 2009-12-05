@@ -1,5 +1,7 @@
 /* lbind.c
  *
+ * Daniel Ralston, 2009
+ *
  * Definitions for Lisp interfaces to C functions. The C functions defined in 
  * lisp.c use C calling convention. These interfaces make use of the Lisp 
  * environment to find their parameters.

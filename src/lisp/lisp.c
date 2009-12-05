@@ -1,5 +1,7 @@
 /* lisp.c
  *
+ * Daniel Ralston, 2009
+ *
  * The actual code which makes Lisp tick. Functions here are targeted for use
  * by the C code. To be used in a Lisp environment, add a short interface 
  * function in lbind.c. You will notice a complete lack of de-allocation in
@@ -1028,7 +1030,7 @@ int main ()
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr(":EXTERNAL");
+  str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

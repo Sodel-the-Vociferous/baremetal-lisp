@@ -1,5 +1,7 @@
 /* lisp.h
  *
+ * Daniel Ralston, 2009
+ *
  * Here go all the definitions for all Lisp structs, and function prototypes.
  * As well, the predeefined integer typecodes are defined here.
  *

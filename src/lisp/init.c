@@ -1,5 +1,7 @@
 /* init.c
  *
+ * Daniel Ralston, 2009
+ *
  * This file contains all code to set up a working Lisp environment.
  *
  * This code is released under the GNU GPL General Public License.
@@ -667,7 +669,7 @@ void init_read_funs()
   readtable = init_char_traits(constituents, (cons*)constituent, t, readtable);
   /* Terminating Macro Characters */
   readtable = init_char_trait('(', (cons*)terminating_macro, (cons*)read_list_s, readtable);
-  readtable = init_char_trait(')', (cons*)terminating_macro, nil, readtable);
+  readtable = init_char_trait(')', (cons*)terminating_macro, t, readtable);
   //readtable = init_char_traits(t_macro_chars, (cons*)terminating_macro, (cons*)0, readtable);
   //readtable = init_char_traits(n_t_macro_chars, (cons*)non_terminating_macro, (cons*)0, readtable);
   /* Escape Characters */
