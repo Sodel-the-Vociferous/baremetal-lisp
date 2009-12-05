@@ -35,11 +35,19 @@ cons *read_token(stream *str, cons *env)
 	  f.type = (cons*)0;
 	  b.type = (cons*)0;
 	  s.type = (cons*)0;
-	  c = read_char(str);
+	  c = peek_char(str);
+	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 	  
-	  p = find_package(strtolstr(symbol_name), (procinfo*)env->car);
+	  if (symbol_idx == 0)
+	    p = keyword_pkg;
+	  else
+	    p = find_package(strtolstr(symbol_name), (procinfo*)env->car);
+	  
 	  if (null(assoc((cons*)package_marker, plist)->cdr) != nil) 
-	    external_required = 0;
+	    {
+	      read_char(str);
+	      external_required = 0;
+	    }
 	  
 	  symbol_idx = 0;
 	}

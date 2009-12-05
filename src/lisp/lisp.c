@@ -1011,7 +1011,7 @@ int main ()
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr("CONS");
+  str->rv = strtolstr("(CONS 1 2");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

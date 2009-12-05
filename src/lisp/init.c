@@ -142,6 +142,7 @@ symbol *initcfun (char *name,
 		  cons *(*fun)(cons *env));
 cons *initdeftype(char *string);
 cons *setassoc(cons *key, cons *value, cons *plist);
+cons *init_char_trait(char cc, cons *traitname, cons *traitval, cons *readtable);
 cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable);
 
 void init_keyword_pkg();
@@ -364,24 +365,30 @@ cons *setassoc(cons *key, cons *value, cons *plist)
   return plist;
 }
 
-cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable)
+cons *init_char_trait(char cc, cons *traitname, cons *traitval, cons *readtable)
 {
-  int i;
-
   base_char *c;
   cons *readtable_entry;
   cons *c_ppair;/* Character Property-Pair */
   cons *c_plist;/* Character Property-List */
   
+  c = ctolc(cc);
+  readtable_entry = assoc((cons*)c, readtable);
+  c_plist = readtable_entry->cdr;
+  
+  readtable = setassoc((cons*)c, 
+		       setassoc((cons*)traitname, traitval, c_plist),
+		       readtable);
+  return readtable;
+}
+
+cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *readtable)
+{
+  int i;
+
   for (i=0; string[i]!='\0'; i++)
     {
-      c = ctolc(string[i]);
-      readtable_entry = assoc((cons*)c, readtable);
-      c_plist = readtable_entry->cdr;
-
-      readtable = setassoc((cons*)c, 
-			   setassoc((cons*)traitname, traitval, c_plist),
-			   readtable);
+      readtable = init_char_trait(string[i], traitname, traitval, readtable);
     }
   return readtable;
 }
@@ -648,6 +655,20 @@ void init_read_funs()
 
   readtable_s = initsym("READTABLE", cl_pkg);
 
+  stream *str = newstream();
+  str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
+  str->write_index = str->rv->length->num;
+
+  read_char_s = initcfun("READ-CHAR",
+			initread(str, basic_env),
+			cl_pkg,
+			&lread_char);
+  read_list_s = initcfun("READ-LIST",
+			 fcons((cons*)list_s,
+			       fcons((cons*)character_s, nil)),
+			 cl_pkg,
+			 &lread_list);
+
   /* Syntax Types - CLHS 2.1.4 Fig. 2-7 */
   char whitespaces[] = "\t\n\r ";//Incomplete. What is a rubout? :S
   char constituents[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\b!$%&*+-./:<=>?@[]^_{}~";
@@ -656,10 +677,15 @@ void init_read_funs()
   char s_escape_chars[] = "\\";
   char m_escape_chars[] = "|";
   
+  /* Whitespaces and Constituents */
   readtable = init_char_traits(whitespaces, (cons*)whitespace, t, readtable);
   readtable = init_char_traits(constituents, (cons*)constituent, t, readtable);
+  /* Terminating Macro Characters */
+  readtable = init_char_trait('(', (cons*)terminating_macro, (cons*)read_list_s, readtable);
+  readtable = init_char_trait(')', (cons*)terminating_macro, nil, readtable);
   //readtable = init_char_traits(t_macro_chars, (cons*)terminating_macro, (cons*)0, readtable);
   //readtable = init_char_traits(n_t_macro_chars, (cons*)non_terminating_macro, (cons*)0, readtable);
+  /* Escape Characters */
   readtable = init_char_traits(s_escape_chars, (cons*)single_escape, t, readtable);
   readtable = init_char_traits(m_escape_chars, (cons*)multiple_escape, t, readtable);
 
@@ -671,21 +697,8 @@ void init_read_funs()
   readtable = init_char_traits(alphabetics, (cons*)alphabetic, t, readtable);
   readtable = init_char_traits(alphadigits, (cons*)alphadigit, t, readtable);
 
-  stream *str = newstream();
-  str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
-  str->write_index = str->rv->length->num;
-
   readtable_s->value = readtable;
-
-  read_char_s = initcfun("READ-CHAR",
-			initread(str, basic_env),
-			cl_pkg,
-			&lread_char);
-  read_list_s = initcfun("READ-LIST",
-			 fcons((cons*)stream_s, nil),
-			 cl_pkg,
-			 &lread_list);
-}  
+}
 
 void init_set_funs()
 {/* Initialize assignment functions.
