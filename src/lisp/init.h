@@ -104,6 +104,7 @@ extern symbol *equalp_s;
 extern symbol *read_char_s;
 extern symbol *read_s;
 
+extern symbol *exp_s;
 extern symbol *object_s;
 extern symbol *read_base_s;
 extern symbol *args_s;

@@ -677,7 +677,7 @@ cons *eval(cons *exp, cons *env)
 	 */
 	f = (function*)exp->car;
             
-      else if (type_of((cons*)f) == function_s->class)
+      if (type_of((cons*)f) == function_s->class)
 	{/* If the function isn't compiled, bind the arguments to the function's
 	  * variable names, and evaluate the function's form.
 	  */
@@ -691,13 +691,13 @@ cons *eval(cons *exp, cons *env)
 	    newenv = evalambda(f->lambda_list, exp->cdr, newenv);
 	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
 	}
-      if (type_of((cons*)f) == compiled_function_s->class)
+      else if (type_of((cons*)f) == compiled_function_s->class)
 	{/* If the function is compiled, do exactly the same. Except, call the 
 	  * function pointer, with the expanded environment as the paramater.
 	  */
 	  compiled_function *cf = (compiled_function*)f;
 	  cons *newenv = extend_env(cf->env);
-	  if (assoc((cons*)special_operator, f->plist)->cdr != nil)
+	  if (assoc((cons*)special_operator, cf->plist)->cdr != nil)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */

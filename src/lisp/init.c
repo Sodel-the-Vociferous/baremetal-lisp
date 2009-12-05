@@ -471,6 +471,7 @@ void init_cl_pkg()
   init_eq_funs();
   init_read_funs();
   init_set_funs();
+  init_special_operators();
 }
 
 void init_lambda_control()
@@ -514,11 +515,6 @@ void init_list_funs()
 			 nil),
 		   cl_pkg,
 		   &lcar);
-  quote_s = initcfun("QUOTE", 
-		     fcons((cons*)exp_s,
-			   nil),
-		     cl_pkg,
-		     &lquote);
   rplaca_s = initcfun("RPLACA",
 		      fcons((cons*)cons_s,
 			    fcons((cons*)a_s, 
@@ -627,6 +623,16 @@ void init_env_funs()
 				nil),
 			  cl_pkg,
 			  &lfind_class);
+}
+
+void init_special_operators()
+{
+  quote_s = initcfun("QUOTE", 
+		     fcons((cons*)exp_s,
+			   nil),
+		     cl_pkg,
+		     &lquote);
+  quote_s->fun->plist = setassoc((cons*)special_operator, t, quote_s->plist);
 }
 
 void init_read_funs()

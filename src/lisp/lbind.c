@@ -218,7 +218,7 @@ cons *ldefun(cons *env)
 /*Special Operators*/
 cons *lquote(cons *env)
 {
-  cons *exp = lookup("EXP", env);
+  cons *exp = eval((cons*)exp_s, env);
   return exp;
 }
 
