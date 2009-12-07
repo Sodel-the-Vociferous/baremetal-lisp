@@ -112,3 +112,6 @@ extern symbol *read_base_s;
 extern symbol *args_s;
 extern symbol *a_s;
 extern symbol *b_s;
+extern symbol *value_s;
+
+extern symbol *setq_s;

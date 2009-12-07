@@ -108,6 +108,7 @@ symbol *quote_s;/* QUOTE symbol */
 /* Assignment Operator names */
 symbol *intern_s;
 symbol *defun_s;
+symbol *setq_s;
 /* Equality Function Names */
 symbol *chareq_s;
 symbol *charequal_s;
@@ -129,6 +130,7 @@ symbol *read_s;
 symbol *read_list_s;
 
 /* Local variables */
+symbol *value_s;
 symbol *args_s;
 symbol *object_s;
 symbol *a_s;
@@ -454,6 +456,7 @@ void init_cl_pkg()
   object_s = initintsym("OBJECT", cl_pkg);
   args_s = initintsym("ARGS", cl_pkg);
   exp_s = initintsym("EXP", cl_pkg);
+  value_s = initintsym("VALUE", cl_pkg);
 
   /* Read-control variables */
   read_base_s = initsym("*READ-BASE*", cl_pkg);
@@ -701,12 +704,20 @@ void init_set_funs()
 		      &lintern);
 
   defun_s = initcfun("DEFUN",
-		  fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
-			fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
-			      fcons((cons*)intern(strtolstr("FORM"), cl_pkg),
-				    nil))),
-		  cl_pkg,
-		  &leql);
+		     fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
+			   fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
+				 fcons((cons*)intern(strtolstr("FORM"), cl_pkg),
+				       nil))),
+		     cl_pkg,
+		     &ldefun);
+
+  setq_s = initcfun("SETQ",
+		    fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
+			  fcons((cons*)intern(strtolstr("VALUE"), cl_pkg),
+				nil)),
+			
+		    cl_pkg,
+		    &lsetq);
 }
 
 void init_types()

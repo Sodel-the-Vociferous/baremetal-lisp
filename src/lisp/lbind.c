@@ -237,3 +237,36 @@ cons *lread_list(cons *env)
   base_char *c = (base_char*)eval((cons*)character_s, env);
   return read_list(str, c, env);
 }
+
+cons *lsetq(cons *env)
+{
+  symbol *s = (symbol*)eval((cons*)symbol_s, env);
+  cons *value = eval((cons*)value_s, env);
+  cons *binding = env->cdr; /* current environment node */
+
+  while (binding!=nil)
+    {/* Loop through the lexical environment, searching for a binding for 
+      * symbol. 
+      */
+      if ((symbol*)binding->car->car == s)
+	{/* If the current binding's symbol is the one we're looking for, 
+	  * set and return the value.
+	  */
+	  binding->car->cdr->car = value;
+	  break;
+	}
+      else if (binding->cdr == nil)
+	/* If we've run out of bindings at this "level" of the environment, 
+	 * move to the next one.
+	 */
+	binding = binding->car->cdr;
+      else
+	/* If there are still bindings to search, go to the next one.
+	 */
+	binding = binding->cdr;
+    }
+  if (binding == nil)
+    s->value = value;
+
+  return value;
+}
