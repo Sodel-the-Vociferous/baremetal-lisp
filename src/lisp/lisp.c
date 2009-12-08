@@ -228,7 +228,7 @@ array *strtolstr(char *str)
   base_char *c = 0;
   array *to_ret;
 
-  for(string_len=1;*(str+string_len-1)!=0;string_len++);
+  for(string_len=0;*(str+string_len)!='\0';string_len++);
   //Find the string length.
   to_ret = newsimple_vector(string_len);
 
@@ -241,9 +241,6 @@ array *strtolstr(char *str)
       c->c = *str;
       str++;
     }
-  c = newbase_char();
-  to_ret->a[0][i] = (cons*)c;
-  c->c = 0;
   return to_ret;
 }
 
@@ -445,23 +442,36 @@ cons *charequal(base_char *a, base_char *b)
 cons *stringeq(array *a, array *b)
 {
   long i=0;
-  if(a==b)
+  if (a==b)
     return t;
   else if (a->type != b->type)
     return nil;
   else if (((a->type <= (cons*)BUILT_IN_CLASS) &&
 	    (a->type == (cons*)STRING)))
-    return 0;//TODO error
-  
-  while(1)
     {
-      if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
-	return nil;
-      else if (((base_char*)a->a[0][i])->c == 0) 
-	return t;
-      else
-	i++;
+      while(1)
+	{
+	  while((i < a->length->num) &&
+		(i < b->length->num))
+	    {
+	      if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
+		return nil;
+	      else
+		i++;
+	    }
+	  if ((a->next != 0) &&
+	      (b->next != 0))
+	    {
+	      i = 0;
+	      a = a->next;
+	      b = b->next;
+	    }
+	  else
+	    return t;
+	}
     }
+  else
+    return 0;//TODO error
 }
 
 /* Determine if two strings are equal, as per CLHS: "STRING-EQUAL"
@@ -478,12 +488,23 @@ cons *stringequal(array *a, array *b)
     {
       while(1)
 	{
-	  if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
-	    return nil;
-	  else if (((base_char*)a->a[0][i])->c == 0) 
-	    return t;
+	  while((i < a->length->num) &&
+		(i < b->length->num))
+	    {
+	      if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
+		return nil;
+	      else
+		i++;
+	    }
+	  if ((a->next != 0) &&
+	      (b->next != 0))
+	    {
+	      i = 0;
+	      a = a->next;
+	      b = b->next;
+	    }
 	  else
-	    i++;
+	    return t;
 	}
     }
   else
@@ -571,7 +592,7 @@ cons *eql (cons *a, cons *b)
 }
 
 int hash(cons *object, hash_table *ht)
-{
+{// Very incomplete
   int objsize;
   int index = 0;
   int ht_length = ht->a->length->num;
@@ -940,28 +961,43 @@ base_char *read_char(stream *str)
     return (base_char*)nil;
   else if (str->read_index < str->rv->length->num)
     /* If the stream has not yet reached the end of the current vector, 
-     * increment the index.
+     * increment the index. The read character will be returned.
      */
       str->read_index++;
   else if (str->rv->next != 0)
     {/* If the stream has reached the end of the vector, and the vector
-      * is extended, move to the next vector.
+      * is extended, move to the next vector. The read character will be 
+      * returned.
       */
       str->rv = str->rv->next;
       str->read_index = 0;
     }
   else
-    /* If the strem has dried up, and there is no more, just increment the 
-     * read index.
+    /* If the stream has dried up, and there is no more, return nil.
      */
-    str->read_index++;
+    return nil;
+
   return to_ret;
 }
 
 base_char *peek_char(stream *str)
 {/* Read a character from a stream without officially reading it. hence, peek.
   */
-  return (base_char*)str->rv->a[0][str->read_index];
+  base_char *to_ret = (base_char*)str->rv->a[0][str->read_index];
+
+  if ((str->read_index == str->write_index) &&
+      (str->rv == str->wv))
+    return (base_char*)nil;
+
+  else if (str->read_index < str->rv->length->num)
+    continue;
+
+  else
+    /* If the stream has dried up, and there is no more, return nil.
+     */
+    return nil;
+
+  return to_ret;
 }
 
 cons *unread_char(base_char *c, stream *str)
