@@ -182,8 +182,10 @@ cons *read_token(stream *str, cons *env)
   else
     {
       foo = (cons*)intern(strtolstr(symbol_name), p);
+      
       if ((external_required = 1) &&
-	  (null(assoc((cons*)external, ((symbol*)foo)->plist)->cdr) == t))
+	  (null(assoc((cons*)external, ((symbol*)foo)->plist)->cdr) == t) &&
+	  (p != package_s->value))
 	return (cons*)0xbad10;//TODO non-external error
     }
   return foo;
