@@ -1040,10 +1040,8 @@ cons *write_char(base_char *c, stream *str)
 
 extern cons *initread(stream *str, cons *env);
 
-int main ()
+void test()
 {
-  procinfo *proc = init();
-  
   /*Tests*/
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
@@ -1067,6 +1065,11 @@ int main ()
   str->write_index = 4;
 
   cons *snazzy = read(str, env);
+
+int main ()
+{
+  procinfo *proc = init();
+  test();
 
   return 0;
 }
