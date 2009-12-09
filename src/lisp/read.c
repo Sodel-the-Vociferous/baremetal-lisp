@@ -11,7 +11,8 @@
 cons *read_token(stream *str, cons *env)
 {/* CLHS 2.2 Step 8
   */
-  //TODO add support for floating point numbers.
+  //TODO add support for floating point numbers, and bignums.
+  //TODO make buffer overrun check robust.
   base_char *c;
   cons *readtable = readtable_s->value;//TODO check w/ (readtablep...)
   package *p = (package*)package_s->value;
@@ -36,7 +37,13 @@ cons *read_token(stream *str, cons *env)
       plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
       if (c == (base_char*)nil)
-	continue;
+	{
+	  if (symbol_idx > max_idx)
+	    return (cons*)0xbad2;//TODO error. Must make robust!
+	  symbol_name[symbol_idx] = '\0';
+	  symbol_idx++;
+	  break;
+	}
       else if (null(assoc((cons*)package_marker, plist)->cdr) == nil) 
 	{
 	  f.type = (cons*)0;
@@ -64,15 +71,12 @@ cons *read_token(stream *str, cons *env)
 	    }
 	}
       if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
-	  (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil) ||
-	  (c->c == '\0'))
+	  (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil))
 	{
 	  if (symbol_idx > 255)
 	    return (cons*)0xbad1;//TODO error. Must make robust!
 	  symbol_name[symbol_idx] = c->c;
 	  symbol_idx++;
-	  if (c->c == '\0')
-	    break;
 	}
       else if (null(assoc((cons*)single_escape, plist)->cdr) == nil)
 	{
@@ -94,7 +98,12 @@ cons *read_token(stream *str, cons *env)
 
 	  while (1)
 	    {
-	      if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
+	      c = read_char(str);
+	      plist = assoc((cons*)c, (cons*)readtable)->cdr;
+	      
+	      if (c == (base_char*)nil)
+		return (cons*)0xbad14;
+	      else if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
 		  (null(assoc((cons*)whitespace, plist)->cdr) == nil))
 		{//TODO expand as per CLHS 2.2 step 9
 		  if (symbol_idx > max_idx)
@@ -185,7 +194,7 @@ cons *read_token(stream *str, cons *env)
       
       if ((external_required = 1) &&
 	  (null(assoc((cons*)external, ((symbol*)foo)->plist)->cdr) == t) &&
-	  (p != package_s->value))
+	  (p != (package*)package_s->value))
 	return (cons*)0xbad10;//TODO non-external error
     }
   return foo;

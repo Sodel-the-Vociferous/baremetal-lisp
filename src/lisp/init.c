@@ -238,14 +238,9 @@ cons *initread(stream *str, cons *env)
 
   while (1)
     {
-      if (c->c == 0 || c->c == ')')
+      if ((c == (base_char*)nil) || (c->c == ')'))
 	{/* Terminate a list, or a read.
 	  */
-	  if (c->c == 0)
-	    /* If the character is the null character, unread it, or else
-	     * successive reads won't know that the stream has ended.
-	     */
-	    unread_char(c, str);
 	  return nil;
 	}
       else if (c->c == ' ' || c->c == '\t')

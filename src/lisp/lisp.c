@@ -975,7 +975,7 @@ base_char *read_char(stream *str)
   else
     /* If the stream has dried up, and there is no more, return nil.
      */
-    return nil;
+    return (base_char*)nil;
 
   return to_ret;
 }
@@ -989,13 +989,10 @@ base_char *peek_char(stream *str)
       (str->rv == str->wv))
     return (base_char*)nil;
 
-  else if (str->read_index < str->rv->length->num)
-    continue;
-
-  else
+  else if (str->read_index >= str->rv->length->num)
     /* If the stream has dried up, and there is no more, return nil.
      */
-    return nil;
+    return (base_char*)nil;
 
   return to_ret;
 }
