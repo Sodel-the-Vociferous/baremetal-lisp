@@ -294,8 +294,15 @@ cons *read_list(stream *str,  base_char *c, cons *env)
 	{
 	  c = peek_char(str);
 	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
-	  if (null(assoc((cons*)whitespace, plist)->cdr) == nil)
+	  while (null(assoc((cons*)whitespace, plist)->cdr) == nil)
 	    read_char(str);
+	  else if (null(assoc((cons*)dot, plist)->cdr) == nil)
+	    {
+	      foo = read(str, env);
+	      current->cdr = foo;
+	      if (read(str, env) != (cons*)0xBADB0B)
+		return 0;//TODO error
+	    }
 	  else
 	    break;
 	}
