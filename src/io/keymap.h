@@ -39,5 +39,3 @@
 #define F12 158
 
 #define SUPER 159
-
-extern uchar kbdus[256];

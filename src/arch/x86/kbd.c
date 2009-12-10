@@ -1,17 +1,24 @@
 #include "defs.h"
 #include "io.h"
 #include "interrupt.h"
-#include "kbd.h"
 #include "keymap.h"
+#include "kbd.h"
+#include "lisp.h"
+
+extern uchar kbdus_noshift[];
+extern uchar kbdus_shift[];
 
 struct keyboard kbd;
-struct uchar **keymap;
+
+uchar **keymap;
+uchar **keymap_shift;
 
 static void kbd_handler(struct registers);
 
 static void kbd_handler(struct registers regs)
 {
   char scancode;
+  unsigned char c;
 	
   /*read from keyboard data buffer*/
   scancode = inb(0x60);
@@ -19,7 +26,8 @@ static void kbd_handler(struct registers regs)
   /*If the top bit is set, a key was just released*/
   if (scancode & 0x80)
     {
-      switch (scancode ^ 0x80)
+      scancode ^=  0x80;
+      switch (c)
 	{/* If the key (high bit stripped) is a status key, 
 	  * set its status in the keyboard structure.
 	  */
@@ -49,14 +57,13 @@ static void kbd_handler(struct registers regs)
 	
   else //A key was just pressed.
     {
-      if (kbd.widx = 0xff)//If we are about to wrap around...
-	kbd.wrap = 1;//Tell the system so.
-      kbd.buffer[kbd.widx] = scancode;
-      kbd.widx++;
+      write_char(ctolc(c), kbd.buffer);
     }
 }
 
 void init_kbd()
 {
   register_interrupt_handler(IRQ1, &kbd_handler);
+  keymap = (uchar**)&kbdus_noshift[0];
+  keymap_shift = (uchar**)&kbdus_shift[0];  
 }

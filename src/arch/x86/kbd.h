@@ -16,8 +16,5 @@ struct keyboard_status
 struct keyboard
 {
   struct keyboard_status status;
-  char buffer[256];
-  uchar widx;//Write index.Yes, these are SUPPOSED to "wrap around" to 0 again. Simple solutions! Yay!
-  uchar ridx;//Read index. Current read position.
-  uchar wrap;//Whether the reader needs to catch up by wrapping.
+  struct stream *buffer;
 };
