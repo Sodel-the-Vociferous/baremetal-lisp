@@ -40,12 +40,10 @@ cons *nil = &nil_phys;
 cons *type_of(cons *foo)
 {
   if (foo->type <= (cons*)BUILT_IN_CLASS)
-    /* This line returns a warning. No way to suppress it, I'm afraid. :( It 
-     * doesn't matter if the two types happen to be of different sizes,
-     * because these are just our constant type specifiers, which are quite
-     * compact.
-     */
-    return basic_classes[(int)foo->type];
+    {
+      unsigned long index = (unsigned long)foo->type;
+      return basic_classes[index];
+    }
   else
     return foo->type;
 }
