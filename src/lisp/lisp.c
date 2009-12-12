@@ -18,11 +18,13 @@
 //    a separate function.
 
 #include "lisp.h"
-#include <stdlib.h>
 #include "init.h"
 
-#include <stdio.h>
-
+#ifndef IN_OS
+#include <stdlib.h>
+#else
+#include "malloc.h"
+#endif
 
 /* Internal Function Declarations */
 cons *subtypep(cons *object, cons *objtype, symbol *type);
@@ -338,7 +340,7 @@ symbol *intern(array *name, package *p)
   cons *entry;
   symbol *s;
 
-  for (i=0;i<3;i++)
+  for (i=0;i<4;i++)
     {/* Hash the first four characters of the name.
       */
       if (i >= name->length->num)
@@ -441,7 +443,8 @@ cons *charequal(base_char *a, base_char *b)
  */
 cons *stringeq(array *a, array *b)
 {
-  long i=0;
+  long ai=0;
+  long bi=0;
   if (a==b)
     return t;
   else if (a->type != b->type)
@@ -451,23 +454,32 @@ cons *stringeq(array *a, array *b)
     {
       while(1)
 	{
-	  while((i < a->length->num) &&
-		(i < b->length->num))
+	  while((ai < a->length->num) &&
+		(bi < b->length->num))
 	    {
-	      if (chareq((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
+	      if (chareq((base_char*)a->a[0][ai], (base_char*)b->a[0][bi]) == nil)
 		return nil;
 	      else
-		i++;
+		{
+		  ai++;
+		  bi++;
+		}
 	    }
-	  if ((a->next != 0) &&
-	      (b->next != 0))
+	  if (a->next != 0)
 	    {
-	      i = 0;
+	      ai = 0;
 	      a = a->next;
+	    }
+	  if (b->next != 0)
+	    {
+	      bi = 0;
 	      b = b->next;
 	    }
-	  else
+	  else if ((ai >= a->length->num) &&
+		   (bi >= b->length->num))
 	    return t;
+	  else
+	    return nil;
 	}
     }
   else
@@ -478,7 +490,8 @@ cons *stringeq(array *a, array *b)
  */
 cons *stringequal(array *a, array *b)
 {
-  long i=0;
+  long ai=0;
+  long bi=0;
   if (a==b)
     return t;
   else if (a->type != b->type)
@@ -488,19 +501,25 @@ cons *stringequal(array *a, array *b)
     {
       while(1)
 	{
-	  while((i < a->length->num) &&
-		(i < b->length->num))
+	  while((ai < a->length->num) &&
+		(bi < b->length->num))
 	    {
-	      if (charequal((base_char*)a->a[0][i], (base_char*)b->a[0][i]) == nil)
+	      if (charequal((base_char*)a->a[0][ai], (base_char*)b->a[0][bi]) == nil)
 		return nil;
 	      else
-		i++;
+		{
+		  ai++;
+		  bi++;
+		}
 	    }
-	  if ((a->next != 0) &&
-	      (b->next != 0))
+	  if (a->next != 0)
 	    {
-	      i = 0;
+	      ai = 0;
 	      a = a->next;
+	    }
+	  if (b->next != 0)
+	    {
+	      bi = 0;
 	      b = b->next;
 	    }
 	  else
@@ -1040,7 +1059,7 @@ cons *write_char(base_char *c, stream *str)
 
 extern cons *initread(stream *str, cons *env);
 
-void test()
+void test(procinfo *proc)
 {
   /*Tests*/
   cons *env = extend_env(nil);
@@ -1065,11 +1084,12 @@ void test()
   str->write_index = 4;
 
   cons *snazzy = read(str, env);
+}
 
 int main ()
 {
   procinfo *proc = init();
-  test();
+  test(proc);
 
   return 0;
 }

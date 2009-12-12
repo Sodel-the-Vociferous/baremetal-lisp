@@ -7,10 +7,15 @@
  * This code is released under the GNU GPL General Public License.
  */
 
-#include <stdlib.h>
 #include "lisp.h"
 #include "init.h"
 #include "lbind.h"
+
+#ifndef IN_OS
+#include <stdlib.h>
+#else
+#include "malloc.h"
+#endif
 
 cons *basic_classes[20];
 
@@ -239,10 +244,7 @@ cons *initread(stream *str, cons *env)
   while (1)
     {
       if ((c == (base_char*)nil) || (c->c == ')'))
-	{/* Terminate a list, or a read.
-	  */
-	  return nil;
-	}
+	return (cons*)0xbad;
       else if (c->c == ' ' || c->c == '\t')
 	/* Skip over whitespace.
 	 */
@@ -255,7 +257,7 @@ cons *initread(stream *str, cons *env)
 	  cons *to_ret = foo;
 
 	  bar = (cons*)initread(str, env);
-	  if (bar == nil)
+	  if (bar == (cons*)0xbad)
 	    /*Recognize when the list is null.
 	     */
 	    return nil;
@@ -264,12 +266,11 @@ cons *initread(stream *str, cons *env)
 	     */
 	    foo->car = bar;
 	  
-	  while ((c->c != ')') &&
-		 (c->c != 0))
+	  while (1)
 	    {/* Read a list, until a read returns nil, terminating the list.
 	      */
 	      bar = (cons*)initread(str, env);
-	      if (bar == nil)
+	      if (bar == (cons*)0xbad)
 		return to_ret;
 	      foo->cdr = newcons();
 	      foo = foo->cdr;
@@ -325,6 +326,7 @@ cons *initread(stream *str, cons *env)
 	      c = read_char(str);
 	      i++;
 	    }
+	  unread_char(c, str);
 	  if (i >= 100)
 	    /* If we overrun the buffer, we are in error. return.
 	     */
@@ -418,6 +420,7 @@ void init_keyword_pkg()
   alphabetic = initsym("ALPHABETIC", keyword_pkg);
   alphadigit = initsym("ALPHADIGIT", keyword_pkg);
   package_marker = initsym("PACKAGE-MARKER", keyword_pkg);
+  dot = initsym("DOT", keyword_pkg);
 }
 
 void init_cl_pkg()
@@ -665,6 +668,7 @@ void init_read_funs()
   /* Whitespaces and Constituents */
   readtable = init_char_traits(whitespaces, (cons*)whitespace, t, readtable);
   readtable = init_char_traits(constituents, (cons*)constituent, t, readtable);
+  readtable = init_char_trait('.', (cons*)dot, t, readtable);
   /* Terminating Macro Characters */
   readtable = init_char_trait('(', (cons*)terminating_macro, (cons*)read_list_s, readtable);
   readtable = init_char_trait(')', (cons*)terminating_macro, t, readtable);
@@ -729,7 +733,7 @@ void init_types()
   basic_classes[BUILT_IN_CLASS] = built_in_class_s->class;
 
   number_s = initsym("NUMBER", cl_pkg);
-  number_s->class = initdeftype("(NUMBER (BUILT-IN-CLASS) ())");
+  number_s->class = initdeftype("(NUMBER (T) ())");
   real_s = initsym("REAL", cl_pkg);
   real_s->class = initdeftype("(REAL (NUMBER) ())");
 

@@ -296,7 +296,7 @@ cons *read_list(stream *str,  base_char *c, cons *env)
 	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 	  while (null(assoc((cons*)whitespace, plist)->cdr) == nil)
 	    read_char(str);
-	  else if (null(assoc((cons*)dot, plist)->cdr) == nil)
+	  if (null(assoc((cons*)dot, plist)->cdr) == nil)
 	    {
 	      foo = read(str, env);
 	      current->cdr = foo;
