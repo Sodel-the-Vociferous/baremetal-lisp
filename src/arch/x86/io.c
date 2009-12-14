@@ -1,6 +1,6 @@
 #include "defs.h"
 
-unsigned char *memcpy(uchar *dest, const uchar *src, int count)
+unsigned char *memcpy(uchar *dest, const uchar *src, uint count)
 {/* Copy count bytes of data from src' to dest, and return dest.
   */
     const char *source = (const char *)src;
@@ -12,7 +12,7 @@ unsigned char *memcpy(uchar *dest, const uchar *src, int count)
     return dest;
 }
 
-unsigned char *memset(uchar *dest, uchar val, int count)
+unsigned char *memset(uchar *dest, uchar val, uint count)
 {/* Set count bytes from location dest to value val.
   */
     char *temp = (char *)dest;

@@ -5,13 +5,16 @@
 
 int kmain(multiboot_header_t *mboot)
 {
+  procinfo *proc = init();
   stream *str;
   char c;
   int paren_levels = 0;
   
-
+  cons *env = fcons((cons*)proc, nil);
+  cons *exp;
+  cons *value;
   while (1)
-    {
+    {      
       str = newstream();
       str->rv = newsimple_vector(240);
       str->wv = str->rv;
@@ -32,7 +35,9 @@ int kmain(multiboot_header_t *mboot)
 	  else if (c == '\n')
 	    break;
 	}
-
+      exp = read(str, env);
+      value = eval(exp, env);
+      
     }
 }
 
