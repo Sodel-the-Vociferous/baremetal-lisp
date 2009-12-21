@@ -8,6 +8,9 @@
  * This code is released under the GNU GPL General Public License.
  */
 
+#ifndef LISP_H
+#define LISP_H
+
 #define HASH_TABLE_SIZE 255
 
 /* These are predefined typecodes that aren't legal address values for basic 
@@ -307,7 +310,7 @@ extern hash_table *newhash_table(int length, function *eq_fun);
 extern package *newpackage();
 extern compiled_function *newcompiled_function();
 extern function *newfunction();
-extern stream *newstream();
+extern stream *newstream(uint sz)
 extern base_char *ctolc(char c);
 extern array *strtolstr(char *str);
 extern cons *null (cons *a);
@@ -344,3 +347,4 @@ extern cons *write_char(base_char *c, stream *str);
 
 extern cons *read(stream *str, cons *env);
 extern cons *read_list(stream *str,  base_char *c, cons *env);
+#endif

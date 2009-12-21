@@ -1,11 +1,14 @@
 /* init.h
  *
- * Danie Ralston, 2009
+ * Daniel Ralston, 2009
  *
  * This code is released under the GNU GPL General Public License.
  */
+#ifndef INIT_H
+#define INIT_H
 
 #define CASE_DIFFERENCE = 32
+
 extern cons *basic_classes[];
 
 /*Packages*/
@@ -115,3 +118,4 @@ extern symbol *b_s;
 extern symbol *value_s;
 
 extern symbol *setq_s;
+#endif

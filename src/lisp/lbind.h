@@ -7,6 +7,8 @@
  * This code is released under the GNU GPL General Public License.
  */
 
+#ifndef LBIND_H
+#define LBIND_H
 extern cons *lnull(cons *env);
 extern cons *lnumberp(cons *env);
 extern cons *lcons(cons *env);
@@ -45,3 +47,4 @@ extern cons *lsetq(cons *env);
 
 extern cons *lread_char(cons *env);
 extern cons *lread_list(cons *env);
+#endif

@@ -223,7 +223,7 @@ symbol *initcfun (char *name,
 
 cons *initdeftype(char *string)
 {
-  stream *str = newstream();
+  stream *str = newstream(0);
   str->rv = strtolstr(string);
   cons *foo = initread(str, basic_env);
   foo->type = (cons*)BUILT_IN_CLASS;
@@ -643,7 +643,7 @@ void init_read_funs()
 
   readtable_s = initsym("READTABLE", cl_pkg);
 
-  stream *str = newstream();
+  stream *str = newstream(0);
   str->rv = strtolstr("(&OPTIONAL (STREAM *STANDARD-INPUT*) (EOF-ERROR-P T))");
   str->write_index = str->rv->length->num;
 

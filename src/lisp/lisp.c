@@ -193,17 +193,24 @@ function *newfunction()
   f->fun = 0;
 }
 
-stream *newstream()
+stream *newstream(uint sz)
 {
   stream *str = malloc(sizeof(stream));
   str->type = (cons*)STREAM;
   str->plist = nil;
-  str->read_index = 0;
   //Manual setup of the new stream will be required.
-  str->rv = (array*)0;
-  str->wv = (array*)0;
+  if (sz > 0)
+    {
+      str->rv = newsimple_vector(sz);
+      str->wv = str->rv;
+    }
+  else
+    {
+      str->rv = (array*)0;
+      str->wv = (array*)0;
+    }
+  str->read_index = 0;
   str->write_index = 0;
-
   return str;
 }
 
@@ -1037,6 +1044,13 @@ cons *unread_char(base_char *c, stream *str)
 cons *write_char(base_char *c, stream *str)
 {/* Append a character to a stream.
   */
+  if (str->wv == 0)
+    {
+      str->wv = newsimple_vector(128);
+      str->rv = str->wv;
+      str->read_index = 0;
+      str->write_index = 0;
+    }
   if (str->write_index < str->wv->length->num)
     {/* If the stream's write-vector hasn't been exhausted, append the
       * character, and increment the write index.
@@ -1048,7 +1062,8 @@ cons *write_char(base_char *c, stream *str)
     {/* If the stream's write-vector has been exhausted, append a new
       * vector, and add the character.
       */
-      str->wv->next = newsimple_vector(128);
+      str->wv = newsimple_vector(128);
+      str->rv->next = str->wv;
       str->wv->a[0][0] = (cons*)c;
       str->write_index = 1;
     }
