@@ -1,19 +1,50 @@
 #include "defs.h"
 #include "io.h"
 #include "interrupt.h"
-#include "keymap.h"
 #include "kbd.h"
 #include "lisp.h"
-
-extern uchar kbdus_noshift[];
-extern uchar kbdus_shift[];
+#include "screen.h"
+#include "terminal.h"
+#include KEYMAP
 
 struct keyboard kbd;
 
-uchar **keymap;
-uchar **keymap_shift;
+base_char *local_keymap[128];
+base_char *local_keymap_shift[128];
 
 static void kbd_handler(struct registers);
+
+int special_key(char scancode, char press_or_release)
+{
+  uchar c = keymap[scancode];
+  switch (c)
+    {/* If the key (high bit stripped) is a status key, 
+      * set its status in the keyboard structure.
+      */
+    case (LALT):
+      kbd.status.lalt = press_or_release;
+      break;
+    case (RALT):
+      kbd.status.ralt = press_or_release;
+      break;
+    case (LCTRL):
+      kbd.status.lctrl = press_or_release;
+      break;
+    case (RCTRL):
+      kbd.status.rctrl = press_or_release;
+      break;
+    case (LSHIFT):
+      kbd.status.lshift = press_or_release;
+      break;
+    case (RSHIFT):
+      kbd.status.rshift = press_or_release;
+      break;
+      //Unfinished: implement remaining keys.
+    default:
+      return 0;
+    }
+  return 1;
+}
 
 static void kbd_handler(struct registers regs)
 {
@@ -26,44 +57,28 @@ static void kbd_handler(struct registers regs)
   /*If the top bit is set, a key was just released*/
   if (scancode & 0x80)
     {
-      scancode ^=  0x80;
-      switch (c)
-	{/* If the key (high bit stripped) is a status key, 
-	  * set its status in the keyboard structure.
-	  */
-	case (LALT):
-	  kbd.status.lalt = 0;
-	  break;
-	case (RALT):
-	  kbd.status.ralt = 0;
-	  break;
-	case (LCTRL):
-	  kbd.status.lctrl = 0;
-	  break;
-	case (RCTRL):
-	  kbd.status.rctrl = 0;
-	  break;
-	case (LSHIFT):
-	  kbd.status.lshift = 0;
-	  break;
-	case (RSHIFT):
-	  kbd.status.rshift = 0;
-	  break;
-	  //Unfinished: implement remaining keys.
-	default:
-	  break;
-	}
+      scancode ^= 0x80;
+      special_key(scancode, 0);
     }
 	
   else //A key was just pressed.
     {
-      write_char(ctolc(c), kbd.buffer);
+      c = keymap[scancode];
+      if (special_key(c, 1) == 1)
+	return;
+      if (c >= ' ')
+	write_char(local_keymap[scancode], current_terminal->stdin);
+      putchar('!', current_terminal->screen);
+      //cursor(current_terminal->screen->x, current_terminal->screen->y);
     }
 }
 
 void init_kbd()
 {
-  register_interrupt_handler(IRQ1, &kbd_handler);
-  keymap = (uchar**)&kbdus_noshift[0];
-  keymap_shift = (uchar**)&kbdus_shift[0];  
+  int i;
+  for (i=0; i<128; i++)
+    local_keymap[i] = ctolc(keymap[i]);
+  for (i=0; i<128; i++)
+    local_keymap_shift[i] = ctolc(keymap_shift[i]);
+  register_interrupt_handler(IRQ1, &kbd_handler);  
 }

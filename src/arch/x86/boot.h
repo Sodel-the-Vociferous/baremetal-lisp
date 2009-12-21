@@ -29,8 +29,6 @@ struct idt_pointer
    uint base;//Address of first element in idt_entry array.
 } __attribute__((packed));
 
-static void init_dt();
-
 extern void isr0 ();
 extern void isr1 ();
 extern void isr2 ();

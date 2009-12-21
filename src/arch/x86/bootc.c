@@ -20,10 +20,11 @@ struct gdt_pointer gdt_ptr;
 struct idt_entry idt_entries[256];
 struct idt_pointer idt_ptr; 
 
-static void init_dt()
+void init_dt()
 {
   init_gdt();
   init_idt();
+  init_pit(50);
 }
 
 static void init_gdt()
@@ -36,6 +37,7 @@ static void init_gdt()
   set_gdt_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Data segment
   set_gdt_gate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // User mode code segment
   set_gdt_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF); // User mode data segment
+  //  for(;;);
 
   flush_gdt((uint)&gdt_ptr);
 }
@@ -55,19 +57,19 @@ static void set_gdt_gate(int num, uint base, uint limit, uchar access, uchar gra
 
 static void init_idt()
 {
-    idt_ptr.limit = sizeof(struct idt_entry) * 256 -1;
-    idt_ptr.base  = (uint)&idt_entries;
+  idt_ptr.limit = sizeof(struct idt_entry) * 256 -1;
+  idt_ptr.base  = (uint)&idt_entries;
 
-    memset((uchar*)&idt_entries, 0, sizeof(struct idt_entry)*256);
+  memset((uchar*)&idt_entries, 0, sizeof(struct idt_entry)*256);
 
-    // Remap the irq table.
-    outb(0x20, 0x11);
-    outb(0xA0, 0x11);
-    outb(0x21, 0x20);
-    outb(0xA1, 0x28);
-    outb(0x21, 0x04);
-    outb(0xA1, 0x02);
-    outb(0x21, 0x01);
+  // Remap the irq table.
+  outb(0x20, 0x11);
+  outb(0xA0, 0x11);
+  outb(0x21, 0x20);
+  outb(0xA1, 0x28);
+  outb(0x21, 0x04);
+  outb(0xA1, 0x02);
+  outb(0x21, 0x01);
     outb(0xA1, 0x01);
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
@@ -121,8 +123,6 @@ static void init_idt()
     set_idt_gate(46, (unsigned)irq14, 0x08, 0x8E);
     set_idt_gate(47, (unsigned)irq15, 0x08, 0x8E);
     flush_idt((uint)&idt_ptr);
-
-    init_pit(50);
 }
 
 static void set_idt_gate(uchar num, uint base, ushort sel, uchar flags)

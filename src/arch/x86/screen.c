@@ -3,54 +3,74 @@
 #include "screen.h"
 #include "lisp.c"
 
-struct hw_screen screen;
+ushort *screen;
+
+void cursor(uint x, uint y);
+void cls(sw_screen *scn);
+void draw_screen(struct sw_screen *s);
+void newline(struct sw_screen *s);
+void putchar(char c, struct sw_screen *scn);
 
 void inithw_screen()
 {
-  screen->screen = (cchar*[])SCREENSTART;
+  screen = (ushort*)SCREENSTART;
+  unsigned short blank = (' ' | (BLACK << 12) | (WHITE << 8));
+  uint i;
+  
+  for (i=0; i<YROWS; i++)
+    memsetw(screen + (i * XCOLUMNS), blank, XCOLUMNS);
+
+  *screen = (ushort)('Q' | (BLACK << 12) | (LGREEN << 8));
+  cursor(0, 0);
 }
 
 void cursor(uint x, uint y)
 {
-  if ((x >= XCOLUMNS) ||
-      (y >= YROWS))
-    return;
-  ushort location = y * ROWS + x; 
+  ushort location = y * XCOLUMNS + x; 
 
   outb(0x3D4, 14);
-  outb(0x3D4, (uchar)location<<8);
+  outb(0x3D5, location >> 8);
   outb(0x3D4, 15);
-  outb(0x3D5, (uchar)location);
+  outb(0x3D5, location);
 }
 
-void draw_screen(struct sw_screen *s)
+void cls(sw_screen *scn)
 {
-  cursor(s->x, s->y);
-  memcpy(&screen->screen[0], &s->screen[0], x * y * sizeof(cchar));
+  ushort blank = (' ' | (scn->bgattrib << 12) | (scn->fgattrib << 8));
+  ushort *where = scn->screen;
+  ushort *last = where + sizeof(ushort) * XCOLUMNS * YROWS;
+  for(where; where < last; where = where + sizeof(ushort))
+    *where = blank;
 }
 
-void advance_line(struct sw_screen *s)
+void newline(struct sw_screen *s)
 {
   s->x = 0;
   s->y++;
-  if (s->y >= YCHARS)
+  if (s->y >= YROWS)
     {
-      cchar *c;
-      ushort y;
-      for (y = 1, y < YROWS, y++)
-	  memcpy(&s->screen[(y-1)*XCOLUMNS], &s->&s->screen[y*XCOLUMNS], XCOLUMNS);
-      s->y--;
+      s->y = s->y;//TODO!
     }
+  cursor(s->x, s->y);
 }
 
 void putchar(char c, struct sw_screen *s)
-{ ushort location = y * YROWS + x; 
-  struct cchar cc;
-  cc->c = c;
-  cc->fgattrib = s->fgattrib;
-  cc->bgattrib = s->bgattrib;
-  s->screen[location] = cc;
+{
+  switch (c)
+    {
+    case('\n'):
+      newline(s);
+      return;
+    case('\b'):
+      return;
+    default:
+      if (c < ' ')
+	return;
+      break;
+    }	  
+  ushort *location = (ushort*)(s->y * XCOLUMNS + s->x + s->screen);
+  *location = (c | (s->bgattrib << 12) | (s->fgattrib << 8));
   s->x++;
   if (s->x >= XCOLUMNS)
-    advance_line(s);
+    newline(s);
 }

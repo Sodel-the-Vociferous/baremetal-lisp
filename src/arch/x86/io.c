@@ -23,6 +23,17 @@ unsigned char *memset(uchar *dest, uchar val, uint count)
     return dest;
 }
 
+unsigned short *memsetw(ushort *dest, ushort val, uint count)
+{/* Set count bytes from location dest to value val.
+  */
+    ushort *temp = (ushort*)dest;
+    for(; count !=0; count--)
+    {
+        *temp++ = val;
+    }
+    return dest;
+}
+
 /* Read from an I/O port.
  */
 uchar inb (ushort _port)

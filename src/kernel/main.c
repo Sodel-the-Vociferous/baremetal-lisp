@@ -1,43 +1,28 @@
 #include "defs.h"
+#include "boot.h"
 #include "main.h"
 #include "multiboot.h"
 #include "lisp.h"
+#include "screen.h"
+#include "malloc.h"
+#include "terminal.h"
+
+lisp_terminal *current_terminal;
+extern void end;
 
 int kmain(multiboot_header_t *mboot)
 {
-  procinfo *proc = init();
-  stream *str;
-  char c;
-  int paren_levels = 0;
-  
-  cons *env = fcons((cons*)proc, nil);
-  cons *exp;
-  cons *value;
-  while (1)
-    {      
-      str = newstream();
-      str->rv = newsimple_vector(240);
-      str->wv = str->rv;
+  firstfree = (void*)&end;
+  inithw_screen();
+  init_dt();
+  init_kbd();
 
-      while (1)
-	{
-	  c = peek_char(str)->c;
-	  if (c == '(')
-	    {
-	      paren_levels++;
-	      while (paren_levels > 0)
-		{
-		  c = peek_char(str)->c;
-		  if (peek_char(str)->c == ')')
-		    paren_levels--;
-		}
-	    }
-	  else if (c == '\n')
-	    break;
-	}
-      exp = read(str, env);
-      value = eval(exp, env);
-      
-    }
+  __asm__ __volatile__ ("sti"); //Allow interrupts
+
+  //  lisp_main();
+  lisp_terminal *term = newlisp_terminal();
+  cursor(0, 0);
+  termmain(term);
+  for(;;);
 }
 

@@ -2,8 +2,6 @@
 ;;; Kernel begins execution here
 ;;; Uses nasm specific directives.
 
-	[BITS 32]		;Use 32 bit instructions.
-	
 	[GLOBAL mboot]		;Make mboot accessible from C.
 	[EXTERN code]		;Start of .text section.
 	[EXTERN bss]		;Start of .bss section.
@@ -11,8 +9,6 @@
 	
 	[GLOBAL start]		;Kernel entry point
 	[EXTERN kmain]		;Entry to C code.
-	[GLOBAL flush_gdt]
-	[GLOBAL flush_idt]
 	
 	
 	MBOOT_PAGE_ALIGN	equ	1<<0 ;Load kernel and any modules on a page boundary.
@@ -39,7 +35,9 @@ section .text
 	dd start		;Kernel entry 
 
 start:
-	push ebx 		;Load location of multiboot header to pass as a parameter to kmain.
+	mov esp, stack+STACKSIZE           ; set up the stack	
+	push eax                           ; pass Multiboot magic number
+	push ebx                           ;Load location of multiboot header to pass as a parameter to kmain.
 
 	cli			;Disable interrupts
 	call kmain
@@ -47,10 +45,7 @@ start:
 infinite_loop:	
 	jmp infinite_loop	;Enter an infinite loop if kmain ever returns.
 
-	section .bss
-	align 32
-stack:
-	resb STACKSIZE		;Reserve 16K stack
+[GLOBAL flush_gdt]
 
 flush_gdt:
 	mov eax, [esp+4]  	;Get the pointer to the GDT, passed as a parameter.
@@ -64,7 +59,7 @@ flush_gdt:
 	mov ss, ax
 	jmp 0x08:.flush   	;0x08 is the offset to code segment: Far jump! 
 .flush:
-   ret
+	ret
 
 	[GLOBAL flush_idt]
 flush_idt:
@@ -213,3 +208,8 @@ irq_common:
    add esp, 8     		; Cleans up the pushed error code and pushed ISR number
    sti
    iret           		; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP 
+
+section .bss
+	align 32
+stack:
+	resb STACKSIZE		;Reserve 16K stack
