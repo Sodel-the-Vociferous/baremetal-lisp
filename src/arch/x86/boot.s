@@ -212,4 +212,4 @@ irq_common:
 section .bss
 	align 32
 stack:
-	resb STACKSIZE		;Reserve 16K stack
+	resb STACKSIZE		;Reserve 512Kib stack

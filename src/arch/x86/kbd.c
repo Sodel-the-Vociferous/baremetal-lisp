@@ -49,7 +49,7 @@ int special_key(char scancode, char press_or_release)
 static void kbd_handler(struct registers regs)
 {
   char scancode;
-  unsigned char c;
+  uchar c;
 	
   /*read from keyboard data buffer*/
   scancode = inb(0x60);
@@ -63,6 +63,7 @@ static void kbd_handler(struct registers regs)
 	
   else //A key was just pressed.
     {
+      int i = 1;
       c = keymap[scancode];
       if (special_key(c, 1) == 1)
 	return;

@@ -5,12 +5,14 @@
 #include "terminal.h"
 #include "io.h"
 
+int locusts = 0;
+
 lisp_terminal *newlisp_terminal()
 {
   int i;
   lisp_terminal *term = malloc(sizeof(lisp_terminal));
   current_terminal = term;
-  term->stdin = newstream(255);
+  term->stdin = newstream(5);
   term->stdout = newstream(255);
   term->screen = malloc(sizeof(sw_screen));
   
@@ -44,11 +46,21 @@ cons *termmain(lisp_terminal *term)
   putchar('S', term->screen);
   putchar('P', term->screen);
   cursor(term->screen->x, term->screen->y);
+  int idx = term->stdin->write_index;
+  base_char *c;
   while (1)
     {
-      base_char *c = termread_char(term->stdin);
-      putchar(c->c, term->screen);
-      cursor(term->screen->x, term->screen->y);
-    }
+      if (idx == term->stdin->write_index)
+	continue;
+      while (1)
+	{
+	  c = read_char(term->stdin);
+	  if (c == (base_char*)nil)
+	    break;
+	  putchar(c->c, term->screen);
+	  cursor(term->screen->x, term->screen->y);
+	  idx = term->stdin->write_index;
+	}
+    } 
 }
   
