@@ -193,7 +193,7 @@ function *newfunction()
   f->fun = 0;
 }
 
-stream *newstream(uint sz)
+stream *newstream(unsigned int sz)
 {
   stream *str = malloc(sizeof(stream));
   str->type = (cons*)STREAM;
@@ -975,7 +975,7 @@ base_char *read_char(stream *str)
 {/* Read a character from a stream. (See stream implementation documentation in 
   * lisp.h for a better understanding.)
   */
-  base_char *to_ret = (base_char*)str->rv->a[0][str->read_index];
+  base_char *c = (base_char*)str->rv->a[0][str->read_index];
 
   if ((str->read_index == str->write_index) &&
       (str->rv == str->wv))
@@ -984,24 +984,27 @@ base_char *read_char(stream *str)
      */
     return (base_char*)nil;
   else if (str->read_index < str->rv->length->num)
-    /* If the stream has not yet reached the end of the current vector, 
-     * increment the index. The read character will be returned.
-     */
+    {/* If the stream has not yet reached the end of the current vector, 
+      * increment the index. The read character will be returned.
+      */
       str->read_index++;
+    }
   else if (str->rv->next != 0)
     {/* If the stream has reached the end of the vector, and the vector
       * is extended, move to the next vector. The read character will be 
       * returned.
       */
       str->rv = str->rv->next;
-      str->read_index = 0;
+      str->read_index = 1;
+      c = (base_char*)str->rv->a[0][0];
+      return c;
     }
   else
     /* If the stream has dried up, and there is no more, return nil.
      */
     return (base_char*)nil;
 
-  return to_ret;
+  return c;
 }
 
 base_char *peek_char(stream *str)
@@ -1046,12 +1049,12 @@ cons *write_char(base_char *c, stream *str)
   */
   if (str->wv == 0)
     {
-      str->wv = newsimple_vector(128);
+      str->wv = newsimple_vector(DEFAULT_VECTOR_SIZE);
       str->rv = str->wv;
       str->read_index = 0;
       str->write_index = 0;
     }
-  if (str->write_index < str->wv->length->num)
+  else if (str->write_index < str->wv->length->num)
     {/* If the stream's write-vector hasn't been exhausted, append the
       * character, and increment the write index.
       */
@@ -1062,8 +1065,8 @@ cons *write_char(base_char *c, stream *str)
     {/* If the stream's write-vector has been exhausted, append a new
       * vector, and add the character.
       */
-      str->wv = newsimple_vector(128);
-      str->rv->next = str->wv;
+      str->wv->next = newsimple_vector(DEFAULT_VECTOR_SIZE);
+      str->wv = str->wv->next;
       str->wv->a[0][0] = (cons*)c;
       str->write_index = 1;
     }
@@ -1082,7 +1085,7 @@ void test(procinfo *proc)
   
   cons *hope = eval(exp, env);
 
-  stream *str = newstream();
+  stream *str = newstream(0);
   
   str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
   str->write_index = 19;
@@ -1097,6 +1100,11 @@ void test(procinfo *proc)
   str->write_index = 4;
 
   cons *snazzy = read(str, env);
+  cons *shiny = eval(snazzy, env);
+  
+  str = newstream(0);
+  typep(shiny, fixnum_s);
+  badprint(shiny, str);
 }
 
 int main ()

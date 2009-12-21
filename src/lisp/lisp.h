@@ -12,6 +12,7 @@
 #define LISP_H
 
 #define HASH_TABLE_SIZE 255
+#define DEFAULT_VECTOR_SIZE 255
 
 /* These are predefined typecodes that aren't legal address values for basic 
  * predefined types. Anything in an object's type field that isn't one of these 
@@ -272,8 +273,8 @@ typedef struct stream
 {
   struct cons *type;
   struct cons *plist;
-  int read_index;
-  int write_index;
+  unsigned int read_index;
+  unsigned int write_index;
   struct array *rv;//read vector
   struct array *wv;//write vector
 }__attribute__((packed)) stream;
@@ -310,7 +311,7 @@ extern hash_table *newhash_table(int length, function *eq_fun);
 extern package *newpackage();
 extern compiled_function *newcompiled_function();
 extern function *newfunction();
-extern stream *newstream(uint sz)
+extern stream *newstream(unsigned int sz);
 extern base_char *ctolc(char c);
 extern array *strtolstr(char *str);
 extern cons *null (cons *a);
