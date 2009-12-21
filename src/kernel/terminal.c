@@ -12,7 +12,7 @@ lisp_terminal *newlisp_terminal()
   int i;
   lisp_terminal *term = malloc(sizeof(lisp_terminal));
   current_terminal = term;
-  term->stdin = newstream(5);
+  term->stdin = newstream(255);
   term->stdout = newstream(255);
   term->screen = malloc(sizeof(sw_screen));
   
@@ -41,17 +41,52 @@ cons *termmain(lisp_terminal *term)
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
   test(proc);
+  term->screen->fgattrib = CYAN;
   putchar('L', term->screen);
   putchar('I', term->screen);
   putchar('S', term->screen);
   putchar('P', term->screen);
+  putchar('\n', term->screen);
+  term->screen->fgattrib = WHITE;
   cursor(term->screen->x, term->screen->y);
   int idx = term->stdin->write_index;
+  int paren_levels = 0;
   base_char *c;
   while (1)
     {
-      if (idx == term->stdin->write_index)
-	continue;
+      stream *tolisp = newstream(255);
+
+      while (1)
+	{
+	  if (idx == term->stdin->write_index)
+	    continue;
+	  while (1)
+	    {
+	      c = read_char(term->stdin);
+	      if (c == (base_char*)nil)
+		break;
+	      write_char(c, tolisp);
+	      putchar(c->c, term->screen);
+	      cursor(term->screen->x, term->screen->y);
+	      idx = term->stdin->write_index;
+	      if (c->c == '(')
+		paren_levels++;
+	      else if (c->c == ')')
+		paren_levels--; 
+	      else if (c->c == '\n')
+		break;
+	    }
+	  if (paren_levels == 0)
+	    break;
+	}
+      putchar('\n', term->screen);
+      
+      cons *exp = read(tolisp, env);
+      cons *value = eval(exp, env);
+      
+      stream *fromlisp = newstream(128);
+      badprint(value, fromlisp);
+
       while (1)
 	{
 	  c = read_char(term->stdin);
@@ -59,8 +94,8 @@ cons *termmain(lisp_terminal *term)
 	    break;
 	  putchar(c->c, term->screen);
 	  cursor(term->screen->x, term->screen->y);
-	  idx = term->stdin->write_index;
 	}
-    } 
+    }
+  for(;;);
 }
-  
+ 

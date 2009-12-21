@@ -14,9 +14,8 @@ base_char *local_keymap_shift[128];
 
 static void kbd_handler(struct registers);
 
-int special_key(char scancode, char press_or_release)
+int special_key(uchar c, char press_or_release)
 {
-  uchar c = keymap[scancode];
   switch (c)
     {/* If the key (high bit stripped) is a status key, 
       * set its status in the keyboard structure.
@@ -58,19 +57,25 @@ static void kbd_handler(struct registers regs)
   if (scancode & 0x80)
     {
       scancode ^= 0x80;
-      special_key(scancode, 0);
+      uchar c = keymap[scancode];
+      special_key(c, 0);
     }
 	
   else //A key was just pressed.
     {
       int i = 1;
       c = keymap[scancode];
-      if (special_key(c, 1) == 1)
+      //putchar('!', current_terminal->screen);
+      if (special_key(c, 1) > 0)
 	return;
-      if (c >= ' ')
+      if ((c > '~'))
+	return;
+      
+      if ((kbd.status.rshift > 0) ||
+	  (kbd.status.lshift > 0))
+	write_char(local_keymap_shift[scancode], current_terminal->stdin);
+      else 
 	write_char(local_keymap[scancode], current_terminal->stdin);
-      putchar('!', current_terminal->screen);
-      //cursor(current_terminal->screen->x, current_terminal->screen->y);
     }
 }
 
