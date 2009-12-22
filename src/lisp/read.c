@@ -73,8 +73,8 @@ cons *read_token(stream *str, cons *env)
 
   while (1)
     {
-      c = read_char(str);
       rtcase = (symbol*)assoc((cons*)readtable_case, (cons*)readtable)->cdr;
+      c = read_char(str);     
       c = manipulate_case(c, rtcase);
       plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
