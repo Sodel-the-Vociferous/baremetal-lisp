@@ -17,6 +17,11 @@ extern package *cl_pkg;
 extern package *cl_user_pkg;
 
 /*Keywords*/
+extern symbol *readtable_case;
+extern symbol *upcase;
+extern symbol *downcase;
+extern symbol *preserve;
+extern symbol *invert;
 //Symbol attributes
 extern symbol *internal;
 extern symbol *external;

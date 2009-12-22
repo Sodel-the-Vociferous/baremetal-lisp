@@ -93,7 +93,7 @@ cons *ladd(cons *env)
   fixnum *num = newfixnum(0);
   for(foo=args; foo!=nil; foo=foo->cdr)
     num->num += ((fixnum*)foo->car)->num;
-  return num;
+  return (cons*)num;
 }
 
 cons *lsubtract(cons *env)
@@ -101,10 +101,23 @@ cons *lsubtract(cons *env)
   cons *args = eval((cons*)args_s, env);
   cons *foo;
 
-  fixnum *num = newfixnum(0);
-  for(foo=args; foo!=nil; foo=foo->cdr)
+  fixnum *num;
+
+  if (args->cdr == nil)
+    {
+      num = newfixnum(0);
+      foo = args;
+    }
+  else
+    {
+      fixnum *first = (fixnum*)args->car;
+      num = newfixnum(first->num);
+      foo = args->cdr;
+    }
+  
+  for(foo; foo!=nil; foo=foo->cdr)
     num->num -= ((fixnum*)foo->car)->num;
-  return num;
+  return (cons*)num;
 }
 
 cons *lmultiply(cons *env)
@@ -115,7 +128,7 @@ cons *lmultiply(cons *env)
   fixnum *num = newfixnum(1);
   for(foo=args; foo!=nil; foo=foo->cdr)
     num->num *= ((fixnum*)foo->car)->num;
-  return num;
+  return (cons*)num;
 }
 
 /* Environment operators */
@@ -272,6 +285,7 @@ cons *lsetq(cons *env)
 {
   symbol *s = (symbol*)eval((cons*)symbol_s, env);
   cons *value = eval((cons*)value_s, env);
+  value = eval(value, env);
   cons *binding = env->cdr; /* current environment node */
 
   while (binding!=nil)

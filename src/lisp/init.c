@@ -29,6 +29,11 @@ package *cl_pkg;
 package *cl_user_pkg;
 
 /* Keywords */
+symbol *readtable_case;
+symbol *upcase;
+symbol *downcase;
+symbol *preserve;
+symbol *invert;
 /* Symbol attributes */
 symbol *internal;
 symbol *external;
@@ -424,6 +429,13 @@ void init_keyword_pkg()
   alphadigit = initsym("ALPHADIGIT", keyword_pkg);
   package_marker = initsym("PACKAGE-MARKER", keyword_pkg);
   dot = initsym("DOT", keyword_pkg);
+  plus_sign = initsym("PLUS-SIGN", keyword_pkg);
+
+  readtable_case = initsym("READTABLE-CASE", keyword_pkg);
+  upcase = initsym("UPCASE", keyword_pkg);
+  downcase = initsym("DOWNCASE", keyword_pkg);
+  preserve = initsym("PRESERVE", keyword_pkg);
+  invert = initsym("INVERT", keyword_pkg);
 }
 
 void init_cl_pkg()
@@ -690,6 +702,7 @@ void init_read_funs()
   readtable = init_char_traits(whitespaces, (cons*)whitespace, t, readtable);
   readtable = init_char_traits(constituents, (cons*)constituent, t, readtable);
   readtable = init_char_trait('.', (cons*)dot, t, readtable);
+  readtable = init_char_trait('+', (cons*)plus_sign, t, readtable);
   /* Terminating Macro Characters */
   readtable = init_char_trait('(', (cons*)terminating_macro, (cons*)read_list_s, readtable);
   readtable = init_char_trait(')', (cons*)terminating_macro, t, readtable);
@@ -708,6 +721,7 @@ void init_read_funs()
   readtable = init_char_traits(alphadigits, (cons*)alphadigit, t, readtable);
   readtable = init_char_trait(':', (cons*)package_marker, t, readtable);
 
+  readtable = setassoc((cons*)readtable_case, (cons*)upcase, readtable);
   readtable_s->value = readtable;
 }
 

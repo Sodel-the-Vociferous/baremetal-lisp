@@ -8,6 +8,45 @@
 #include "lisp.h"
 #include "init.h"
 
+base_char *manipulate_case(base_char *c, symbol *rtcase)
+{
+  if ((rtcase == upcase)&&
+      (c->c >= 'a') &&
+      (c->c <= 'z'))
+    {
+      char cc = c->c;
+      c = newbase_char();
+      c->c = cc - 'a' + 'A';
+    }
+  else if ((rtcase == downcase)&&
+	   (c->c >= 'A') &&
+	   (c->c <= 'Z'))
+    {
+      char cc = c->c;
+      c = newbase_char();
+      c->c = cc - 'A' + 'a';
+    }
+  else if (rtcase == invert)
+    {
+      if
+	((c->c >= 'a') &&
+	 (c->c <= 'z'))
+	{
+	  char cc = c->c;
+	  c = newbase_char();
+	  c->c = cc - 'a' + 'A';
+	}
+      else if  ((c->c >= 'A') &&
+		(c->c <= 'Z'))
+	{
+	  char cc = c->c;
+	  c = newbase_char();
+	  c->c = cc - 'A' + 'a';
+	}
+    }
+  return c;
+}
+
 cons *read_token(stream *str, cons *env)
 {/* CLHS 2.2 Step 8
   */
@@ -30,10 +69,13 @@ cons *read_token(stream *str, cons *env)
   cons *foo;
   char base = ((fixnum*)read_base_s->value)->num;
   cons *plist;
+  symbol *rtcase;
 
   while (1)
     {
       c = read_char(str);
+      rtcase = (symbol*)assoc((cons*)readtable_case, (cons*)readtable)->cdr;
+      c = manipulate_case(c, rtcase);
       plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
       if (c == (base_char*)nil)
@@ -62,11 +104,13 @@ cons *read_token(stream *str, cons *env)
 	    }
 	  
 	  c = read_char(str);
+	  c = manipulate_case(c, rtcase);
 	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 
 	  if (null(assoc((cons*)package_marker, plist)->cdr) == nil) 
 	    {
 	      read_char(str);
+	      c = manipulate_case(c, rtcase);
 	      external_required = 0;
 	    }
 	}
@@ -158,6 +202,13 @@ cons *read_token(stream *str, cons *env)
 	 * interpreter's code.
 	 */
 	return (cons*)0xbad9;//TODO error
+
+      if (null(assoc((cons*)alphadigit, plist)->cdr) == t)
+	{
+	  f.type = (cons*)0;
+	  b.type = (cons*)0;
+	  s.type = (cons*)0;
+	}
 
       if (f.type != (cons*)0)
 	{
