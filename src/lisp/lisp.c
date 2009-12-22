@@ -762,16 +762,16 @@ cons *eval(cons *exp, cons *env)
 	 */
 	return 0;//TODO error, not a function
     }
-  else if (typep(exp, list_s) == nil)
+  else
     /* An other valid input must be self-evaluating.
      */
     return exp;
 
-  else
-    /* Because I am the mighty programmer, anything I have not anticipated must 
-     * be wrong. Throw an error, because it's not a valid expression.
-     */
-    return 0;//TODO should be error
+  /* else */
+  /*   /\* Because I am the mighty programmer, anything I have not anticipated must  */
+  /*    * be wrong. Throw an error, because it's not a valid expression. */
+  /*    *\/ */
+  /*   return 0;//TODO should be error */
 }
 
 /* Creates a new lexical environment level. New lexical bindings will be pushed 
@@ -1054,7 +1054,7 @@ cons *write_char(base_char *c, stream *str)
       str->read_index = 0;
       str->write_index = 0;
     }
-  else if (str->write_index < str->wv->length->num)
+  if (str->write_index < str->wv->length->num)
     {/* If the stream's write-vector hasn't been exhausted, append the
       * character, and increment the write index.
       */
@@ -1096,7 +1096,8 @@ void test(procinfo *proc)
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
-  str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
+  //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
+  str->rv = strtolstr("8");
   str->write_index = 4;
 
   cons *snazzy = read(str, env);

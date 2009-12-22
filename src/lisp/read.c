@@ -185,8 +185,7 @@ cons *read_token(stream *str, cons *env)
     }
   if (f.type != (cons*)0)
     {
-      foo = (cons*)newfixnum(0);
-      *(fixnum*)foo = f;
+      foo = (cons*)newfixnum(f.num);
     }
   else
     {
