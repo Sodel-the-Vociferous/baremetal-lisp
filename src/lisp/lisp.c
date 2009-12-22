@@ -451,17 +451,26 @@ cons *stringeq(array *a, array *b)
   long ai=0;
   long bi=0;
   if (a==b)
+    /* If they are literally the same object, it's obvious that they are equal.
+     */
     return t;
   else if (a->type != b->type)
+    /* If they are of unequal types, they are not equal.
+     */
+    //This might be changed, if extended-characters are added.
     return nil;
   else if (((a->type <= (cons*)BUILT_IN_CLASS) &&
 	    (a->type == (cons*)STRING)))
-    {
+    {/* If they are string objects, compare them. Note that the slightly odd 
+      * test is compatible with initialization.
+      */
       while(1)
 	{
 	  while((ai < a->length->num) &&
 		(bi < b->length->num))
-	    {
+	    {/* While the string is not "empty", compare the current characters.
+	      * If they are not equal, return nil; otherrwise, continue.
+	      */
 	      if (chareq((base_char*)a->a[0][ai], (base_char*)b->a[0][bi]) == nil)
 		return nil;
 	      else
@@ -470,6 +479,8 @@ cons *stringeq(array *a, array *b)
 		  bi++;
 		}
 	    }
+	  /* If there are extensions to either string, follow them.
+	   */
 	  if (a->next != 0)
 	    {
 	      ai = 0;
@@ -480,8 +491,11 @@ cons *stringeq(array *a, array *b)
 	      bi = 0;
 	      b = b->next;
 	    }
-	  else if ((ai >= a->length->num) &&
-		   (bi >= b->length->num))
+	  if ((ai >= a->length->num) &&
+	      (bi >= b->length->num))
+	    /* If there are no further extensions, and both strings are empty, 
+	     * they must be equal.
+	     */ 
 	    return t;
 	  else
 	    return nil;
@@ -527,8 +541,11 @@ cons *stringequal(array *a, array *b)
 	      bi = 0;
 	      b = b->next;
 	    }
-	  else
+	  else if ((ai >= a->length->num) &&
+		   (bi >= b->length->num))
 	    return t;
+	  else
+	    return nil;
 	}
     }
   else
@@ -1097,8 +1114,8 @@ void test(procinfo *proc)
 
   str->read_index = 0;
   //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
-  str->rv = strtolstr("8");
-  str->write_index = 4;
+  str->rv = strtolstr("(SETQ X :A)");
+  str->write_index = 1;
 
   cons *snazzy = read(str, env);
   cons *shiny = eval(snazzy, env);

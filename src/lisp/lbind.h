@@ -18,6 +18,10 @@ extern cons *lcdr(cons *env);
 extern cons *lrplacd(cons *env);
 extern cons *llist(cons *env);
 
+extern cons *ladd(cons *env);
+extern cons *lsubtract(cons *env);
+extern cons *lmultiply(cons *env);
+
 extern cons *lintern(cons *env);
 extern cons *lfind_package(cons *env);
 extern cons *lfind_class(cons *env);

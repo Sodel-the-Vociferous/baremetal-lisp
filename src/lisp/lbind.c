@@ -84,9 +84,39 @@ cons *llist(cons *env)
 
 /*Mathematics*/
 //TODO does not yet support bignums.
-//TODO add math functions.
+//TODO only quick-and-dirty
+cons *ladd(cons *env)
+{
+  cons *args = eval((cons*)args_s, env);
+  cons *foo;
 
+  fixnum *num = newfixnum(0);
+  for(foo=args; foo!=nil; foo=foo->cdr)
+    num->num += ((fixnum*)foo->car)->num;
+  return num;
+}
 
+cons *lsubtract(cons *env)
+{
+  cons *args = eval((cons*)args_s, env);
+  cons *foo;
+
+  fixnum *num = newfixnum(0);
+  for(foo=args; foo!=nil; foo=foo->cdr)
+    num->num -= ((fixnum*)foo->car)->num;
+  return num;
+}
+
+cons *lmultiply(cons *env)
+{
+  cons *args = eval((cons*)args_s, env);
+  cons *foo;
+
+  fixnum *num = newfixnum(1);
+  for(foo=args; foo!=nil; foo=foo->cdr)
+    num->num *= ((fixnum*)foo->car)->num;
+  return num;
+}
 
 /* Environment operators */
 cons *lintern(cons *env)

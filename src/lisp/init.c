@@ -102,6 +102,9 @@ symbol *body_s;/* &body */
 symbol *allow_other_keys_s;/* &allow-other-keys */
 /* Mathematic Function Names */
 symbol *numberp_s;
+symbol *plus_sign_s;
+symbol *minus_sign_s;
+symbol *asterisk_s;
 /* List function names */
 symbol *car_s;/* CAR symbol */
 symbol *cdr_s;/* CDR symbol */
@@ -509,7 +512,7 @@ void init_list_funs()
 		   fcons((cons*)list_s,
 			 nil),
 		   cl_pkg,
-		   &lcar);
+		   &lcdr);
   rplaca_s = initcfun("RPLACA",
 		      fcons((cons*)cons_s,
 			    fcons((cons*)a_s, 
@@ -543,6 +546,24 @@ void init_number_funs()
 			     nil),
 		       cl_pkg,
 		       &lnumberp);
+  plus_sign_s = initcfun("+",
+			 fcons((cons*)rest_s,
+			       fcons((cons*)args_s,
+				     nil)),
+			 cl_pkg,
+			 &ladd);
+  minus_sign_s = initcfun("-",
+			  fcons((cons*)rest_s,
+				fcons((cons*)args_s,
+				      nil)),
+			  cl_pkg,
+			  &lsubtract);
+  asterisk_s = initcfun("*",
+			fcons((cons*)rest_s,
+			      fcons((cons*)args_s,
+				    nil)),
+			cl_pkg,
+			&lmultiply);
 }
 
 void init_eq_funs()
@@ -709,6 +730,7 @@ void init_set_funs()
 				       nil))),
 		     cl_pkg,
 		     &ldefun);
+  defun_s->fun->plist = setassoc((cons*)special_operator, t, defun_s->plist);
 
   setq_s = initcfun("SETQ",
 		    fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
@@ -717,6 +739,7 @@ void init_set_funs()
 			
 		    cl_pkg,
 		    &lsetq);
+  setq_s->fun->plist = setassoc((cons*)special_operator, t, setq_s->plist);
 }
 
 void init_types()
