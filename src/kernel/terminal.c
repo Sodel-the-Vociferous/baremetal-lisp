@@ -25,35 +25,28 @@ lisp_terminal *newlisp_terminal()
   return term;
 }
 
-base_char *termread_char(stream *str)
-{
-  base_char *c;
-  do 
-    {
-      c = read_char(str);
-    } while (c == (base_char*)nil);
-  return c;
-}
-
 cons *termmain(lisp_terminal *term)
 {
   procinfo *proc = init();
   cons *env = extend_env(nil);
   env->car = (cons*)proc;
   test(proc);
-  term->screen->fgattrib = CYAN;
-  putchar('L', term->screen);
-  putchar('I', term->screen);
-  putchar('S', term->screen);
-  putchar('P', term->screen);
-  putchar('\n', term->screen);
-  term->screen->fgattrib = WHITE;
   cursor(term->screen->x, term->screen->y);
   int idx = term->stdin->write_index;
   int paren_levels = 0;
   base_char *c;
   while (1)
     {
+      term->screen->fgattrib = GREEN;
+      putchar('L', term->screen);
+      putchar('I', term->screen);
+      putchar('S', term->screen);
+      putchar('P', term->screen);
+      putchar('>', term->screen);
+      putchar(' ', term->screen);
+      cursor(term->screen->x, term->screen->y);
+      term->screen->fgattrib = WHITE;
+
       stream *tolisp = newstream(255);
 
       while (1)
@@ -76,7 +69,8 @@ cons *termmain(lisp_terminal *term)
 	      else if (c->c == '\n')
 		break;
 	    }
-	  if (paren_levels == 0)
+	  if ((paren_levels == 0) &&
+	      (c->c == '\n'))
 	    break;
 	}
       putchar('\n', term->screen);
@@ -89,12 +83,13 @@ cons *termmain(lisp_terminal *term)
 
       while (1)
 	{
-	  c = read_char(term->stdin);
+	  c = read_char(fromlisp);
 	  if (c == (base_char*)nil)
 	    break;
 	  putchar(c->c, term->screen);
 	  cursor(term->screen->x, term->screen->y);
 	}
+      putchar('\n', term->screen);
     }
   for(;;);
 }
