@@ -934,7 +934,31 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
 	  else
 	    return 0;//TODO error
 
-	  envbind(varsym, args, env);
+	  cons *rest_list;
+	  if (args == nil)
+	    rest_list = nil;
+	  else
+	    {
+	      rest_list = newcons();
+	      cons *param = args;
+	      cons *foo = rest_list;
+	      if (evaluate == t)
+		foo->car = eval(param->car, env);
+	      else
+		foo->car = param->car;
+	      param = param->cdr;
+	      while(param != nil)
+		{
+		  foo->cdr = newcons();
+		  foo = foo->cdr;
+		  if (evaluate == t)
+		    foo->car = eval(param->car, env);
+		  else
+		    foo->car = param->car;
+		  param = param->cdr;
+		}
+	    }
+	  envbind(varsym, rest_list, env);
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
 	}
