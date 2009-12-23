@@ -753,10 +753,10 @@ cons *eval(cons *exp, cons *env)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
-	    newenv = evalambda_special(f->lambda_list, exp->cdr, newenv);
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, env);
 	  else
-	    newenv = evalambda(f->lambda_list, exp->cdr, newenv);
-	  return eval(f->fun, evalambda(f->lambda_list, exp->cdr, newenv));
+	    newenv = evalambda(f->lambda_list, exp->cdr, env);
+	  return eval(f->fun, newenv);
 	}
       else if (type_of((cons*)f) == compiled_function_s->class)
 	{/* If the function is compiled, do exactly the same. Except, call the 
@@ -768,9 +768,9 @@ cons *eval(cons *exp, cons *env)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
-	    newenv = evalambda_special(f->lambda_list, exp->cdr, newenv);
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, env);
 	  else
-	    newenv = evalambda(f->lambda_list, exp->cdr, newenv);
+	    newenv = evalambda(f->lambda_list, exp->cdr, env);
 	  return cf->fun(newenv);
 	}
       else
