@@ -1138,7 +1138,7 @@ void test(procinfo *proc)
 
   str->read_index = 0;
   //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
-  str->rv = strtolstr("(cons 1 2)");
+  str->rv = strtolstr("(list 1 (list 3 4) 5)");
   str->write_index = 1;
 
   cons *snazzy = read(str, env);

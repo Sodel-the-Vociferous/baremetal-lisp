@@ -345,7 +345,11 @@ cons *read_list(stream *str,  base_char *c, cons *env)
 	  c = peek_char(str);
 	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 	  while (null(assoc((cons*)whitespace, plist)->cdr) == nil)
-	    read_char(str);
+	    {
+	      read_char(str);
+	      c = peek_char(str);
+	      plist = assoc((cons*)c, (cons*)readtable)->cdr;
+	    }
 	  if (null(assoc((cons*)dot, plist)->cdr) == nil)
 	    {
 	      foo = read(str, env);
