@@ -10,6 +10,7 @@
 #define CASE_DIFFERENCE = 32
 
 extern cons *basic_classes[];
+extern cons *basic_env;
 
 /*Packages*/
 extern package *keyword_pkg;
@@ -121,6 +122,7 @@ extern symbol *args_s;
 extern symbol *a_s;
 extern symbol *b_s;
 extern symbol *value_s;
+extern symbol *clauses_s;
 
 extern symbol *setq_s;
 #endif

@@ -28,7 +28,7 @@
 
 /* Internal Function Declarations */
 cons *subtypep(cons *object, cons *objtype, symbol *type);
-cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate);
+cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, cons *evaluate);
 
 cons t_phys;
 cons nil_phys;
@@ -753,9 +753,9 @@ cons *eval(cons *exp, cons *env)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
-	    newenv = evalambda_special(f->lambda_list, exp->cdr, env);
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, env, newenv);
 	  else
-	    newenv = evalambda(f->lambda_list, exp->cdr, env);
+	    newenv = evalambda(f->lambda_list, exp->cdr, env, newenv);
 	  return eval(f->fun, newenv);
 	}
       else if (type_of((cons*)f) == compiled_function_s->class)
@@ -768,9 +768,9 @@ cons *eval(cons *exp, cons *env)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
 	     */
-	    newenv = evalambda_special(f->lambda_list, exp->cdr, env);
+	    newenv = evalambda_special(f->lambda_list, exp->cdr, env, newenv);
 	  else
-	    newenv = evalambda(f->lambda_list, exp->cdr, env);
+	    newenv = evalambda(f->lambda_list, exp->cdr, env, newenv);
 	  return cf->fun(newenv);
 	}
       else
@@ -819,22 +819,21 @@ cons *envbind(symbol *sym, cons *value, cons *env)
   return env;
 }
 
-cons *evalambda(cons *lambda_list, cons *args, cons *env)
+cons *evalambda(cons *lambda_list, cons *args, cons *oldenv, cons *env)
 {
-  return evalambda_base(lambda_list, args, env, t);
+  return evalambda_base(lambda_list, args, oldenv, env, t);
 }
 
-cons *evalambda_special(cons *lambda_list, cons *args, cons *env)
+cons *evalambda_special(cons *lambda_list, cons *args, cons *oldenv, cons *env)
 {
-  return evalambda_base(lambda_list, args, env, nil);
+  return evalambda_base(lambda_list, args, oldenv, env, nil);
 }
 
-cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
+cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, cons *evaluate)
 {/* Lexically bind a set of arguments to variable names defined in a lambda 
   * list.
   */
   //NOTE: "Someone, please tidy me." :'( "I'm so messy!"
-  cons *oldenv = env;
   cons *binding;
   cons *foo;
   array *varname;
@@ -850,7 +849,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
       */
       varsym = (symbol*)lambda_list->car;
       if (evaluate == t)
-	envbind(varsym, eval(args->car, env), env);
+	envbind(varsym, eval(args->car, oldenv), env);
       else
 	envbind(varsym, args->car, env);
       
@@ -907,7 +906,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
 	    {
 	      varsym = (symbol*)lambda_list->car->car;
 	      if (evaluate == t)
-		envbind(varsym, eval(lambda_list->car->cdr, env), env);
+		envbind(varsym, eval(lambda_list->car->cdr, oldenv), env);
 	      else
 		envbind(varsym, lambda_list->car->cdr, env);
 	      lambda_list = lambda_list->cdr;
@@ -943,7 +942,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
 	      cons *param = args;
 	      cons *foo = rest_list;
 	      if (evaluate == t)
-		foo->car = eval(param->car, env);
+		foo->car = eval(param->car, oldenv);
 	      else
 		foo->car = param->car;
 	      param = param->cdr;
@@ -952,7 +951,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *env, cons *evaluate)
 		  foo->cdr = newcons();
 		  foo = foo->cdr;
 		  if (evaluate == t)
-		    foo->car = eval(param->car, env);
+		    foo->car = eval(param->car, oldenv);
 		  else
 		    foo->car = param->car;
 		  param = param->cdr;
@@ -1119,7 +1118,7 @@ extern cons *initread(stream *str, cons *env);
 void test(procinfo *proc)
 {
   /*Tests*/
-  cons *env = extend_env(nil);
+  cons *env = basic_env;
   env->car = (cons*)proc;
 
   cons *exp = fcons((cons*)cons_s, fcons((cons*)external, fcons((cons*)internal, nil)));			  

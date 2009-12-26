@@ -149,6 +149,7 @@ symbol *object_s;
 symbol *a_s;
 symbol *b_s;
 symbol *exp_s;
+symbol *clauses_s;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -470,6 +471,7 @@ void init_cl_pkg()
   args_s = initintsym("ARGS", cl_pkg);
   exp_s = initintsym("EXP", cl_pkg);
   value_s = initintsym("VALUE", cl_pkg);
+  clauses_s = initintsym("CLAUSES", cl_pkg);
 
   /* Read-control variables */
   read_base_s = initsym("*READ-BASE*", cl_pkg);
@@ -636,10 +638,12 @@ void init_eval_funs()
 			  nil),
 		    cl_pkg,
 		    &lcond);
+  cond_s->fun->plist = setassoc((cons*)special_operator, t, cond_s->plist);
 }
 
 void init_env_funs()
 {
+  //TODO String reader macro so I can actually use these two.
   find_package_s = initcfun("FIND-PACKAGE",
 			    fcons((cons*)string_s,
 				  nil),
@@ -660,6 +664,7 @@ void init_special_operators()
 			   nil),
 		     cl_pkg,
 		     &lquote);
+
   quote_s->fun->plist = setassoc((cons*)special_operator, t, quote_s->plist);
 }
 

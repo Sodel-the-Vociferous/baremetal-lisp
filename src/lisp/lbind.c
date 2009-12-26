@@ -210,22 +210,24 @@ cons *lhash (cons *env)
 /*Flow control*/
 cons *lcond(cons *env)
 {
-  cons *clauses = lookup("CLAUSES", env);
+  cons *clauses = eval((cons*)clauses_s, env);
   cons *clause = clauses;
   while (1)
     {
-      if (eval(clause->car->car, env) != nil)
+      if (clause == nil)
+	return 0;//TODO error
+      else if (eval(clause->car->car, env) != nil)
 	return eval(clause->car->cdr, env);
       else
 	clause = clause->cdr;
     }
-  return 0;//ERROR!
+  return 0;//TODO ERROR!
 }
 
 /*Evaluation*/
 cons *leval(cons *env)
 {
-  cons *exp = lookup("EXP", env);
+  cons *exp = eval((cons*)exp_s, env);
   return eval(exp, env);
 }
 
