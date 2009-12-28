@@ -37,6 +37,8 @@ extern cons *lequal (cons *env);
 
 extern cons *lhash (cons *env);
 
+extern cons *llet(cons *env);
+extern cons *llet_star(cons *env);
 extern cons *lsetq(cons *env);
 
 extern cons *lcond (cons *env);

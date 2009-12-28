@@ -13,6 +13,8 @@
 #include "init.h"
 #include "lbind.h"
 
+cons *llet_base(cons *env, int parallelp);
+
 //Major TODO typechecking
 
 /*Predicates*/
@@ -83,8 +85,9 @@ cons *llist(cons *env)
 }  
 
 /*Mathematics*/
-//TODO does not yet support bignums.
+//TODO support bignums.
 //TODO only quick-and-dirty
+//TODO division
 cons *ladd(cons *env)
 {
   cons *args = eval((cons*)args_s, env);
@@ -233,7 +236,7 @@ cons *leval(cons *env)
 
 cons *lprogn(cons *env)
 {
-  cons *body = lookup("body", env);
+  cons *body = lookup("BODY", env);
   cons *to_ret;
   for(body;body!=nil;body=body->cdr)
     to_ret = eval(body->car, env);
@@ -281,6 +284,90 @@ cons *lread_list(cons *env)
   stream *str = (stream*)eval((cons*)list_s, env);
   base_char *c = (base_char*)eval((cons*)character_s, env);
   return read_list(str, c, env);
+}
+
+cons *llet_base(cons *env, int parallelp)
+{//TODO declarations
+  cons *oldenv = env;
+  cons *body = lookup("BODY", env);
+  symbol *sym;
+  cons *value;
+  cons *varforms = body->car;
+  cons *evalforms = body->cdr;
+  cons *form;
+  cons *to_ret;
+  cons *old_dbindings = nil;
+
+  if (parallelp == 1)
+    /* If variables are to be assigned in parallel (let...), separate the old 
+     * and new environments. If the bindings are sequential (let*...), no such 
+     * separation is needed, as a variable's initial value can refer to 
+     * bindings previously made during this "instance" of (let*...).
+     */
+    env = extend_env(env);
+
+  for(form=varforms; form!=nil; form=form->cdr)
+    {/* For each symbol or symbol-value pair:
+      */
+      if (typep(form->car, symbol_s) == t)
+	{/* If the form is a symbol, bind it to nil.
+	  */
+	  sym = (symbol*)form->car;
+	  value = nil;
+	}
+      else if ((typep(form->car, list_s) == t) &&
+	       (typep(form->car->car, symbol_s) == t))
+	{/* If the form is a symbol-value pair (that is, a two-item list: first
+	  * the symbol, then the value), bind the symbol to the value.
+	  */
+	  sym = (symbol*)form->car->car;
+	  value = eval(form->car->cdr->car, oldenv);
+	}
+      else
+	/* If it is neither of these, throw an error.
+	 */
+	return 0;//TODO error
+
+      if (assoc((cons*)special, sym->plist)->cdr != nil)
+	{/* If the variable is special, save its current dynamic binding, and
+	  * set the new dynamic value.
+	  */
+	  old_dbindings = fcons(fcons((cons*)sym, sym->value), 
+				old_dbindings);
+	  sym->value = value;
+	}
+      else
+	/* Otherwise, bind the variable lexically.
+	 */
+	envbind(sym, value, env);
+    }
+
+  for(form=evalforms; form!=nil; form=form->cdr)
+    /* Evaluate each constituent form similarly to progn, and store the value of
+     * the final evaluation.
+     */
+    to_ret = eval(form->car, env);
+  
+  for(form=old_dbindings; form!=nil; form=form->cdr)
+    {/* Restore any old dynamic bindings.
+      */
+      sym = (symbol*)form->car->car;
+      value = form->car->cdr;
+
+      sym->value = value;
+    }
+
+  return to_ret;
+}
+
+cons *llet(cons *env)
+{
+  return llet_base(env, 1);
+}
+
+cons *llet_star(cons *env)
+{
+  return llet_base(env, 0);
 }
 
 cons *lsetq(cons *env)

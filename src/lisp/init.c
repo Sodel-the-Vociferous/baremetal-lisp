@@ -119,9 +119,10 @@ symbol *list_s;/* LIST symbol */
 /* Special operators */
 symbol *quote_s;/* QUOTE symbol */
 /* Assignment Operator names */
-symbol *intern_s;
 symbol *defun_s;
 symbol *setq_s;
+symbol *let_s;
+symbol *let_star_s;
 /* Equality Function Names */
 symbol *chareq_s;
 symbol *charequal_s;
@@ -132,9 +133,11 @@ symbol *eql_s;
 symbol *equal_s;
 symbol *equalp_s;
 /* Evaluation Function Names */
+symbol *progn_s;
 symbol *eval_s;
 symbol *cond_s;
 /* Environment Function Names */
+symbol *intern_s;
 symbol *find_package_s;
 symbol *find_class_s;
 /* Reader function names */
@@ -627,6 +630,13 @@ void init_eq_funs()
 
 void init_eval_funs()
 {
+  progn_s = initcfun("PROGN",
+		     fcons((cons*)intern(strtolstr("BODY"), cl_pkg),
+			   nil),
+		     cl_pkg,
+		     &lprogn);
+  progn_s->fun->plist = setassoc((cons*)special_operator, t, progn_s->plist);
+
   eval_s = initcfun("EVAL",
 		    fcons((cons*)exp_s,
 			  nil),
@@ -759,6 +769,22 @@ void init_set_funs()
 		    cl_pkg,
 		    &lsetq);
   setq_s->fun->plist = setassoc((cons*)special_operator, t, setq_s->plist);
+
+  let_s = initcfun("LET",
+		   fcons((cons*)rest_s,
+			 fcons((cons*)intern(strtolstr("BODY"), cl_pkg),
+			       nil)),
+		   cl_pkg,
+		   &llet);
+  let_s->fun->plist = setassoc((cons*)special_operator, t, let_s->plist);
+
+  let_star_s = initcfun("LET*",
+			fcons((cons*)rest_s,
+			      fcons((cons*)intern(strtolstr("BODY"), cl_pkg),
+				    nil)),
+			cl_pkg,
+			&llet_star);
+  let_star_s->fun->plist = setassoc((cons*)special_operator, t, let_star_s->plist);
 }
 
 void init_types()
