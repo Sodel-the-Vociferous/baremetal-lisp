@@ -49,7 +49,21 @@ void newline(struct sw_screen *s)
   s->y++;
   if (s->y >= YROWS)
     {
-      s->y = s->y;//TODO!
+      //s->y = s->y;//TODO!
+      int i;
+      uchar *dest = (uchar*)s->screen;
+      uchar *src = dest + (XCOLUMNS * sizeof(ushort));
+      
+      for (i=0; i<YROWS; i++)
+	{
+	  memcpy(dest, src, XCOLUMNS*sizeof(ushort));
+	  src += (XCOLUMNS * sizeof(ushort));
+	  dest += (XCOLUMNS * sizeof(ushort));
+	}
+
+      ushort blank = (' ' | (s->bgattrib << 12) | (s->fgattrib << 8));
+      memsetw((ushort*)dest, blank, XCOLUMNS*sizeof(ushort));
+      s->y = YROWS-1;
     }
   cursor(s->x, s->y);
 }
