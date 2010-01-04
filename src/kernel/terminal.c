@@ -73,8 +73,6 @@ cons *termmain(lisp_terminal *term)
 	      (c->c == '\n'))
 	    break;
 	}
-      putchar('\n', term->screen);
-      
       cons *exp = read(tolisp, env);
       cons *value = eval(exp, env);
       
@@ -89,6 +87,7 @@ cons *termmain(lisp_terminal *term)
 	  putchar(c->c, term->screen);
 	  cursor(term->screen->x, term->screen->y);
 	}
+      putchar('\n', term->screen);
       putchar('\n', term->screen);
     }
   for(;;);
