@@ -11,13 +11,18 @@ cons *badprint_backend(cons *exp, stream *str)
     {
       unsigned long magnitude = 1000000000;
       long num = ((fixnum*)exp)->num;
-      unsigned long i;
+      long i;
       char negative = 0;
       
       if (num < 0)
-	{
+	{//TODO fix; negative numbers don't print properly.
 	  negative = 1;
 	  i = -num;
+	}
+      else if (num == 0)
+	{
+	  write_char(ctolc('0'), str);
+	  return;
 	}
       else
 	i = num;

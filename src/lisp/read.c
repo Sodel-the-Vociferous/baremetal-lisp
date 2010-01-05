@@ -75,19 +75,18 @@ cons *read_token(stream *str, cons *env)
     {
       rtcase = (symbol*)assoc((cons*)readtable_case, (cons*)readtable)->cdr;
       c = read_char(str);     
-      c = manipulate_case(c, rtcase);
       plist = assoc((cons*)c, (cons*)readtable)->cdr;
-
       if (c == (base_char*)nil)
 	{
 	  if (symbol_idx > max_idx)
-	    return (cons*)0xbad2;//TODO error. Must make robust!
+	    return (cons*)0xbad2;//TODO error.
 	  symbol_name[symbol_idx] = '\0';
 	  symbol_idx++;
 	  break;
 	}
       else if (null(assoc((cons*)package_marker, plist)->cdr) == nil) 
-	{
+	{/* Dealing with package markers in or prefixing tokens. CLHS 2.3.5
+	  */
 	  f.type = (cons*)0;
 	  b.type = (cons*)0;
 	  s.type = (cons*)0;
@@ -116,19 +115,28 @@ cons *read_token(stream *str, cons *env)
 	}
       if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
 	  (null(assoc((cons*)non_terminating_macro, plist)->cdr) == nil))
-	{
+	{/* Manipulate the character's case, depending on the readtable case
+	  * of the current readtable, and append the character to the token.
+	  */
+	  c = manipulate_case(c, rtcase);
+	  plist = assoc((cons*)c, (cons*)readtable)->cdr;
 	  if (symbol_idx > 255)
 	    return (cons*)0xbad1;//TODO error. Must make robust!
-	  symbol_name[symbol_idx] = c->c;
+	  symbol_name[symbol_idx] = c->c;//TODO readtable-case
 	  symbol_idx++;
 	}
       else if (null(assoc((cons*)single_escape, plist)->cdr) == nil)
-	{
+	{/* Append the character to the current token as an alphabetical 
+	  * character, regardless of what it really is.
+	  */
 	  c = read_char(str);
 	  if (symbol_idx > max_idx)
 	    return (cons*)0xbad2;//TODO error. Must make robust!
 	  symbol_name[symbol_idx] = c->c;
 	  symbol_idx++;
+
+	  /* Escape characters preclude the possibility of the token being a 
+	   * number.*/
 	  f.type = (cons*)0;
 	  b.type = (cons*)0;
 	  s.type = (cons*)0;
@@ -136,6 +144,8 @@ cons *read_token(stream *str, cons *env)
       else if (null(assoc((cons*)multiple_escape, plist)->cdr) == nil)
 	{/* CLHS 2.2 Step 9
 	  */
+
+	  /* Escape characters preclude the possibility of the token being a number. */
 	  f.type = (cons*)0;
 	  b.type = (cons*)0;
 	  s.type = (cons*)0;
@@ -148,8 +158,9 @@ cons *read_token(stream *str, cons *env)
 	      if (c == (base_char*)nil)
 		return (cons*)0xbad14;
 	      else if ((null(assoc((cons*)constituent, plist)->cdr) == nil) ||
-		  (null(assoc((cons*)whitespace, plist)->cdr) == nil))
-		{//TODO expand as per CLHS 2.2 step 9
+		       (null(assoc((cons*)whitespace, plist)->cdr) == nil))
+		{
+		  //TODO expand as per CLHS 2.2 step 9
 		  if (symbol_idx > max_idx)
 		    return (cons*)0xbad3;//TODO error. Must make robust!
 		  symbol_name[symbol_idx] = c->c;
@@ -177,7 +188,8 @@ cons *read_token(stream *str, cons *env)
 	    }
 	}
       else if (null(assoc((cons*)terminating_macro, plist)->cdr) == nil)
-	{
+	{/* Terminating macro characters terminate the token.
+	  */
 	  //TODO if (read_preserving_whitespace_s->value != nil) yadda yadda....
 	  unread_char(c, str);
 
@@ -188,7 +200,9 @@ cons *read_token(stream *str, cons *env)
 	  break;
 	}
       else if (null(assoc((cons*)whitespace, plist)->cdr) == nil)
-	{//TODO expand as per CLHS.
+	{/* Whitespace terminates the token.
+	  */
+	  //TODO expand as per CLHS.
 	  if (symbol_idx > 255)
 	    return (cons*)0xbad14;//TODO error. Must make robust!
 	  symbol_name[symbol_idx] = '\0';
@@ -196,6 +210,8 @@ cons *read_token(stream *str, cons *env)
 	  break;
 	}
      else if (null(assoc((cons*)invalid, plist)->cdr) == nil)
+       /* Invalid characters signal a reader-error.
+	*/
 	return (cons*)0xbad8;//TODO reader error
       else
 	/* This should never happen, and signals a problem with the

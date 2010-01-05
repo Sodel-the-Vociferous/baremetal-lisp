@@ -4,7 +4,7 @@
  *
  * Definitions for Lisp interfaces to C functions. The C functions defined in 
  * lisp.c use C calling convention. These interfaces make use of the Lisp 
- * environment to find their parameters.
+ * environment to find their parameters. 
  *
  * This code is released under the GNU GPL General Public License.
  */
@@ -134,7 +134,7 @@ cons *lmultiply(cons *env)
   return (cons*)num;
 }
 
-/* Environment operators */
+/* Environment */
 cons *lintern(cons *env)
 {
   array *name = (array*)lookup("NAME", env);
@@ -148,16 +148,14 @@ cons *lfind_package(cons *env)
   procinfo *p = (procinfo*)env->car;
   return (cons*)find_package(name, p);
 }
-  
-/*Equality*/
-
 
 cons *lfind_class(cons *env)
 {
   symbol *typename = (symbol*)lookup("TYPE-NAME", env);
   return typename->class;
 }
-
+  
+/*Equality*/
 cons *lchareq(cons *env)
 {
   cons *a = lookup("A", env);
@@ -202,13 +200,13 @@ cons *leql (cons *env)
 
 cons *lequal (cons *env);
 
-cons *lhash (cons *env)
-{
-  cons *object = eval((cons*)object_s,env);
-  hash_table *ht = (hash_table*)eval((cons*)hash_table_s, env);
+/* cons *lhash (cons *env) */
+/* { */
+/*   cons *object = eval((cons*)object_s,env); */
+/*   hash_table *ht = (hash_table*)eval((cons*)hash_table_s, env); */
   
-  return (cons*)newfixnum(hash(object, ht));
-}
+/*   return (cons*)newfixnum(hash(object, ht)); */
+/* } */
 
 /*Flow control*/
 cons *lcond(cons *env)
@@ -228,6 +226,11 @@ cons *lcond(cons *env)
 }
 
 /*Evaluation*/
+cons *lquote(cons *env)
+{
+  cons *exp = eval((cons*)exp_s, env);
+  return exp;
+}
 cons *leval(cons *env)
 {
   cons *exp = eval((cons*)exp_s, env);
@@ -262,28 +265,12 @@ cons *ldefun(cons *env)
   symbol *name = (symbol*)lookup("SYMBOL", env);
   cons *lambda_list = lookup("LAMBDA-LIST", env);
   cons *form = lookup("FORM", env);
-  return (cons*)defun(name, lambda_list, form, env);
-}
 
-/*Special Operators*/
-cons *lquote(cons *env)
-{
-  cons *exp = eval((cons*)exp_s, env);
-  return exp;
-}
+  cons *proper_env = env->cdr;
+  for(proper_env; proper_env->cdr!=nil; proper_env=proper_env->cdr);
+  proper_env = proper_env->car;
 
-/* Reading */
-cons *lread_char(cons *env)
-{
-  stream *str = (stream*)lookup("STREAM", env);
-  return (cons*)read_char(str);
-}
-
-cons *lread_list(cons *env)
-{
-  stream *str = (stream*)eval((cons*)list_s, env);
-  base_char *c = (base_char*)eval((cons*)character_s, env);
-  return read_list(str, c, env);
+  return (cons*)defun(name, lambda_list, form, proper_env);
 }
 
 cons *llet_base(cons *env, int parallelp)
@@ -402,4 +389,19 @@ cons *lsetq(cons *env)
     s->value = value;
 
   return value;
+}
+
+
+/* Reading */
+cons *lread_char(cons *env)
+{
+  stream *str = (stream*)lookup("STREAM", env);
+  return (cons*)read_char(str);
+}
+
+cons *lread_list(cons *env)
+{
+  stream *str = (stream*)eval((cons*)list_s, env);
+  base_char *c = (base_char*)eval((cons*)character_s, env);
+  return read_list(str, c, env);
 }

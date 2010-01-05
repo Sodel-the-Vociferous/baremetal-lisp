@@ -136,6 +136,7 @@ symbol *equalp_s;
 symbol *progn_s;
 symbol *eval_s;
 symbol *cond_s;
+symbol *type_of_s;
 /* Environment Function Names */
 symbol *intern_s;
 symbol *find_package_s;
@@ -153,6 +154,7 @@ symbol *a_s;
 symbol *b_s;
 symbol *exp_s;
 symbol *clauses_s;
+symbol *name_s;
 
 /*Local functions*/
 symbol *initsym(char *name, package *p);
@@ -168,13 +170,12 @@ cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *rea
 void init_keyword_pkg();
 
 void init_cl_pkg();
-void init_readtable();
 void init_lambda_control();
-void init_special_operators();
 void init_number_funs();
 void init_list_funs();
 void init_eq_funs();
 void init_eval_funs();
+void init_flow_control();
 void init_env_funs();
 void init_read_funs();
 void init_set_funs();
@@ -475,6 +476,7 @@ void init_cl_pkg()
   exp_s = initintsym("EXP", cl_pkg);
   value_s = initintsym("VALUE", cl_pkg);
   clauses_s = initintsym("CLAUSES", cl_pkg);
+  name_s = initintsym("NAME", cl_pkg);
 
   /* Read-control variables */
   read_base_s = initsym("*READ-BASE*", cl_pkg);
@@ -484,9 +486,11 @@ void init_cl_pkg()
   init_number_funs();
   init_list_funs();
   init_eq_funs();
+  init_eval_funs();
+  init_flow_control();
+  init_env_funs();
   init_read_funs();
   init_set_funs();
-  init_special_operators();
 }
 
 void init_lambda_control()
@@ -630,6 +634,14 @@ void init_eq_funs()
 
 void init_eval_funs()
 {
+  quote_s = initcfun("QUOTE", 
+		     fcons((cons*)exp_s,
+			   nil),
+		     cl_pkg,
+		     &lquote);
+
+  quote_s->fun->plist = setassoc((cons*)special_operator, t, quote_s->plist);
+
   progn_s = initcfun("PROGN",
 		     fcons((cons*)intern(strtolstr("BODY"), cl_pkg),
 			   nil),
@@ -643,6 +655,21 @@ void init_eval_funs()
 		    cl_pkg,
 		    &leval);
 
+  function_s = initcfun("FUNCTION",
+			fcons((cons*)name_s,
+			      nil),
+			cl_pkg,
+			&lfunction);
+
+  type_of_s = initcfun("TYPE-OF",
+		       fcons((cons*)object_s,
+			     nil),
+		       cl_pkg,
+		       &ltype_of);
+}
+
+void init_flow_control()
+{
   cond_s = initcfun("COND",
 		    fcons((cons*)intern(strtolstr("CLAUSES"), cl_pkg),
 			  nil),
@@ -665,17 +692,14 @@ void init_env_funs()
 				nil),
 			  cl_pkg,
 			  &lfind_class);
-}
 
-void init_special_operators()
-{
-  quote_s = initcfun("QUOTE", 
-		     fcons((cons*)exp_s,
-			   nil),
-		     cl_pkg,
-		     &lquote);
-
-  quote_s->fun->plist = setassoc((cons*)special_operator, t, quote_s->plist);
+  intern_s = initcfun("INTERN",
+		      fcons((cons*)string_s,
+			    fcons((cons*)optional_s,
+				  fcons((cons*)package_s,
+					nil))),
+		      cl_pkg,
+		      &lintern);
 }
 
 void init_read_funs()
@@ -743,14 +767,6 @@ void init_read_funs()
 void init_set_funs()
 {/* Initialize assignment functions.
   */
-
-  intern_s = initcfun("INTERN",
-		      fcons((cons*)string_s,
-			    fcons((cons*)optional_s,
-				  fcons((cons*)package_s,
-					nil))),
-		      cl_pkg,
-		      &lintern);
 
   defun_s = initcfun("DEFUN",
 		     fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),

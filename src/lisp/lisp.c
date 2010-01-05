@@ -16,6 +16,7 @@
 //TODO make sure nil can't get clobbered
 //TODO cut out automatic export of symbols in init.c, and make symbol export
 //    a separate function.
+//TODO multiple value return.
 
 #include "lisp.h"
 #include "init.h"
@@ -688,7 +689,6 @@ cons *eval(cons *exp, cons *env)
     {/* If the expression is just a symbol, evaluate it, and return its current
       * value.
       */
-
       symbol *s = (symbol*)exp;
       cons *binding = env->cdr; /* current environment node */
       
@@ -749,6 +749,7 @@ cons *eval(cons *exp, cons *env)
 	  * variable names, and evaluate the function's form.
 	  */
 	  cons *newenv = extend_env(f->env);
+	  newenv->car = env->car;
 	  if (assoc((cons*)special_operator, f->plist)->cdr != nil)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
@@ -764,6 +765,7 @@ cons *eval(cons *exp, cons *env)
 	  */
 	  compiled_function *cf = (compiled_function*)f;
 	  cons *newenv = extend_env(cf->env);
+	  newenv->car = env->car;
 	  if (assoc((cons*)special_operator, cf->plist)->cdr != nil)
 	    /* If the expression is a special form, evaluate it as a special 
 	     * form, and treat its paramteres accordingly.
@@ -1120,24 +1122,20 @@ void test(procinfo *proc)
   /*Tests*/
   cons *env = basic_env;
   env->car = (cons*)proc;
+  //envbind(intern(strtolstr("X"), cl_pkg), (cons*)newfixnum(3), env);
 
-  cons *exp = fcons((cons*)cons_s, fcons((cons*)external, fcons((cons*)internal, nil)));			  
-  
-  cons *hope = eval(exp, env);
-
-  stream *str = newstream(0);
-  
-  str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
+  stream *str = newstream(0);  
+  str->rv = strtolstr("(defun test (x) (defun f () x))");
   str->write_index = 19;
 
-  cons *exp2 = (cons*)initread(str, env);
+  cons *exp2 =  read(str, env);
   cons *lesser = eval((cons*)exp2, env);
 
   cons *xyzzy = eval(fcons((cons*)quote_s, fcons((cons*)quote_s, nil)), env);
 
   str->read_index = 0;
   //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
-  str->rv = strtolstr("(list 1 (list 3 4) 5)");
+  str->rv = strtolstr("(test 2)");
   str->write_index = 1;
 
   cons *snazzy = read(str, env);
@@ -1146,6 +1144,9 @@ void test(procinfo *proc)
   str = newstream(0);
   typep(shiny, fixnum_s);
   badprint(shiny, str);
+  
+  cons *finalexp = fcons((cons*)intern(strtolstr("F"), cl_pkg), nil);
+  cons *final = eval(finalexp, env);
 }
 
 int main ()
