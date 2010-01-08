@@ -678,8 +678,9 @@ void init_eval_funs()
 void init_flow_control()
 {
   cond_s = initcfun("COND",
-		    fcons((cons*)intern(strtolstr("CLAUSES"), cl_pkg),
-			  nil),
+		    fcons((cons*)rest_s,
+			  fcons((cons*)intern(strtolstr("CLAUSES"), cl_pkg),
+				nil)),
 		    cl_pkg,
 		    &lcond);
   cond_s->fun->plist = setassoc((cons*)special_operator, t, cond_s->plist);

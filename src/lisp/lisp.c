@@ -988,7 +988,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
   /*   env = evalkeyword(lambda_list, args, env); */
   /* if (lambda_list->car != (cons*)aux) */
   /*   env = env; */
-    return env;
+  return env;
 }
 
 cons *assoc(cons *key, cons *plist)
@@ -1175,7 +1175,7 @@ void test(procinfo *proc)
 
   str->read_index = 0;
   //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
-  str->rv = strtolstr("(test)");
+  str->rv = strtolstr("(cond (nil 1) (t 2))");
   str->write_index = 1;
 
   cons *snazzy = read(str, env);

@@ -211,14 +211,14 @@ cons *lequal (cons *env);
 /*Flow control*/
 cons *lcond(cons *env)
 {
-  cons *clauses = eval((cons*)clauses_s, env);
+  cons *clauses = lookup("CLAUSES", env);
   cons *clause = clauses;
   while (1)
     {
       if (clause == nil)
 	return 0;//TODO error
       else if (eval(clause->car->car, env) != nil)
-	return eval(clause->car->cdr, env);
+	return eval(clause->car->cdr->car, env);
       else
 	clause = clause->cdr;
     }
