@@ -896,10 +896,10 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 	  else
 	    envbind(varsym, args->car, env);
 
-	  if (typep(specifier->cdr->cdr, symbol_s) == t)
+	  if (typep(specifier->cdr->cdr->car, symbol_s) == t)
 	    /* If supplied-p-parameter is supplied, bind it to T.
 	     */
-	    envbind((symbol*)specifier->cdr->cdr, t, env);
+	    envbind((symbol*)specifier->cdr->cdr->car, t, env);
 
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
@@ -914,27 +914,27 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 	  * default value for a variable name, bind it to nil.
 	  */
 	  specifier = lambda_list->car;
-	  if (typep(lambda_list->car, symbol_s) == t)
+	  if (typep(specifier, symbol_s) == t)
 	    {
-	      varsym = (symbol*)lambda_list->car;
+	      varsym = (symbol*)specifier;
 	      envbind(varsym, nil, env);
 	    }
-	  else if ((typep(lambda_list->car, list_s) == t) &&
-		   (typep(lambda_list->car->car, symbol_s) == t))
+	  else if ((typep(specifier, list_s) == t) &&
+		   (typep(specifier->car, symbol_s) == t))
 	    {
-	      varsym = (symbol*)lambda_list->car->car;
+	      varsym = (symbol*)specifier->car;
 	      if (evaluate == t)
-		envbind(varsym, eval(lambda_list->car->cdr, oldenv), env);
+		envbind(varsym, eval(specifier->cdr->car, oldenv), env);
 	      else
-		envbind(varsym, lambda_list->car->cdr, env);
+		envbind(varsym, specifier->cdr->car, env);
 	    }
 	  else
 	    return 0;//TODO error
 
-	  if (typep(specifier->cdr->cdr, symbol_s) == t)
-	    /* If supplied-p-parameter is supplied, bind it to T.
+	  if (typep(specifier->cdr->cdr->car, symbol_s) == t)
+	    /* If supplied-p-parameter is supplied, bind it to NIL.
 	     */
-	    envbind((symbol*)specifier->cdr->cdr, nil, env);
+	    envbind((symbol*)specifier->cdr->cdr->car, nil, env);
 
 	  lambda_list = lambda_list->cdr;
 	}
@@ -1165,7 +1165,7 @@ void test(procinfo *proc)
   //envbind(intern(strtolstr("X"), cl_pkg), (cons*)newfixnum(3), env);
 
   stream *str = newstream(0);  
-  str->rv = strtolstr("(defun test (x) (defun f () x))");
+  str->rv = strtolstr("(defun test (&optional (x 1 x-p)) (list x x-p))");
   str->write_index = 19;
 
   cons *exp2 =  read(str, env);
@@ -1175,7 +1175,7 @@ void test(procinfo *proc)
 
   str->read_index = 0;
   //str->rv = strtolstr("(LIST :INTERNAL :EXTERNAL)");
-  str->rv = strtolstr("(test 2)");
+  str->rv = strtolstr("(test)");
   str->write_index = 1;
 
   cons *snazzy = read(str, env);
