@@ -391,6 +391,29 @@ cons *lsetq(cons *env)
   return value;
 }
 
+cons *ldefparameter(cons *env)
+{
+  symbol *sym = (symbol*)eval((cons*)symbol_s, env);
+  cons *value = eval((cons*)value_s, env);
+  value = eval(value, env);
+  cons *docstring = lookup("DOCUMENTATION", env);
+  cons *doc_p = lookup("DOCUMENTATION-P", env);
+
+  return (cons*)defparameter(sym, value, docstring, doc_p);
+}
+
+cons *ldefvar(cons *env)
+{
+  symbol *sym = (symbol*)eval((cons*)symbol_s, env);
+  cons *value = lookup("VALUE", env);
+  cons *value_p = lookup("VALUE-P", env);
+  if (value_p != nil)
+    value = eval(value, env);
+  cons *docstring = lookup("DOCUMENTATION", env);
+  cons *doc_p = lookup("DOCUMENTATION-P", env);
+
+  return (cons*)defvar(sym, value, value_p, docstring, doc_p);
+}
 
 /* Reading */
 cons *lread_char(cons *env)

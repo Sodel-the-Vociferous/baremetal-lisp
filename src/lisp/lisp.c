@@ -838,6 +838,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
   //NOTE: "Someone, please tidy me." :'( "I'm so messy!"
   cons *binding;
   cons *foo;
+  cons *specifier;
   array *varname;
   symbol *varsym;
   
@@ -860,7 +861,8 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
     }
 
   if (lambda_list->car == (cons*)optional_s)
-    {/* Bind &optional parameters to proper variable names.
+    {/* CLHS 2.4.1.2
+      * Bind &optional parameters to proper variable names.
       */
       lambda_list = lambda_list->cdr;
       while((null(lambda_list) == nil) && 
@@ -869,13 +871,23 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 	    (lambda_list->car != (cons*)keyword_s) &&
 	    (lambda_list->car != (cons*)aux_s))
 	{/* If the parameter list hasn't run out, bind them to variable names, 
-	  * as per the lambda list.
+	  * according to the lambda list.
 	  */
-	  if (typep(lambda_list->car, symbol_s) == t)
-	    varsym = (symbol*)lambda_list->car;
-	  else if ((typep(lambda_list->car, list_s) == t) &&
-		   (typep(lambda_list->car->car, symbol_s) == t))
-	    varsym = (symbol*)lambda_list->car->car;
+	  specifier = lambda_list->car;
+	  if (typep(specifier, symbol_s) == t)
+	    /* CLHS 3.4.1
+	     * If the parameter in the lambda list specifier is just a symbol, 
+	     * use that symbol as the parameter name.
+	     */
+	    varsym = (symbol*)specifier;
+	  else if ((typep(specifier, list_s) == t) &&
+		   (typep(specifier->car, symbol_s) == t))
+	    /* If the lambda list parameter specifier is a list, and the first 
+	     * object in the list is a symbol, the first object in the specifier
+	     * is the parameter name.
+	     */
+	     //TODO typechecking
+	    varsym = (symbol*)specifier->car;
 	  else
 	    return 0;//TODO error
 
@@ -883,6 +895,11 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 	    envbind(varsym, eval(args->car, env), env);
 	  else
 	    envbind(varsym, args->car, env);
+
+	  if (typep(specifier->cdr->cdr, symbol_s) == t)
+	    /* If supplied-p-parameter is supplied, bind it to T.
+	     */
+	    envbind((symbol*)specifier->cdr->cdr, t, env);
 
 	  lambda_list = lambda_list->cdr;
 	  args = args->cdr;
@@ -896,12 +913,11 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 	  * variable names with their default values, if any. If there is no 
 	  * default value for a variable name, bind it to nil.
 	  */
+	  specifier = lambda_list->car;
 	  if (typep(lambda_list->car, symbol_s) == t)
 	    {
 	      varsym = (symbol*)lambda_list->car;
 	      envbind(varsym, nil, env);
-	      lambda_list = lambda_list->cdr;
-	      args = args->cdr;
 	    }
 	  else if ((typep(lambda_list->car, list_s) == t) &&
 		   (typep(lambda_list->car->car, symbol_s) == t))
@@ -911,11 +927,16 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
 		envbind(varsym, eval(lambda_list->car->cdr, oldenv), env);
 	      else
 		envbind(varsym, lambda_list->car->cdr, env);
-	      lambda_list = lambda_list->cdr;
-	      args = args->cdr;
 	    }
 	  else
 	    return 0;//TODO error
+
+	  if (typep(specifier->cdr->cdr, symbol_s) == t)
+	    /* If supplied-p-parameter is supplied, bind it to T.
+	     */
+	    envbind((symbol*)specifier->cdr->cdr, nil, env);
+
+	  lambda_list = lambda_list->cdr;
 	}
     }
   if (lambda_list->car == (cons*)rest_s)
@@ -924,7 +945,6 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
       lambda_list = lambda_list->cdr;
   
       if((null(lambda_list) == nil) && 
-	 (null(args) == nil) &&
 	 (lambda_list->car != (cons*)optional_s) &&
 	 (lambda_list->car != (cons*)rest_s) && 
 	 (lambda_list->car != (cons*)keyword_s) &&
@@ -1010,6 +1030,26 @@ symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env)
   f->lambda_list = lambda_list;
   f->fun = form;
   return sym;
+}
+
+symbol *defparameter(symbol *name, cons *val, cons *docstring, cons *docstring_p)
+{
+  name->plist = setassoc((cons*)special, t, name->plist);
+  name->value = val;
+  if (docstring_p != nil)
+    name->plist = setassoc((cons*)variable_documentation_s, docstring, name->plist);
+  return name;
+}
+
+symbol *defvar(symbol *name, cons *val, cons *val_p, cons *docstring, cons *docstring_p)
+{
+  name->plist = setassoc((cons*)special, t, name->plist);
+  if ((val_p != nil) &&
+      (name->value == 0))
+    name->value = val;
+  if (docstring_p != nil)
+    name->plist = setassoc((cons*)variable_documentation_s, docstring, name->plist);
+  return name;
 }
 
 //Stream functions

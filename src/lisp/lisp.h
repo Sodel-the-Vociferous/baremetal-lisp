@@ -341,6 +341,8 @@ extern cons *evalambda_special(cons *lambda_list, cons *args, cons *oldenv, cons
 extern cons *assoc(cons *key, cons *plist);
 extern cons *setassoc(cons *key, cons *value, cons *plist);
 extern symbol *defun(symbol *sym, cons *lambda_list, cons *form, cons *env);
+extern symbol *defparameter(symbol *name, cons *val, cons *docstring, cons *docstring_p);
+extern symbol *defvar(symbol *name, cons *val, cons *val_p, cons *docstring, cons *docstring_p);
 extern base_char *read_char(stream *str);
 extern base_char *peek_char(stream *str);
 extern cons *unread_char(base_char *c, stream *str);

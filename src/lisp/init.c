@@ -123,6 +123,8 @@ symbol *defun_s;
 symbol *setq_s;
 symbol *let_s;
 symbol *let_star_s;
+symbol *defparameter_s;
+symbol *defvar_s;
 /* Equality Function Names */
 symbol *chareq_s;
 symbol *charequal_s;
@@ -137,6 +139,7 @@ symbol *progn_s;
 symbol *eval_s;
 symbol *cond_s;
 symbol *type_of_s;
+symbol *documentation_s;
 /* Environment Function Names */
 symbol *intern_s;
 symbol *find_package_s;
@@ -145,7 +148,8 @@ symbol *find_class_s;
 symbol *read_char_s;
 symbol *read_s;
 symbol *read_list_s;
-
+/* Internal Symbols */
+symbol *variable_documentation_s;
 /* Local variables */
 symbol *value_s;
 symbol *args_s;
@@ -180,9 +184,9 @@ void init_env_funs();
 void init_read_funs();
 void init_set_funs();
 void init_types();
+void init_nonstandard_symbols();
 
 cons *initread(stream *str, cons *env);
-
 
 /*Initialization helper functions*/
 symbol *initsym(char *name, package *p)
@@ -392,7 +396,8 @@ cons *init_char_traits(char string[], cons *traitname, cons *traitval, cons *rea
   return readtable;
 }
 
-/*Initialization*/
+/* Package Initialization */
+
 void init_keyword_pkg()
 {/* Initialize keywords that we'll need to get things rolling.
   */
@@ -400,9 +405,8 @@ void init_keyword_pkg()
   keyword_pkg = newpackage();
   keyword_pkg->name = keyword_name;
 
-  /* External and constant must be initialized manually, because they depend on
-   * themselves.
-   */
+  /* :EXTERNAL and :CONSTANT must be initialized manually, because they depend 
+   * on themselves. */
   external = intern(strtolstr("EXTERNAL"), keyword_pkg);
   external->value = (cons*)external;
   constant = intern(strtolstr("CONSTANT"), keyword_pkg);
@@ -468,7 +472,7 @@ void init_cl_pkg()
   proc->package_s = package_s;
   init_types();
 
-  /* Generic paramter names */
+  /* Generic parameter names */
   a_s = initintsym("A", cl_pkg);
   b_s = initintsym("B", cl_pkg);
   object_s = initintsym("OBJECT", cl_pkg);
@@ -483,14 +487,17 @@ void init_cl_pkg()
   read_base_s->value = (cons*)newfixnum(10);
 
   init_lambda_control();
-  init_number_funs();
   init_list_funs();
   init_eq_funs();
-  init_eval_funs();
   init_flow_control();
-  init_env_funs();
   init_read_funs();
+  init_number_funs();
+  init_eval_funs();
+  init_env_funs();
   init_set_funs();
+  init_nonstandard_symbols();
+
+  package_s->plist = setassoc((cons*)special, t, package_s->plist);
 }
 
 void init_lambda_control()
@@ -767,9 +774,10 @@ void init_read_funs()
 void init_set_funs()
 {/* Initialize assignment functions.
   */
+  stream *str = newstream(0);
 
   defun_s = initcfun("DEFUN",
-		     fcons((cons*)intern(strtolstr("SYMBOL"), cl_pkg),
+		     fcons((cons*)symbol_s,
 			   fcons((cons*)intern(strtolstr("LAMBDA-LIST"), cl_pkg),
 				 fcons((cons*)intern(strtolstr("FORM"), cl_pkg),
 				       nil))),
@@ -801,6 +809,25 @@ void init_set_funs()
 			cl_pkg,
 			&llet_star);
   let_star_s->fun->plist = setassoc((cons*)special_operator, t, let_star_s->plist);
+
+
+  str = newstream(0);
+  str->rv = strtolstr("(SYMBOL VALUE &OPTIONAL (DOCUMENTATION NIL DOCUMENTATION-P))");
+  str->read_index = 0;
+  defparameter_s = initcfun("DEFPARAMETER",
+			    initread(str, basic_env),
+			    cl_pkg,
+			    &ldefparameter);
+  defparameter_s->fun->plist = setassoc((cons*)special_operator, t, defparameter_s->plist);
+
+  str = newstream(0);
+  str->rv = strtolstr("(SYMBOL &OPTIONAL (VALUE NIL VALUE-P) (DOCUMENTATION NIL DOCUMENTATION-P))");
+  str->read_index = 0;
+  defvar_s = initcfun("DEFVAR",
+		      initread(str, basic_env),
+		      cl_pkg,
+		      &ldefvar);
+  defvar_s->fun->plist = setassoc((cons*)special_operator, t, defvar_s->plist);
 }
 
 void init_types()
@@ -900,6 +927,11 @@ void init_types()
   hash_table_s = initsym("HASH-TABLE", cl_pkg);
   hash_table_s->class = initdeftype("(HASH-TABLE (T) ())");
   basic_classes[HASH_TABLE] = hash_table_s->class;
+}
+
+void init_nonstandard_symbols()
+{
+  variable_documentation_s = initintsym("VARIABLE-DOCUMENTATION", cl_pkg);
 }
 
 procinfo *init()

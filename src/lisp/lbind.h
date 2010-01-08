@@ -42,6 +42,8 @@ extern cons *ldefun(cons *env);
 extern cons *llet(cons *env);
 extern cons *llet_star(cons *env);
 extern cons *lsetq(cons *env);
+extern cons *ldefparameter(cons *env);
+extern cons *ldefvar(cons *env);
 /* Evaluation */
 extern cons *lquote(cons *env);
 extern cons *leval(cons *env);
