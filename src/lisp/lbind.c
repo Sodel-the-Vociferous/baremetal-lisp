@@ -134,6 +134,17 @@ cons *lmultiply(cons *env)
   return (cons*)num;
 }
 
+cons *lnum_eq(cons *env)
+{
+  fixnum *a = (fixnum*)lookup("A", env);
+  fixnum *b = (fixnum*)lookup("B", env);
+  
+  if (a->num == b->num)
+    return t;
+  else
+    return nil;
+}
+
 /* Environment */
 cons *lintern(cons *env)
 {

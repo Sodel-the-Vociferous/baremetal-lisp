@@ -23,6 +23,7 @@ extern cons *llist(cons *env);
 extern cons *ladd(cons *env);
 extern cons *lsubtract(cons *env);
 extern cons *lmultiply(cons *env);
+extern cons *lnum_eq(cons *env);
 /* Environment */
 extern cons *lintern(cons *env);
 extern cons *lfind_package(cons *env);

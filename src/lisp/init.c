@@ -134,6 +134,7 @@ symbol *eq_s;
 symbol *eql_s;
 symbol *equal_s;
 symbol *equalp_s;
+symbol *equalsign_s;
 /* Evaluation Function Names */
 symbol *progn_s;
 symbol *eval_s;
@@ -592,6 +593,13 @@ void init_number_funs()
 				    nil)),
 			cl_pkg,
 			&lmultiply);
+
+  equalsign_s = initcfun("=",
+			 fcons((cons*)a_s,
+			       fcons((cons*)b_s,
+				     nil)),
+			 cl_pkg,
+			 &lnum_eq);
 }
 
 void init_eq_funs()

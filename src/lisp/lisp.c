@@ -836,6 +836,7 @@ cons *evalambda_base(cons *lambda_list, cons *args, cons *oldenv, cons *env, con
   * list.
   */
   //NOTE: "Someone, please tidy me." :'( "I'm so messy!"
+  //TODO enforce parameter number limits.
   cons *binding;
   cons *foo;
   cons *specifier;
