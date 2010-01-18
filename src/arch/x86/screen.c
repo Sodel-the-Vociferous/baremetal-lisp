@@ -20,7 +20,6 @@ void inithw_screen()
   for (i=0; i<YROWS; i++)
     memsetw(screen + (i * XCOLUMNS), blank, XCOLUMNS);
 
-  *screen = (ushort)('Q' | (BLACK << 12) | (LGREEN << 8));
   cursor(0, 0);
 }
 
@@ -87,4 +86,10 @@ void putchar(char c, struct sw_screen *s)
   s->x++;
   if (s->x >= XCOLUMNS)
     newline(s);
+}
+
+void draw_screen(struct sw_screen *s)
+{
+  cursor(s->x, s->y);
+  memcpy(screen, s->screen, YROWS*XCOLUMNS*sizeof(ushort));
 }

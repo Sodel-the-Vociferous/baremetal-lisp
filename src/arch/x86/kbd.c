@@ -57,7 +57,7 @@ static void kbd_handler(struct registers regs)
   if (scancode & 0x80)
     {
       scancode ^= 0x80;
-      uchar c = keymap[scancode];
+      c = keymap[scancode];
       special_key(c, 0);
     }
 	
@@ -65,14 +65,15 @@ static void kbd_handler(struct registers regs)
     {
       int i = 1;
       c = keymap[scancode];
-      //putchar('!', current_terminal->screen);
       if (special_key(c, 1) > 0)
 	return;
-      if ((c > '~'))
-	return;
       
-      if ((kbd.status.rshift > 0) ||
-	  (kbd.status.lshift > 0))
+      if (c > '~')
+	{
+	  write_char(local_keymap[scancode], current_terminal->stdin);
+	}
+      else if ((kbd.status.rshift > 0) ||
+	       (kbd.status.lshift > 0))
 	write_char(local_keymap_shift[scancode], current_terminal->stdin);
       else 
 	write_char(local_keymap[scancode], current_terminal->stdin);
