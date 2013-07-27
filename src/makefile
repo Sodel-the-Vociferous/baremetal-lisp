@@ -16,7 +16,27 @@ all: kernel.bin lispos-floppy.img
 kernel.bin: $(SOURCES)
 	ld $(LDFLAGS) -zmuldefs -o $@ $(SOURCES)
 
+lispos-floppy.img: makefile kernel.bin basic-grub-floppy.img grub/menu.lst
+	@echo "Creating floppy disk image!"
 
+	$(eval LOOPBACK=$(shell losetup --find))
+	$(eval TMP_FLOPPY=$(shell mktemp))
+	$(eval FLOPPY_MNT_DIR=$(shell mktemp -d))
+
+	cp basic-grub-floppy.img $(TMP_FLOPPY)
+
+	sudo losetup $(LOOPBACK) $(TMP_FLOPPY)
+	sudo mount $(LOOPBACK) $(FLOPPY_MNT_DIR)
+
+	sudo cp kernel.bin $(FLOPPY_MNT_DIR)
+	sudo cp grub/menu.lst "$(FLOPPY_MNT_DIR)/grub"
+	sync
+
+	sudo umount $(LOOPBACK)
+	sudo losetup -d $(LOOPBACK)
+
+	rmdir $(FLOPPY_MNT_DIR)
+	mv $(TMP_FLOPPY) $@
 
 .s.o:
 	nasm $(ASFLAGS) $<

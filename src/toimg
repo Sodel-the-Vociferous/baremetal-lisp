@@ -1,8 +1,0 @@
-#!/bin/bash
-LOOPBACK=/dev/loop1
-
-sudo losetup $LOOPBACK floppy.img
-sudo mount $LOOPBACK /mnt/lo
-sudo cp ./kernel.bin /mnt/lo/boot/
-sudo umount $LOOPBACK
-sudo losetup -d $LOOPBACK
