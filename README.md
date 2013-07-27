@@ -20,7 +20,7 @@ much more recent project. I stopped working on it after January of
 If you just want to play around with it, you can boot the premade
 floppy disk image in qemu with the following command:
 
-    $ qemu -fda src/basic-grub-floppy.img -boot order=a
+    $ qemu-system-i386 -fda src/basic-grub-floppy.img -boot order=a
 
 If you like, you can also write the disk image onto a floppy disk, and
 run the "OS" on real hardware:
@@ -36,7 +36,7 @@ the least amount of effort for me to set up.
 
 Then, you can either run qemu manually:
 
-    $ qemu -fda src/lispos-floppy.img -boot order=a
+    $ qemu-system-i386 -fda src/lispos-floppy.img -boot order=a
 
 or use the handy shortcut I added to the makefile:
 
