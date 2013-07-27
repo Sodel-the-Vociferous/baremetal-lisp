@@ -9,14 +9,18 @@ CFLAGS=-nostdlib -nostdinc -fno-builtin -g -D IN_OS -D KEYMAP=\"$(KEYMAP).h\" -I
 LDFLAGS=-Tlink.ld -melf_i386
 ASFLAGS=-felf32
 
-all: $(SOURCES) link
 
-clean:
-	find . -iname *.o | xargs rm
+.PHONY: all
+all: kernel.bin lispos-floppy.img
 
-link:
-	ld $(LDFLAGS) -zmuldefs -o kernel.bin $(SOURCES)
+kernel.bin: $(SOURCES)
+	ld $(LDFLAGS) -zmuldefs -o $@ $(SOURCES)
+
+
 
 .s.o:
 	nasm $(ASFLAGS) $<
 
+.PHONY: clean
+clean:
+	find . -iname *.o | xargs rm
