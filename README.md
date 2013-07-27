@@ -12,8 +12,9 @@ This project was my second kernel, and my second non-trivial project
 in C. It's a bit of a tangly mess.
 
 Compared to the other stuff I've been digging up lately, this is a
-much more recent project. I stopped working on it after January of
-2010 (though, 2010 still feels ancient to me.)
+comparatively recent project. I stopped working on it after January of
+2010 (though, 2010 still feels ancient to me.) I've come a long way
+since then, but this program fills me with mellow nostalgia.
 
 ### Building and Running It
 
