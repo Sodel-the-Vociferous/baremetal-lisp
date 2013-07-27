@@ -13,6 +13,9 @@ ASFLAGS=-felf32
 .PHONY: all
 all: kernel.bin lispos-floppy.img
 
+qemu: lispos-floppy.img
+	qemu-system-i386 -fda $< -boot order=a
+
 kernel.bin: $(SOURCES)
 	ld $(LDFLAGS) -zmuldefs -o $@ $(SOURCES)
 
