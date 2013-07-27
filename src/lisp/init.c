@@ -136,7 +136,7 @@ symbol *equal_s;
 symbol *equalp_s;
 symbol *equalsign_s;
 symbol *greatersign_s;
-symbol *lessign_s;
+symbol *lesssign_s;
 /* Evaluation Function Names */
 symbol *progn_s;
 symbol *eval_s;
