@@ -1,6 +1,6 @@
 ## My "Bare-Metal" Lisp Interpreter ##
 
-While I was working on it, I generously called this projects a Lisp
+While I was working on it, I generously called this project a Lisp
 operating system. The goal was to make it semi-usable, but other
 concerns stole my attention away. As it is, it's a very incomplete and
 deeply flawed toy lisp interpreter that runs on bare hardware. While
