@@ -1,5 +1,8 @@
 ## My "Bare-Metal" Lisp Interpreter ##
 
+*DISCLAIMER*: This was one of my earliest projects. The code is a
+tangly mess, and it's only purpose is as a historical curiosity.
+
 While I was working on it, I generously called this project a Lisp
 operating system. The goal was to make it semi-usable, but other
 concerns stole my attention away. As it is, it's a very incomplete and
@@ -7,9 +10,6 @@ deeply flawed toy lisp interpreter that runs on bare hardware. While
 programming the interpreter, I worked off of the Common Lisp
 hyper-spec. (That's right: I was gunning for a fully ANSI-compliant
 Common Lisp interpreter.)
-
-This project was my second kernel, and my second non-trivial project
-in C. It's a bit of a tangly mess.
 
 Compared to the other stuff I've been digging up lately, this is a
 comparatively recent project. I stopped working on it after January of
